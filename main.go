@@ -26,13 +26,14 @@ func init() {
 }
 
 var log = golog.Child("[main]")
+var Version = "v0.2.0"
 
 func main() {
 	golog.Default.SetLevel("info")
 	app := cli.NewApp()
 	app.Name = "watchvuln"
 	app.Usage = "A high valuable vulnerability watcher and pusher"
-	app.Version = "v0.1.0"
+	app.Version = Version
 
 	app.Flags = []cli.Flag{
 		&cli.BoolFlag{
@@ -57,6 +58,16 @@ func main() {
 			Aliases: []string{"ds"},
 			Usage:   "sign secret of dingding bot",
 		},
+		&cli.StringFlag{
+			Name:    "wechatwork-key",
+			Aliases: []string{"wk"},
+			Usage:   "wechat work webhook key",
+		},
+		&cli.BoolFlag{
+			Name:    "no-start-message",
+			Aliases: []string{"n"},
+			Usage:   "disable the hello message when server starts",
+		},
 	}
 	app.Before = func(c *cli.Context) error {
 		if c.Bool("debug") {
@@ -76,21 +87,15 @@ func Action(c *cli.Context) error {
 	ctx, cancel := signalCtx()
 	defer cancel()
 
-	dingToken := c.String("dingding-access-token")
-	dingSecret := c.String("dingding-sign-secret")
-	if os.Getenv("DINGDING_ACCESS_TOKEN") != "" {
-		dingToken = os.Getenv("DINGDING_ACCESS_TOKEN")
-	}
-	if os.Getenv("DINGDING_SECRET") != "" {
-		dingSecret = os.Getenv("DINGDING_SECRET")
+	pusher, err := initPusher(c)
+	if err != nil {
+		return err
 	}
 
-	if dingToken == "" || dingSecret == "" {
-		return fmt.Errorf("invalid dingding token, \nusage: %s -dt DINGDING_ACCESS_TOKEN -ds DINGDING_SECRET \nor set via env", os.Args[0])
-	}
-
+	noStartMessage := c.Bool("no-start-message")
 	debug := c.Bool("debug")
 	iv := c.String("interval")
+
 	if os.Getenv("INTERVAL") != "" {
 		iv = os.Getenv("INTERVAL")
 	}
@@ -141,7 +146,7 @@ func Action(c *cli.Context) error {
 		if err != nil {
 			return errors.Wrap(err, "init data")
 		}
-		log.Infof("grabber finished successfully, local db has %d vulns", dbClient.VulnInformation.Query().CountX(ctx))
+		log.Infof("grabber finished successfully")
 	}
 
 	// 初次启动不要推送数据, 以免长时间没运行狂发消息
@@ -150,8 +155,34 @@ func Action(c *cli.Context) error {
 		return errors.Wrap(err, "initial collect")
 	}
 
+	localCount := dbClient.VulnInformation.Query().CountX(ctx)
+	log.Infof("local database has %d vulns", localCount)
+	if !noStartMessage {
+		providers := make([]*grab.Provider, 0, 3)
+		for _, p := range grabbers {
+			providers = append(providers, p.ProviderInfo())
+		}
+		msg := push.InitialMsg{
+			Version:   Version,
+			VulnCount: localCount,
+			Interval:  interval.String(),
+			Provider:  providers,
+		}
+		md := push.RenderInitialMsg(&msg)
+		if err := pusher.PushMarkdown("WatchVuln 初始化完成", md); err != nil {
+			return err
+		}
+	}
+
 	log.Infof("system init finished, found %d new vulns (skip pushing)", len(vulns))
 	log.Infof("ticking every %s", interval)
+
+	defer func() {
+		if err = pusher.PushText("注意: WatchVuln 进程退出"); err != nil {
+			log.Error(err)
+		}
+		time.Sleep(time.Second)
+	}()
 
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
@@ -163,8 +194,8 @@ func Action(c *cli.Context) error {
 			return ctx.Err()
 		case <-ticker.C:
 			hour := time.Now().Hour()
-			if hour > 0 && hour < 7 {
-				// we must sleep in this period
+			if hour >= 0 && hour < 7 {
+				// we must sleep in this time
 				log.Infof("sleeping..")
 				continue
 			}
@@ -178,7 +209,7 @@ func Action(c *cli.Context) error {
 			for _, v := range vulns {
 				if v.Creator.IsValuable(v) {
 					log.Infof("publishing new vuln %s", v)
-					err = push.DingDingSend(v, dingToken, dingSecret)
+					err = pusher.PushMarkdown(v.Title, push.RenderVulnInfo(v))
 					if err != nil {
 						log.Errorf("send dingding msg error, %s", err)
 						break
@@ -189,9 +220,42 @@ func Action(c *cli.Context) error {
 	}
 }
 
+func initPusher(c *cli.Context) (push.Pusher, error) {
+	dingToken := c.String("dingding-access-token")
+	dingSecret := c.String("dingding-sign-secret")
+	wxWorkKey := c.String("wechatwork-key")
+
+	if os.Getenv("DINGDING_ACCESS_TOKEN") != "" {
+		dingToken = os.Getenv("DINGDING_ACCESS_TOKEN")
+	}
+	if os.Getenv("DINGDING_SECRET") != "" {
+		dingSecret = os.Getenv("DINGDING_SECRET")
+	}
+	if os.Getenv("WECHATWORK_KEY") != "" {
+		wxWorkKey = os.Getenv("WECHATWORK_KEY")
+	}
+
+	var pushers []push.Pusher
+	if dingToken != "" && dingSecret != "" {
+		pushers = append(pushers, push.NewDingDing(dingToken, dingSecret))
+	}
+	if wxWorkKey != "" {
+		pushers = append(pushers, push.NewWechatWork(wxWorkKey))
+	}
+	if len(pushers) == 0 {
+		msg := `
+you must setup a dingding token or weixin work key, eg: 
+use dingding: %s --dt DINGDING_ACCESS_TOKEN --ds DINGDING_SECRET
+use wechat:   %s --wk WECHATWORK_KEY
+`
+		return nil, fmt.Errorf(msg, os.Args[0], os.Args[0])
+	}
+	return push.Multi(pushers...), nil
+}
+
 func initData(ctx context.Context, dbClient *ent.Client, grabber grab.Grabber) error {
 	pageSize := 100
-	source := grabber.SourceInfo()
+	source := grabber.ProviderInfo()
 	total, err := grabber.GetPageCount(ctx, pageSize)
 	if err != nil {
 		return nil
@@ -234,7 +298,7 @@ func collectUpdate(ctx context.Context, dbClient *ent.Client, grabbers []grab.Gr
 	for _, grabber := range grabbers {
 		grabber := grabber
 		eg.Go(func() error {
-			source := grabber.SourceInfo()
+			source := grabber.ProviderInfo()
 			pageCount, err := grabber.GetPageCount(ctx, pageSize)
 			if err != nil {
 				return err
@@ -272,7 +336,7 @@ func collectUpdate(ctx context.Context, dbClient *ent.Client, grabbers []grab.Gr
 	return newVulns, err
 }
 
-func createOrUpdate(ctx context.Context, dbClient *ent.Client, source *grab.SourceInfo, data *grab.VulnInfo) (bool, error) {
+func createOrUpdate(ctx context.Context, dbClient *ent.Client, source *grab.Provider, data *grab.VulnInfo) (bool, error) {
 	vuln, err := dbClient.VulnInformation.Query().
 		Where(vulninformation.Key(data.UniqueKey)).
 		First(ctx)

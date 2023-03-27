@@ -25,8 +25,8 @@ func NewTiCrawler() Grabber {
 	return c
 }
 
-func (t *TiCrawler) SourceInfo() *SourceInfo {
-	return &SourceInfo{
+func (t *TiCrawler) ProviderInfo() *Provider {
+	return &Provider{
 		Name:        "qianxin-ti",
 		DisplayName: "奇安信威胁情报中心",
 		Link:        "https://ti.qianxin.com/vulnerability",
@@ -105,7 +105,7 @@ func (t *TiCrawler) ParsePage(ctx context.Context, page, size int) (chan *VulnIn
 				References:  []string{},
 				Tags:        tags,
 				Solutions:   "",
-				From:        t.SourceInfo().Link,
+				From:        t.ProviderInfo().Link,
 				Creator:     t,
 			}
 			result <- info

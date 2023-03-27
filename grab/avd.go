@@ -32,8 +32,8 @@ func NewAVDCrawler() Grabber {
 		log:    golog.Child("[aliyun-avd]"),
 	}
 }
-func (a *AVDCrawler) SourceInfo() *SourceInfo {
-	return &SourceInfo{
+func (a *AVDCrawler) ProviderInfo() *Provider {
+	return &Provider{
 		Name:        "aliyun-avd",
 		DisplayName: "阿里云漏洞库",
 		Link:        "https://avd.aliyun.com/high-risk/list",
