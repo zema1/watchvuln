@@ -25,8 +25,8 @@ func NewOSCSCrawler() Grabber {
 	return c
 }
 
-func (t *OSCSCrawler) SourceInfo() *SourceInfo {
-	return &SourceInfo{
+func (t *OSCSCrawler) ProviderInfo() *Provider {
+	return &Provider{
 		Name:        "oscs",
 		DisplayName: "OSCS开源安全情报预警",
 		Link:        "https://www.oscs1024.com/cm",
@@ -163,7 +163,7 @@ func (t *OSCSCrawler) parseSingeVuln(ctx context.Context, mps string) (*VulnInfo
 		References:  refs,
 		Tags:        nil,
 		Solutions:   "",
-		From:        t.SourceInfo().Link,
+		From:        t.ProviderInfo().Link,
 		Creator:     t,
 	}
 	return info, nil

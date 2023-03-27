@@ -37,14 +37,14 @@ func (v *VulnInfo) String() string {
 	return fmt.Sprintf("%s (%s)", v.Title, v.From)
 }
 
-type SourceInfo struct {
+type Provider struct {
 	Name        string
 	DisplayName string
 	Link        string
 }
 
 type Grabber interface {
-	SourceInfo() *SourceInfo
+	ProviderInfo() *Provider
 	GetPageCount(ctx context.Context, size int) (int, error)
 	ParsePage(ctx context.Context, page int, size int) (chan *VulnInfo, error)
 	IsValuable(info *VulnInfo) bool
