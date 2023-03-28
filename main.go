@@ -71,8 +71,13 @@ func main() {
 		},
 		&cli.BoolFlag{
 			Name:    "no-start-message",
-			Aliases: []string{"n"},
+			Aliases: []string{"nm"},
 			Usage:   "disable the hello message when server starts",
+		},
+		&cli.BoolFlag{
+			Name:    "no-filter",
+			Aliases: []string{"nf"},
+			Usage:   "ignore the valuable filter and push all discovered vulns",
 		},
 	}
 	app.Before = func(c *cli.Context) error {
@@ -99,6 +104,8 @@ func Action(c *cli.Context) error {
 	}
 
 	noStartMessage := c.Bool("no-start-message")
+	noFilter := c.Bool("no-filter")
+
 	debug := c.Bool("debug")
 	iv := c.String("interval")
 
@@ -109,9 +116,12 @@ func Action(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-
 	if interval.Minutes() < 1 && !debug {
 		return fmt.Errorf("interval is too small, at least 1m")
+	}
+
+	if os.Getenv("NO_FILTER") != "" {
+		noFilter = true
 	}
 
 	drv, err := entSql.Open("sqlite3", "file:vuln_v1.sqlite3?cache=shared&_pragma=foreign_keys(1)")
@@ -213,7 +223,7 @@ func Action(c *cli.Context) error {
 			}
 			log.Infof("found %d new vulns in this ticking", len(vulns))
 			for _, v := range vulns {
-				if v.Creator.IsValuable(v) {
+				if noFilter || v.Creator.IsValuable(v) {
 					log.Infof("publishing new vuln %s", v)
 					err = pusher.PushMarkdown(v.Title, push.RenderVulnInfo(v))
 					if err != nil {
