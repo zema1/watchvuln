@@ -1,6 +1,5 @@
 FROM golang:1.19-alpine as builder
 
-LABEL Author=Koalr(https://github.com/zema1)
 
 WORKDIR /app
 
@@ -12,6 +11,14 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -extldflags=-static" -o mai
 
 
 FROM alpine:3
+
+LABEL Author=Koalr(https://github.com/zema1)
+
+RUN apk add --update tzdata && \
+    cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+    echo "Asia/Shanghai" > /etc/timezone && \
+    apk del tzdata && \
+    rm -rf /var/cache/apk/*
 
 WORKDIR /app
 
