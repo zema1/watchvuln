@@ -52,7 +52,7 @@ func main() {
 		&cli.StringFlag{
 			Name:    "pusher-api",
 			Aliases: []string{"api"},
-			Usage:   "api url",
+			Usage:   "your http url",
 		},
 		&cli.StringFlag{
 			Name:    "dingding-access-token",
@@ -241,7 +241,7 @@ func initPusher(c *cli.Context) (push.Pusher, error) {
 	if os.Getenv("WECHATWORK_KEY") != "" {
 		wxWorkKey = os.Getenv("WECHATWORK_KEY")
 	}
-	if os.Getenv("MEISHI_URL") != "" {
+	if os.Getenv("PUSHER_API") != "" {
 		pusherApi = os.Getenv("PUSHER_API")
 	}
 
