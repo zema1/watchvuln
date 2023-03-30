@@ -260,9 +260,8 @@ func initPusher(c *cli.Context) (push.Pusher, error) {
 you must setup a pusher, eg: 
 use dingding: %s --dt DINGDING_ACCESS_TOKEN --ds DINGDING_SECRET
 use wechat:   %s --wk WECHATWORK_KEY
-use API:   %s --api PUSHER_API
-`
-		return nil, fmt.Errorf(msg, os.Args[0], os.Args[0])
+use API:   %s --api PUSHER_API`
+		return nil, fmt.Errorf(msg, os.Args[0], os.Args[0], os.Args[0])
 	}
 	return push.Multi(pushers...), nil
 }
