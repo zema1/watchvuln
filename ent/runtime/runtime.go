@@ -2,7 +2,7 @@
 
 package runtime
 
-// The schema-stitching logic is generated in github.com/zema1/vulntracker/ent/runtime.go
+// The schema-stitching logic is generated in github.com/zema1/watchvuln/ent/runtime.go
 
 const (
 	Version = "v0.11.10"                                        // Version of ent codegen.

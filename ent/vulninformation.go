@@ -36,6 +36,8 @@ type VulnInformation struct {
 	Tags []string `json:"tags,omitempty"`
 	// From holds the value of the "from" field.
 	From string `json:"from,omitempty"`
+	// Pushed holds the value of the "pushed" field.
+	Pushed bool `json:"pushed,omitempty"`
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -45,6 +47,8 @@ func (*VulnInformation) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case vulninformation.FieldReferences, vulninformation.FieldTags:
 			values[i] = new([]byte)
+		case vulninformation.FieldPushed:
+			values[i] = new(sql.NullBool)
 		case vulninformation.FieldID:
 			values[i] = new(sql.NullInt64)
 		case vulninformation.FieldKey, vulninformation.FieldTitle, vulninformation.FieldDescription, vulninformation.FieldSeverity, vulninformation.FieldCve, vulninformation.FieldDisclosure, vulninformation.FieldSolutions, vulninformation.FieldFrom:
@@ -134,6 +138,12 @@ func (vi *VulnInformation) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				vi.From = value.String
 			}
+		case vulninformation.FieldPushed:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field pushed", values[i])
+			} else if value.Valid {
+				vi.Pushed = value.Bool
+			}
 		}
 	}
 	return nil
@@ -191,6 +201,9 @@ func (vi *VulnInformation) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("from=")
 	builder.WriteString(vi.From)
+	builder.WriteString(", ")
+	builder.WriteString("pushed=")
+	builder.WriteString(fmt.Sprintf("%v", vi.Pushed))
 	builder.WriteByte(')')
 	return builder.String()
 }

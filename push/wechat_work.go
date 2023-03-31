@@ -4,7 +4,6 @@ import (
 	"github.com/kataras/golog"
 	"github.com/pkg/errors"
 	wxworkbot "github.com/vimsucks/wxwork-bot-go"
-	"strings"
 )
 
 var _ = Pusher(&WechatWork{})
@@ -17,7 +16,7 @@ type WechatWork struct {
 func NewWechatWork(botKey string) Pusher {
 	return &WechatWork{
 		client: wxworkbot.New(botKey),
-		log:    golog.Child("wechat-work"),
+		log:    golog.Child("[pusher-wechat-work]"),
 	}
 }
 
@@ -34,8 +33,6 @@ func (d *WechatWork) PushText(s string) error {
 
 func (d *WechatWork) PushMarkdown(title, content string) error {
 	d.log.Infof("sending markdown %s", title)
-	title = strings.ReplaceAll(title, "&nbsp;", "")
-	content = strings.ReplaceAll(content, "&nbsp;", "")
 	msg := wxworkbot.Markdown{Content: content}
 	err := d.client.Send(msg)
 	if err != nil {

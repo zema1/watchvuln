@@ -168,6 +168,20 @@ func (viu *VulnInformationUpdate) SetNillableFrom(s *string) *VulnInformationUpd
 	return viu
 }
 
+// SetPushed sets the "pushed" field.
+func (viu *VulnInformationUpdate) SetPushed(b bool) *VulnInformationUpdate {
+	viu.mutation.SetPushed(b)
+	return viu
+}
+
+// SetNillablePushed sets the "pushed" field if the given value is not nil.
+func (viu *VulnInformationUpdate) SetNillablePushed(b *bool) *VulnInformationUpdate {
+	if b != nil {
+		viu.SetPushed(*b)
+	}
+	return viu
+}
+
 // Mutation returns the VulnInformationMutation object of the builder.
 func (viu *VulnInformationUpdate) Mutation() *VulnInformationMutation {
 	return viu.mutation
@@ -254,6 +268,9 @@ func (viu *VulnInformationUpdate) sqlSave(ctx context.Context) (n int, err error
 	}
 	if value, ok := viu.mutation.From(); ok {
 		_spec.SetField(vulninformation.FieldFrom, field.TypeString, value)
+	}
+	if value, ok := viu.mutation.Pushed(); ok {
+		_spec.SetField(vulninformation.FieldPushed, field.TypeBool, value)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, viu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -415,6 +432,20 @@ func (viuo *VulnInformationUpdateOne) SetNillableFrom(s *string) *VulnInformatio
 	return viuo
 }
 
+// SetPushed sets the "pushed" field.
+func (viuo *VulnInformationUpdateOne) SetPushed(b bool) *VulnInformationUpdateOne {
+	viuo.mutation.SetPushed(b)
+	return viuo
+}
+
+// SetNillablePushed sets the "pushed" field if the given value is not nil.
+func (viuo *VulnInformationUpdateOne) SetNillablePushed(b *bool) *VulnInformationUpdateOne {
+	if b != nil {
+		viuo.SetPushed(*b)
+	}
+	return viuo
+}
+
 // Mutation returns the VulnInformationMutation object of the builder.
 func (viuo *VulnInformationUpdateOne) Mutation() *VulnInformationMutation {
 	return viuo.mutation
@@ -531,6 +562,9 @@ func (viuo *VulnInformationUpdateOne) sqlSave(ctx context.Context) (_node *VulnI
 	}
 	if value, ok := viuo.mutation.From(); ok {
 		_spec.SetField(vulninformation.FieldFrom, field.TypeString, value)
+	}
+	if value, ok := viuo.mutation.Pushed(); ok {
+		_spec.SetField(vulninformation.FieldPushed, field.TypeBool, value)
 	}
 	_node = &VulnInformation{config: viuo.config}
 	_spec.Assign = _node.assignValues

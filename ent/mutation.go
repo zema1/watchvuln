@@ -44,6 +44,7 @@ type VulnInformationMutation struct {
 	tags             *[]string
 	appendtags       []string
 	from             *string
+	pushed           *bool
 	clearedFields    map[string]struct{}
 	done             bool
 	oldValue         func(context.Context) (*VulnInformation, error)
@@ -566,6 +567,42 @@ func (m *VulnInformationMutation) ResetFrom() {
 	m.from = nil
 }
 
+// SetPushed sets the "pushed" field.
+func (m *VulnInformationMutation) SetPushed(b bool) {
+	m.pushed = &b
+}
+
+// Pushed returns the value of the "pushed" field in the mutation.
+func (m *VulnInformationMutation) Pushed() (r bool, exists bool) {
+	v := m.pushed
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPushed returns the old "pushed" field's value of the VulnInformation entity.
+// If the VulnInformation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VulnInformationMutation) OldPushed(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPushed is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPushed requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPushed: %w", err)
+	}
+	return oldValue.Pushed, nil
+}
+
+// ResetPushed resets all changes to the "pushed" field.
+func (m *VulnInformationMutation) ResetPushed() {
+	m.pushed = nil
+}
+
 // Where appends a list predicates to the VulnInformationMutation builder.
 func (m *VulnInformationMutation) Where(ps ...predicate.VulnInformation) {
 	m.predicates = append(m.predicates, ps...)
@@ -600,7 +637,7 @@ func (m *VulnInformationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *VulnInformationMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 11)
 	if m.key != nil {
 		fields = append(fields, vulninformation.FieldKey)
 	}
@@ -631,6 +668,9 @@ func (m *VulnInformationMutation) Fields() []string {
 	if m.from != nil {
 		fields = append(fields, vulninformation.FieldFrom)
 	}
+	if m.pushed != nil {
+		fields = append(fields, vulninformation.FieldPushed)
+	}
 	return fields
 }
 
@@ -659,6 +699,8 @@ func (m *VulnInformationMutation) Field(name string) (ent.Value, bool) {
 		return m.Tags()
 	case vulninformation.FieldFrom:
 		return m.From()
+	case vulninformation.FieldPushed:
+		return m.Pushed()
 	}
 	return nil, false
 }
@@ -688,6 +730,8 @@ func (m *VulnInformationMutation) OldField(ctx context.Context, name string) (en
 		return m.OldTags(ctx)
 	case vulninformation.FieldFrom:
 		return m.OldFrom(ctx)
+	case vulninformation.FieldPushed:
+		return m.OldPushed(ctx)
 	}
 	return nil, fmt.Errorf("unknown VulnInformation field %s", name)
 }
@@ -766,6 +810,13 @@ func (m *VulnInformationMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetFrom(v)
+		return nil
+	case vulninformation.FieldPushed:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPushed(v)
 		return nil
 	}
 	return fmt.Errorf("unknown VulnInformation field %s", name)
@@ -860,6 +911,9 @@ func (m *VulnInformationMutation) ResetField(name string) error {
 		return nil
 	case vulninformation.FieldFrom:
 		m.ResetFrom()
+		return nil
+	case vulninformation.FieldPushed:
+		m.ResetPushed()
 		return nil
 	}
 	return fmt.Errorf("unknown VulnInformation field %s", name)

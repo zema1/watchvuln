@@ -92,6 +92,11 @@ func From(v string) predicate.VulnInformation {
 	return predicate.VulnInformation(sql.FieldEQ(FieldFrom, v))
 }
 
+// Pushed applies equality check predicate on the "pushed" field. It's identical to PushedEQ.
+func Pushed(v bool) predicate.VulnInformation {
+	return predicate.VulnInformation(sql.FieldEQ(FieldPushed, v))
+}
+
 // KeyEQ applies the EQ predicate on the "key" field.
 func KeyEQ(v string) predicate.VulnInformation {
 	return predicate.VulnInformation(sql.FieldEQ(FieldKey, v))
@@ -630,6 +635,16 @@ func FromEqualFold(v string) predicate.VulnInformation {
 // FromContainsFold applies the ContainsFold predicate on the "from" field.
 func FromContainsFold(v string) predicate.VulnInformation {
 	return predicate.VulnInformation(sql.FieldContainsFold(FieldFrom, v))
+}
+
+// PushedEQ applies the EQ predicate on the "pushed" field.
+func PushedEQ(v bool) predicate.VulnInformation {
+	return predicate.VulnInformation(sql.FieldEQ(FieldPushed, v))
+}
+
+// PushedNEQ applies the NEQ predicate on the "pushed" field.
+func PushedNEQ(v bool) predicate.VulnInformation {
+	return predicate.VulnInformation(sql.FieldNEQ(FieldPushed, v))
 }
 
 // And groups predicates with the AND operator between them.
