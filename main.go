@@ -363,7 +363,7 @@ func collectUpdate(ctx context.Context, dbClient *ent.Client, grabbers []grab.Gr
 			if err != nil {
 				return err
 			}
-			for i := 2; i <= pageCount; i++ {
+			for i := 1; i <= pageCount; i++ {
 				dataChan, err := grabber.ParsePage(ctx, i, pageSize)
 				if err != nil {
 					return err
