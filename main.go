@@ -69,6 +69,16 @@ func main() {
 			Aliases: []string{"wk"},
 			Usage:   "wechat work webhook key",
 		},
+		&cli.StringFlag{
+			Name:    "lark-access-token",
+			Aliases: []string{"lt"},
+			Usage:   "webhook access token of lark",
+		},
+		&cli.StringFlag{
+			Name:    "lark-sign-secret",
+			Aliases: []string{"ls"},
+			Usage:   "sign secret of lark",
+		},
 		&cli.BoolFlag{
 			Name:    "no-start-message",
 			Aliases: []string{"nm"},
@@ -241,6 +251,8 @@ func initPusher(c *cli.Context) (push.Pusher, error) {
 	dingSecret := c.String("dingding-sign-secret")
 	wxWorkKey := c.String("wechatwork-key")
 	pusherApi := c.String("pusher-api")
+	larkToken := c.String("lark-access-token")
+	larkSecret := c.String("lark-sign-secret")
 
 	if os.Getenv("DINGDING_ACCESS_TOKEN") != "" {
 		dingToken = os.Getenv("DINGDING_ACCESS_TOKEN")
@@ -254,10 +266,19 @@ func initPusher(c *cli.Context) (push.Pusher, error) {
 	if os.Getenv("PUSHER_API") != "" {
 		pusherApi = os.Getenv("PUSHER_API")
 	}
+	if os.Getenv("LARK_ACCESS_TOKEN") != "" {
+		larkToken = os.Getenv("LARK_ACCESS_TOKEN")
+	}
+	if os.Getenv("LARK_SECRET") != "" {
+		larkSecret = os.Getenv("LARK_SECRET")
+	}
 
 	var pushers []push.Pusher
 	if dingToken != "" && dingSecret != "" {
 		pushers = append(pushers, push.NewDingDing(dingToken, dingSecret))
+	}
+	if larkToken != "" && larkSecret != "" {
+		pushers = append(pushers, push.NewLark(larkToken, larkSecret))
 	}
 	if wxWorkKey != "" {
 		pushers = append(pushers, push.NewWechatWork(wxWorkKey))
@@ -275,7 +296,6 @@ use API:   %s --api PUSHER_API`
 	}
 	return push.Multi(pushers...), nil
 }
-
 func initData(ctx context.Context, dbClient *ent.Client, grabber grab.Grabber) error {
 	pageSize := 100
 	source := grabber.ProviderInfo()
