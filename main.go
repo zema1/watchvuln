@@ -3,8 +3,13 @@ package main
 import (
 	"context"
 	"database/sql"
-	entSql "entgo.io/ent/dialect/sql"
 	"fmt"
+	"os"
+	"os/signal"
+	"sync"
+	"time"
+
+	entSql "entgo.io/ent/dialect/sql"
 	"github.com/kataras/golog"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
@@ -15,10 +20,6 @@ import (
 	"github.com/zema1/watchvuln/push"
 	"golang.org/x/sync/errgroup"
 	"modernc.org/sqlite"
-	"os"
-	"os/signal"
-	"sync"
-	"time"
 )
 
 func init() {
@@ -47,6 +48,11 @@ func main() {
 			Aliases: []string{"i"},
 			Usage:   "checking every [interval], supported format like 30s, 30m, 1h",
 			Value:   "30m",
+		},
+		&cli.StringFlag{
+			Name:    "pusher-api",
+			Aliases: []string{"api"},
+			Usage:   "your http url",
 		},
 		&cli.StringFlag{
 			Name:    "dingding-access-token",
@@ -224,6 +230,7 @@ func initPusher(c *cli.Context) (push.Pusher, error) {
 	dingToken := c.String("dingding-access-token")
 	dingSecret := c.String("dingding-sign-secret")
 	wxWorkKey := c.String("wechatwork-key")
+	pusherApi := c.String("pusher-api")
 
 	if os.Getenv("DINGDING_ACCESS_TOKEN") != "" {
 		dingToken = os.Getenv("DINGDING_ACCESS_TOKEN")
@@ -234,6 +241,9 @@ func initPusher(c *cli.Context) (push.Pusher, error) {
 	if os.Getenv("WECHATWORK_KEY") != "" {
 		wxWorkKey = os.Getenv("WECHATWORK_KEY")
 	}
+	if os.Getenv("PUSHER_API") != "" {
+		pusherApi = os.Getenv("PUSHER_API")
+	}
 
 	var pushers []push.Pusher
 	if dingToken != "" && dingSecret != "" {
@@ -242,13 +252,16 @@ func initPusher(c *cli.Context) (push.Pusher, error) {
 	if wxWorkKey != "" {
 		pushers = append(pushers, push.NewWechatWork(wxWorkKey))
 	}
+	if pusherApi != "" {
+		pushers = append(pushers, push.NewPusher(pusherApi))
+	}
 	if len(pushers) == 0 {
 		msg := `
-you must setup a dingding token or weixin work key, eg: 
+you must setup a pusher, eg: 
 use dingding: %s --dt DINGDING_ACCESS_TOKEN --ds DINGDING_SECRET
 use wechat:   %s --wk WECHATWORK_KEY
-`
-		return nil, fmt.Errorf(msg, os.Args[0], os.Args[0])
+use API:   %s --api PUSHER_API`
+		return nil, fmt.Errorf(msg, os.Args[0], os.Args[0], os.Args[0])
 	}
 	return push.Multi(pushers...), nil
 }

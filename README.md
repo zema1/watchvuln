@@ -80,6 +80,7 @@ GLOBAL OPTIONS:
    --dingding-access-token value, --dt value  access token of dingding bot
    --dingding-sign-secret value, --ds value   sign secret of dingding bot
    --wechatwork-key value, --wk value         wechat work webhook key
+   --pusher-api value, --api value            general http api
    --no-start-message, -n                     disable the hello message when server starts (default: false)
    --help, -h                                 show help
    --version, -v                              print the version
@@ -99,6 +100,15 @@ $ ./watchvuln --dt DINGDING_ACCESS_TOKEN --ds DINGDING_SECRET -i 30m
 $ ./watchvuln --wk WECHATWORK_KEY -i 30m
 ```
 
+通用 WEB API
+
+```
+$ ./watchvuln --api PUSHER_API -i 30m
+```
+
+```json
+{"title": "XXX漏洞", "content": "XXX详情"}
+```
 ## 常见问题
 
 1. 服务重启后支持增量更新吗
