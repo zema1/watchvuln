@@ -69,10 +69,25 @@ func main() {
 			Aliases: []string{"wk"},
 			Usage:   "wechat work webhook key",
 		},
+		&cli.StringFlag{
+			Name:    "lark-access-token",
+			Aliases: []string{"lt"},
+			Usage:   "webhook access token of lark",
+		},
+		&cli.StringFlag{
+			Name:    "lark-sign-secret",
+			Aliases: []string{"ls"},
+			Usage:   "sign secret of lark",
+		},
 		&cli.BoolFlag{
 			Name:    "no-start-message",
-			Aliases: []string{"n"},
+			Aliases: []string{"nm"},
 			Usage:   "disable the hello message when server starts",
+		},
+		&cli.BoolFlag{
+			Name:    "no-filter",
+			Aliases: []string{"nf"},
+			Usage:   "ignore the valuable filter and push all discovered vulns",
 		},
 	}
 	app.Before = func(c *cli.Context) error {
@@ -99,6 +114,8 @@ func Action(c *cli.Context) error {
 	}
 
 	noStartMessage := c.Bool("no-start-message")
+	noFilter := c.Bool("no-filter")
+
 	debug := c.Bool("debug")
 	iv := c.String("interval")
 
@@ -109,9 +126,12 @@ func Action(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-
 	if interval.Minutes() < 1 && !debug {
 		return fmt.Errorf("interval is too small, at least 1m")
+	}
+
+	if os.Getenv("NO_FILTER") != "" {
+		noFilter = true
 	}
 
 	drv, err := entSql.Open("sqlite3", "file:vuln_v1.sqlite3?cache=shared&_pragma=foreign_keys(1)")
@@ -213,7 +233,7 @@ func Action(c *cli.Context) error {
 			}
 			log.Infof("found %d new vulns in this ticking", len(vulns))
 			for _, v := range vulns {
-				if v.Creator.IsValuable(v) {
+				if noFilter || v.Creator.IsValuable(v) {
 					log.Infof("publishing new vuln %s", v)
 					err = pusher.PushMarkdown(v.Title, push.RenderVulnInfo(v))
 					if err != nil {
@@ -231,6 +251,8 @@ func initPusher(c *cli.Context) (push.Pusher, error) {
 	dingSecret := c.String("dingding-sign-secret")
 	wxWorkKey := c.String("wechatwork-key")
 	pusherApi := c.String("pusher-api")
+	larkToken := c.String("lark-access-token")
+	larkSecret := c.String("lark-sign-secret")
 
 	if os.Getenv("DINGDING_ACCESS_TOKEN") != "" {
 		dingToken = os.Getenv("DINGDING_ACCESS_TOKEN")
@@ -244,10 +266,19 @@ func initPusher(c *cli.Context) (push.Pusher, error) {
 	if os.Getenv("PUSHER_API") != "" {
 		pusherApi = os.Getenv("PUSHER_API")
 	}
+	if os.Getenv("LARK_ACCESS_TOKEN") != "" {
+		larkToken = os.Getenv("LARK_ACCESS_TOKEN")
+	}
+	if os.Getenv("LARK_SECRET") != "" {
+		larkSecret = os.Getenv("LARK_SECRET")
+	}
 
 	var pushers []push.Pusher
 	if dingToken != "" && dingSecret != "" {
 		pushers = append(pushers, push.NewDingDing(dingToken, dingSecret))
+	}
+	if larkToken != "" && larkSecret != "" {
+		pushers = append(pushers, push.NewLark(larkToken, larkSecret))
 	}
 	if wxWorkKey != "" {
 		pushers = append(pushers, push.NewWechatWork(wxWorkKey))
@@ -265,7 +296,6 @@ use API:   %s --api PUSHER_API`
 	}
 	return push.Multi(pushers...), nil
 }
-
 func initData(ctx context.Context, dbClient *ent.Client, grabber grab.Grabber) error {
 	pageSize := 100
 	source := grabber.ProviderInfo()
