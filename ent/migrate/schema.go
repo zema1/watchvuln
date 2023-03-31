@@ -21,6 +21,7 @@ var (
 		{Name: "references", Type: field.TypeJSON, Nullable: true},
 		{Name: "tags", Type: field.TypeJSON, Nullable: true},
 		{Name: "from", Type: field.TypeString, Default: ""},
+		{Name: "pushed", Type: field.TypeBool, Default: false},
 	}
 	// VulnInformationsTable holds the schema information for the "vuln_informations" table.
 	VulnInformationsTable = &schema.Table{

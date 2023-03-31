@@ -137,6 +137,20 @@ func (vic *VulnInformationCreate) SetNillableFrom(s *string) *VulnInformationCre
 	return vic
 }
 
+// SetPushed sets the "pushed" field.
+func (vic *VulnInformationCreate) SetPushed(b bool) *VulnInformationCreate {
+	vic.mutation.SetPushed(b)
+	return vic
+}
+
+// SetNillablePushed sets the "pushed" field if the given value is not nil.
+func (vic *VulnInformationCreate) SetNillablePushed(b *bool) *VulnInformationCreate {
+	if b != nil {
+		vic.SetPushed(*b)
+	}
+	return vic
+}
+
 // Mutation returns the VulnInformationMutation object of the builder.
 func (vic *VulnInformationCreate) Mutation() *VulnInformationMutation {
 	return vic.mutation
@@ -200,6 +214,10 @@ func (vic *VulnInformationCreate) defaults() {
 		v := vulninformation.DefaultFrom
 		vic.mutation.SetFrom(v)
 	}
+	if _, ok := vic.mutation.Pushed(); !ok {
+		v := vulninformation.DefaultPushed
+		vic.mutation.SetPushed(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -227,6 +245,9 @@ func (vic *VulnInformationCreate) check() error {
 	}
 	if _, ok := vic.mutation.From(); !ok {
 		return &ValidationError{Name: "from", err: errors.New(`ent: missing required field "VulnInformation.from"`)}
+	}
+	if _, ok := vic.mutation.Pushed(); !ok {
+		return &ValidationError{Name: "pushed", err: errors.New(`ent: missing required field "VulnInformation.pushed"`)}
 	}
 	return nil
 }
@@ -294,6 +315,10 @@ func (vic *VulnInformationCreate) createSpec() (*VulnInformation, *sqlgraph.Crea
 	if value, ok := vic.mutation.From(); ok {
 		_spec.SetField(vulninformation.FieldFrom, field.TypeString, value)
 		_node.From = value
+	}
+	if value, ok := vic.mutation.Pushed(); ok {
+		_spec.SetField(vulninformation.FieldPushed, field.TypeBool, value)
+		_node.Pushed = value
 	}
 	return _node, _spec
 }
@@ -476,6 +501,18 @@ func (u *VulnInformationUpsert) SetFrom(v string) *VulnInformationUpsert {
 // UpdateFrom sets the "from" field to the value that was provided on create.
 func (u *VulnInformationUpsert) UpdateFrom() *VulnInformationUpsert {
 	u.SetExcluded(vulninformation.FieldFrom)
+	return u
+}
+
+// SetPushed sets the "pushed" field.
+func (u *VulnInformationUpsert) SetPushed(v bool) *VulnInformationUpsert {
+	u.Set(vulninformation.FieldPushed, v)
+	return u
+}
+
+// UpdatePushed sets the "pushed" field to the value that was provided on create.
+func (u *VulnInformationUpsert) UpdatePushed() *VulnInformationUpsert {
+	u.SetExcluded(vulninformation.FieldPushed)
 	return u
 }
 
@@ -670,6 +707,20 @@ func (u *VulnInformationUpsertOne) SetFrom(v string) *VulnInformationUpsertOne {
 func (u *VulnInformationUpsertOne) UpdateFrom() *VulnInformationUpsertOne {
 	return u.Update(func(s *VulnInformationUpsert) {
 		s.UpdateFrom()
+	})
+}
+
+// SetPushed sets the "pushed" field.
+func (u *VulnInformationUpsertOne) SetPushed(v bool) *VulnInformationUpsertOne {
+	return u.Update(func(s *VulnInformationUpsert) {
+		s.SetPushed(v)
+	})
+}
+
+// UpdatePushed sets the "pushed" field to the value that was provided on create.
+func (u *VulnInformationUpsertOne) UpdatePushed() *VulnInformationUpsertOne {
+	return u.Update(func(s *VulnInformationUpsert) {
+		s.UpdatePushed()
 	})
 }
 
@@ -1024,6 +1075,20 @@ func (u *VulnInformationUpsertBulk) SetFrom(v string) *VulnInformationUpsertBulk
 func (u *VulnInformationUpsertBulk) UpdateFrom() *VulnInformationUpsertBulk {
 	return u.Update(func(s *VulnInformationUpsert) {
 		s.UpdateFrom()
+	})
+}
+
+// SetPushed sets the "pushed" field.
+func (u *VulnInformationUpsertBulk) SetPushed(v bool) *VulnInformationUpsertBulk {
+	return u.Update(func(s *VulnInformationUpsert) {
+		s.SetPushed(v)
+	})
+}
+
+// UpdatePushed sets the "pushed" field to the value that was provided on create.
+func (u *VulnInformationUpsertBulk) UpdatePushed() *VulnInformationUpsertBulk {
+	return u.Update(func(s *VulnInformationUpsert) {
+		s.UpdatePushed()
 	})
 }
 

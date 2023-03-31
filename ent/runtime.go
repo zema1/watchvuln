@@ -41,4 +41,8 @@ func init() {
 	vulninformationDescFrom := vulninformationFields[9].Descriptor()
 	// vulninformation.DefaultFrom holds the default value on creation for the from field.
 	vulninformation.DefaultFrom = vulninformationDescFrom.Default.(string)
+	// vulninformationDescPushed is the schema descriptor for pushed field.
+	vulninformationDescPushed := vulninformationFields[10].Descriptor()
+	// vulninformation.DefaultPushed holds the default value on creation for the pushed field.
+	vulninformation.DefaultPushed = vulninformationDescPushed.Default.(bool)
 }

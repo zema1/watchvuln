@@ -27,6 +27,8 @@ const (
 	FieldTags = "tags"
 	// FieldFrom holds the string denoting the from field in the database.
 	FieldFrom = "from"
+	// FieldPushed holds the string denoting the pushed field in the database.
+	FieldPushed = "pushed"
 	// Table holds the table name of the vulninformation in the database.
 	Table = "vuln_informations"
 )
@@ -44,6 +46,7 @@ var Columns = []string{
 	FieldReferences,
 	FieldTags,
 	FieldFrom,
+	FieldPushed,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -71,4 +74,6 @@ var (
 	DefaultSolutions string
 	// DefaultFrom holds the default value on creation for the "from" field.
 	DefaultFrom string
+	// DefaultPushed holds the default value on creation for the "pushed" field.
+	DefaultPushed bool
 )

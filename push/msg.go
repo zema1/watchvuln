@@ -7,29 +7,29 @@ import (
 )
 
 const vulnInfoMsg = `
-# {{ .Title }} 
-&nbsp;
+# {{ .Title }}
 
 - CVE编号: **{{ .CVE }}**
 - 危害定级: **{{ .Severity }}**
 - 漏洞标签: {{ range .Tags }}**{{ . }}** {{ end }}
 - 披露日期: **{{ .Disclosure }}**
 - 信息来源: [{{ .From }}]({{ .From }})
+- 推送原因: {{ range .Reason }}{{ . }} {{ end }}
 
-&nbsp;
+
 ### **漏洞描述**
 {{ .Description }}
 
-&nbsp;
+
 ### **参考链接**
-{{ range $i, $ref := .References }}
-{{ inc $i }}. [{{ $ref }}]({{ $ref }})
-{{- end }}
+{{ range $i, $ref := .References }}{{ inc $i }}. [{{ $ref }}]({{ $ref }})
+{{ end }}
 `
 
 const initialMsg = `
 数据初始化完成，当前版本 {{ .Version }}， 本地漏洞数量: {{ .VulnCount }}, 检查周期: {{ .Interval }} 
 启用的数据源:
+
 {{ range .Provider }}
 - [{{ .DisplayName }}]({{ .Link -}})
 {{- end }}

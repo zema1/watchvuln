@@ -25,7 +25,7 @@ func NewLark(botKey, sign string) Pusher {
 	return &Lark{
 		bot:  bot,
 		sign: sign,
-		log:  golog.Child("lark"),
+		log:  golog.Child("[pusher-lark]"),
 	}
 }
 

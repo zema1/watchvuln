@@ -10,12 +10,19 @@ import (
 )
 
 type SeverityLevel string
+type ReasonType string
 
 const (
 	Low      SeverityLevel = "低危"
 	Medium   SeverityLevel = "中危"
 	High     SeverityLevel = "高危"
 	Critical SeverityLevel = "严重"
+)
+
+const (
+	ReasonNewCreated      = "漏洞创建"
+	ReasonTagUpdated      = "标签更新"
+	ReasonSeverityUpdated = "等级更新"
 )
 
 type VulnInfo struct {
@@ -29,6 +36,7 @@ type VulnInfo struct {
 	References  []string      `json:"references"`
 	Tags        []string      `json:"tags"`
 	From        string        `json:"from"`
+	Reason      []string      `json:"reason"`
 
 	Creator Grabber `json:"-"`
 }

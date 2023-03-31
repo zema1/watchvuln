@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/CatchZeng/dingtalk/pkg/dingtalk"
 	"github.com/kataras/golog"
+	"strings"
 )
 
 var _ = Pusher(&DingDing{})
@@ -16,7 +17,7 @@ type DingDing struct {
 func NewDingDing(accessToken, secret string) Pusher {
 	return &DingDing{
 		client: dingtalk.NewClient(accessToken, secret),
-		log:    golog.Child("dingding"),
+		log:    golog.Child("[pusher-dingding]"),
 	}
 }
 
@@ -31,6 +32,9 @@ func (d *DingDing) PushText(s string) error {
 
 func (d *DingDing) PushMarkdown(title, content string) error {
 	d.log.Infof("sending markdown %s", title)
+
+	// 特殊处理一下空行
+	content = strings.ReplaceAll(content, "\n\n", "\n\n&nbsp;\n")
 	msg := dingtalk.NewMarkdownMessage().SetMarkdown(title, content)
 	_, resp, err := d.client.Send(msg)
 	if err != nil {

@@ -27,7 +27,7 @@ func init() {
 }
 
 var log = golog.Child("[main]")
-var Version = "v0.2.0"
+var Version = "v0.3.0"
 
 func main() {
 	golog.Default.SetLevel("info")
@@ -50,14 +50,9 @@ func main() {
 			Value:   "30m",
 		},
 		&cli.StringFlag{
-			Name:    "pusher-api",
-			Aliases: []string{"api"},
-			Usage:   "your http url",
-		},
-		&cli.StringFlag{
 			Name:    "dingding-access-token",
 			Aliases: []string{"dt"},
-			Usage:   "access token of dingding bot",
+			Usage:   "webhook access token of dingding bot",
 		},
 		&cli.StringFlag{
 			Name:    "dingding-sign-secret",
@@ -67,7 +62,7 @@ func main() {
 		&cli.StringFlag{
 			Name:    "wechatwork-key",
 			Aliases: []string{"wk"},
-			Usage:   "wechat work webhook key",
+			Usage:   "webhook key of wechat work",
 		},
 		&cli.StringFlag{
 			Name:    "lark-access-token",
@@ -78,6 +73,11 @@ func main() {
 			Name:    "lark-sign-secret",
 			Aliases: []string{"ls"},
 			Usage:   "sign secret of lark",
+		},
+		&cli.StringFlag{
+			Name:    "webhook-url",
+			Aliases: []string{"webhook"},
+			Usage:   "your webhook server url, ex: http://127.0.0.1:1111/webhook",
 		},
 		&cli.BoolFlag{
 			Name:    "no-start-message",
@@ -122,16 +122,19 @@ func Action(c *cli.Context) error {
 	if os.Getenv("INTERVAL") != "" {
 		iv = os.Getenv("INTERVAL")
 	}
+	if os.Getenv("NO_FILTER") != "" {
+		noFilter = true
+	}
+	if os.Getenv("NO_START_MESSAGE") != "" {
+		noStartMessage = true
+	}
+
 	interval, err := time.ParseDuration(iv)
 	if err != nil {
 		return err
 	}
 	if interval.Minutes() < 1 && !debug {
 		return fmt.Errorf("interval is too small, at least 1m")
-	}
-
-	if os.Getenv("NO_FILTER") != "" {
-		noFilter = true
 	}
 
 	drv, err := entSql.Open("sqlite3", "file:vuln_v1.sqlite3?cache=shared&_pragma=foreign_keys(1)")
@@ -235,6 +238,20 @@ func Action(c *cli.Context) error {
 			for _, v := range vulns {
 				if noFilter || v.Creator.IsValuable(v) {
 					log.Infof("publishing new vuln %s", v)
+					dbVuln, err := dbClient.VulnInformation.Query().Where(vulninformation.Key(v.UniqueKey)).First(ctx)
+					if err != nil {
+						log.Errorf("failed to query %s from db %s", v.UniqueKey, err)
+						continue
+					}
+					if dbVuln.Pushed {
+						continue
+					}
+					_, err = dbVuln.Update().SetPushed(true).Save(ctx)
+					if err != nil {
+						log.Errorf("failed to save pushed %s status, %s", v.UniqueKey, err)
+						continue
+					}
+
 					err = pusher.PushMarkdown(v.Title, push.RenderVulnInfo(v))
 					if err != nil {
 						log.Errorf("send dingding msg error, %s", err)
@@ -250,7 +267,7 @@ func initPusher(c *cli.Context) (push.Pusher, error) {
 	dingToken := c.String("dingding-access-token")
 	dingSecret := c.String("dingding-sign-secret")
 	wxWorkKey := c.String("wechatwork-key")
-	pusherApi := c.String("pusher-api")
+	webhook := c.String("webhook-url")
 	larkToken := c.String("lark-access-token")
 	larkSecret := c.String("lark-sign-secret")
 
@@ -263,8 +280,8 @@ func initPusher(c *cli.Context) (push.Pusher, error) {
 	if os.Getenv("WECHATWORK_KEY") != "" {
 		wxWorkKey = os.Getenv("WECHATWORK_KEY")
 	}
-	if os.Getenv("PUSHER_API") != "" {
-		pusherApi = os.Getenv("PUSHER_API")
+	if os.Getenv("WEBHOOK_URL") != "" {
+		webhook = os.Getenv("WEBHOOK_URL")
 	}
 	if os.Getenv("LARK_ACCESS_TOKEN") != "" {
 		larkToken = os.Getenv("LARK_ACCESS_TOKEN")
@@ -283,8 +300,8 @@ func initPusher(c *cli.Context) (push.Pusher, error) {
 	if wxWorkKey != "" {
 		pushers = append(pushers, push.NewWechatWork(wxWorkKey))
 	}
-	if pusherApi != "" {
-		pushers = append(pushers, push.NewPusher(pusherApi))
+	if webhook != "" {
+		pushers = append(pushers, push.NewWebhook(webhook))
 	}
 	if len(pushers) == 0 {
 		msg := `
@@ -346,7 +363,7 @@ func collectUpdate(ctx context.Context, dbClient *ent.Client, grabbers []grab.Gr
 			if err != nil {
 				return err
 			}
-			for i := 1; i <= pageCount; i++ {
+			for i := 2; i <= pageCount; i++ {
 				dataChan, err := grabber.ParsePage(ctx, i, pageSize)
 				if err != nil {
 					return err
@@ -385,6 +402,7 @@ func createOrUpdate(ctx context.Context, dbClient *ent.Client, source *grab.Prov
 		First(ctx)
 	// not exist
 	if err != nil {
+		data.Reason = append(data.Reason, grab.ReasonNewCreated)
 		newVuln, err := dbClient.VulnInformation.
 			Create().
 			SetKey(data.UniqueKey).
@@ -405,6 +423,29 @@ func createOrUpdate(ctx context.Context, dbClient *ent.Client, source *grab.Prov
 		return true, nil
 	}
 
+	// 如果一个漏洞之前是低危，后来改成了严重，这种可能也需要推送, 走一下高价值的判断逻辑
+	asNewVuln := false
+	if string(data.Severity) != vuln.Severity {
+		log.Infof("%s from %s change severity from %s to %s", data.Title, data.From, vuln.Severity, data.Severity)
+		data.Reason = append(data.Reason, fmt.Sprintf("%s: %s => %s", grab.ReasonSeverityUpdated, vuln.Severity, data.Severity))
+		asNewVuln = true
+	}
+	for _, newTag := range data.Tags {
+		found := false
+		for _, dbTag := range vuln.Tags {
+			if newTag == dbTag {
+				found = true
+				break
+			}
+		}
+		// tag 有更新
+		if !found {
+			log.Infof("%s from %s add new tag %s", data.Title, data.From, newTag)
+			data.Reason = append(data.Reason, fmt.Sprintf("%s: %v => %v", grab.ReasonTagUpdated, vuln.Tags, data.Tags))
+			asNewVuln = true
+		}
+	}
+
 	// update
 	newVuln, err := vuln.Update().SetKey(data.UniqueKey).
 		SetTitle(data.Title).
@@ -421,7 +462,7 @@ func createOrUpdate(ctx context.Context, dbClient *ent.Client, source *grab.Prov
 		return false, err
 	}
 	log.Debugf("vuln %d updated from %s %s", newVuln.ID, newVuln.Key, source.Name)
-	return false, nil
+	return asNewVuln, nil
 }
 
 func signalCtx() (context.Context, func()) {
