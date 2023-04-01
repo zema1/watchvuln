@@ -203,3 +203,9 @@ $ ./watchvuln --dt DINGDING_ACCESS_TOKEN --ds DINGDING_SECRET --wk WECHATWORK_KE
 
 为了减少内卷，该工具在 00:00 到 07:00 间会去 sleep 不会运行, 请确保你的服务器是正确的时间！
 
+扫码加我拉进讨论群，请备注申请理由为：问题反馈与讨论，否则不通过
+
+![wechat](https://user-images.githubusercontent.com/20637881/229296623-24a7cc5d-8f33-4120-ae77-bbe2610ce5bb.jpg)
+
+
+
