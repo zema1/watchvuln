@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"time"
 
@@ -27,7 +28,7 @@ func init() {
 }
 
 var log = golog.Child("[main]")
-var Version = "v0.3.0"
+var Version = "v0.3.1"
 
 func main() {
 	golog.Default.SetLevel("info")
@@ -42,6 +43,12 @@ func main() {
 			Aliases: []string{"d"},
 			Usage:   "set log level to debug, print more details",
 			Value:   false,
+		},
+		&cli.StringFlag{
+			Name:    "sources",
+			Aliases: []string{"s"},
+			Usage:   "set vuln sources",
+			Value:   "avd,ti,oscs",
 		},
 		&cli.StringFlag{
 			Name:    "interval",
@@ -112,6 +119,10 @@ func Action(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	grabbers, vulnCountAtLeast, err := initSources(c)
+	if err != nil {
+		return err
+	}
 
 	noStartMessage := c.Bool("no-start-message")
 	noFilter := c.Bool("no-filter")
@@ -150,18 +161,12 @@ func Action(c *cli.Context) error {
 		return errors.Wrap(err, "failed creating schema resources")
 	}
 
-	grabbers := []grab.Grabber{
-		grab.NewAVDCrawler(),
-		grab.NewTiCrawler(),
-		grab.NewOSCSCrawler(),
-	}
-
 	count, err := dbClient.VulnInformation.Query().Count(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed creating schema resources")
 	}
 	log.Infof("local database has %d vulns", count)
-	if count < 20000 {
+	if count < vulnCountAtLeast {
 		log.Infof("local data is outdated, init database")
 		eg, initCtx := errgroup.WithContext(ctx)
 		eg.SetLimit(len(grabbers))
@@ -263,6 +268,33 @@ func Action(c *cli.Context) error {
 	}
 }
 
+func initSources(c *cli.Context) ([]grab.Grabber, int, error) {
+	sources := c.String("sources")
+	if os.Getenv("SOURCES") != "" {
+		sources = os.Getenv("SOURCES")
+	}
+	parts := strings.Split(sources, ",")
+	var grabs []grab.Grabber
+	var countApproximately int
+	for _, part := range parts {
+		part = strings.ToLower(strings.TrimSpace(part))
+		switch part {
+		case "avd":
+			countApproximately += 1200
+			grabs = append(grabs, grab.NewAVDCrawler())
+		case "ti":
+			countApproximately += 27000
+			grabs = append(grabs, grab.NewTiCrawler())
+		case "oscs":
+			countApproximately += 90 * 10
+			grabs = append(grabs, grab.NewOSCSCrawler())
+		default:
+			return nil, 0, fmt.Errorf("invalid grab source %s", part)
+		}
+	}
+	return grabs, countApproximately, nil
+}
+
 func initPusher(c *cli.Context) (push.Pusher, error) {
 	dingToken := c.String("dingding-access-token")
 	dingSecret := c.String("dingding-sign-secret")
@@ -308,7 +340,7 @@ func initPusher(c *cli.Context) (push.Pusher, error) {
 you must setup a pusher, eg: 
 use dingding: %s --dt DINGDING_ACCESS_TOKEN --ds DINGDING_SECRET
 use wechat:   %s --wk WECHATWORK_KEY
-use API:   %s --api PUSHER_API`
+use API:   %s --webhook WEBHOOK_URL`
 		return nil, fmt.Errorf(msg, os.Args[0], os.Args[0], os.Args[0])
 	}
 	return push.Multi(pushers...), nil

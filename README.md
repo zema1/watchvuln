@@ -35,17 +35,18 @@
 
 Docker 方式推荐使用环境变量来配置服务参数
 
-| 环境变量名                   | 说明                                         | 默认值     |
-|-------------------------|--------------------------------------------|---------|
-| `DINGDING_ACCESS_TOKEN` | 钉钉机器人 url 的 `access_token` 部分              |         |
-| `DINGDING_SECRET`       | 钉钉机器人的加签值 （仅支持加签方式）                        |         |
-| `LARK_ACCESS_TOKEN`     | 飞书机器人 url 的 `/open-apis/bot/v2/hook/` 后的部分 |         |
-| `LARK_SECRET`           | 飞书机器人的加签值 （仅支持加签方式）                        |         |
-| `WECHATWORK_KEY `       | 微信机器人 url 的 `key` 部分                       |         |
-| `WEBHOOK_URL`           | 自定义 webhook 服务的完整 url                      |         |
-| `INTERVAL`              | 检查周期，支持秒 `60s`, 分钟 `10m`, 小时 `1h`, 最低 `1m` | `30m`   |
-| `NO_FILTER`             | 禁用上述推送过滤策略，所有新发现的漏洞都会被推送                   | `false` |
-| `NO_START_MESSAGE`      | 禁用服务启动的提示信息                                | `false` |
+| 环境变量名                   | 说明                                         | 默认值           |
+|-------------------------|--------------------------------------------|---------------|
+| `DINGDING_ACCESS_TOKEN` | 钉钉机器人 url 的 `access_token` 部分              |               |
+| `DINGDING_SECRET`       | 钉钉机器人的加签值 （仅支持加签方式）                        |               |
+| `LARK_ACCESS_TOKEN`     | 飞书机器人 url 的 `/open-apis/bot/v2/hook/` 后的部分 |               |
+| `LARK_SECRET`           | 飞书机器人的加签值 （仅支持加签方式）                        |               |
+| `WECHATWORK_KEY `       | 微信机器人 url 的 `key` 部分                       |               |
+| `WEBHOOK_URL`           | 自定义 webhook 服务的完整 url                      |               |
+| `SOURCES`               | 启用哪些漏洞信息源，逗号分隔, 可选 `avd`, `ti`, `oscs`     | `avd,ti,oscs` |
+| `INTERVAL`              | 检查周期，支持秒 `60s`, 分钟 `10m`, 小时 `1h`, 最低 `1m` | `30m`         |
+| `NO_FILTER`             | 禁用上述推送过滤策略，所有新发现的漏洞都会被推送                   | `false`       |
+| `NO_START_MESSAGE`      | 禁用服务启动的提示信息                                | `false`       |
 
 比如使用钉钉机器人
 
@@ -127,13 +128,14 @@ USAGE:
    watchvuln [global options] command [command options] [arguments...]
 
 VERSION:
-   v0.3.0
+   v0.3.1
 
 COMMANDS:
    help, h  Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
    --debug, -d                                set log level to debug, print more details (default: false)
+   --sources value, -s value                  set vuln sources (default: "avd,ti,oscs")
    --interval value, -i value                 checking every [interval], supported format like 30s, 30m, 1h (default: "30m")
    --dingding-access-token value, --dt value  webhook access token of dingding bot
    --dingding-sign-secret value, --ds value   sign secret of dingding bot
