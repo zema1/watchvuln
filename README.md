@@ -101,9 +101,7 @@ docker run --restart always -d \
 
 </details>
 
-<details><summary>使用自定义 Webhook 服务</summary>
-
-通过自定义一个 webhook server，可以方便的接入其他服务, 实现方式可以参考: [example](./examples/webhook)
+<details><summary>使用server酱机器人</summary>
 
 ```bash
 docker run --restart always -d \
