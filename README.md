@@ -30,6 +30,7 @@
 - [微信企业版群组机器人](https://open.work.weixin.qq.com/help2/pc/14931)
 - [飞书群组机器人](https://open.feishu.cn/document/ukTMukTMukTM/ucTM5YjL3ETO24yNxkjN)
 - [自定义Webhook服务](./examples/webhook)
+- [server酱](https://sct.ftqq.com/)
 
 ### 使用 Docker
 
@@ -100,6 +101,17 @@ docker run --restart always -d \
 
 </details>
 
+<details><summary>使用server酱机器人</summary>
+
+```bash
+docker run --restart always -d \
+  -e SERVERCHAN_KEY=xxxx \
+  -e INTERVAL=30m \
+  zemal/watchvuln:latest
+```
+
+</details>
+
 <details><summary>使用多种服务</summary>
 
 如果配置了多种服务的密钥，那么每个服务都会生效， 比如使用钉钉和企业微信:
@@ -124,6 +136,9 @@ docker run --restart always -d \
 前往 Release 下载对应平台的二进制，然后在命令行执行。
 
 ```bash
+NAME:
+   watchvuln - A high valuable vulnerability watcher and pusher
+
 USAGE:
    watchvuln [global options] command [command options] [arguments...]
 
@@ -143,6 +158,7 @@ GLOBAL OPTIONS:
    --lark-access-token value, --lt value      webhook access token of lark
    --lark-sign-secret value, --ls value       sign secret of lark
    --webhook-url value, --webhook value       your webhook server url, ex: http://127.0.0.1:1111/webhook
+   --serverchan-key value, --sk value         send key for server chan
    --no-start-message, --nm                   disable the hello message when server starts (default: false)
    --no-filter, --nf                          ignore the valuable filter and push all discovered vulns (default: false)
    --help, -h                                 show help
