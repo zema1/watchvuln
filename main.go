@@ -302,6 +302,7 @@ func initPusher(c *cli.Context) (push.Pusher, error) {
 	webhook := c.String("webhook-url")
 	larkToken := c.String("lark-access-token")
 	larkSecret := c.String("lark-sign-secret")
+	serverChanKey := c.String("SERVER_CHANKEY")
 
 	if os.Getenv("DINGDING_ACCESS_TOKEN") != "" {
 		dingToken = os.Getenv("DINGDING_ACCESS_TOKEN")
@@ -321,7 +322,9 @@ func initPusher(c *cli.Context) (push.Pusher, error) {
 	if os.Getenv("LARK_SECRET") != "" {
 		larkSecret = os.Getenv("LARK_SECRET")
 	}
-
+	if os.Getenv("SERVER_CHANKEY") != "" {
+		serverChanKey = os.Getenv("SERVER_CHANKEY")
+	}
 	var pushers []push.Pusher
 	if dingToken != "" && dingSecret != "" {
 		pushers = append(pushers, push.NewDingDing(dingToken, dingSecret))
@@ -334,6 +337,9 @@ func initPusher(c *cli.Context) (push.Pusher, error) {
 	}
 	if webhook != "" {
 		pushers = append(pushers, push.NewWebhook(webhook))
+	}
+	if serverChanKey != "" {
+		pushers = append(pushers, push.NewServerChan(serverChanKey))
 	}
 	if len(pushers) == 0 {
 		msg := `
