@@ -28,7 +28,7 @@ func init() {
 }
 
 var log = golog.Child("[main]")
-var Version = "v0.3.1"
+var Version = "v0.4.0"
 
 func main() {
 	golog.Default.SetLevel("info")
@@ -92,6 +92,10 @@ func main() {
 			Usage:   "send key for server chan",
 		},
 		&cli.BoolFlag{
+			Name:  "enable-cve-filter",
+			Usage: "enable a filter that vulns from multiple sources with same cve id will be sent only once",
+		},
+		&cli.BoolFlag{
 			Name:    "no-start-message",
 			Aliases: []string{"nm"},
 			Usage:   "disable the hello message when server starts",
@@ -131,7 +135,7 @@ func Action(c *cli.Context) error {
 
 	noStartMessage := c.Bool("no-start-message")
 	noFilter := c.Bool("no-filter")
-
+	cveFilter := c.Bool("enable-cve-filter")
 	debug := c.Bool("debug")
 	iv := c.String("interval")
 
@@ -143,6 +147,9 @@ func Action(c *cli.Context) error {
 	}
 	if os.Getenv("NO_START_MESSAGE") != "" {
 		noStartMessage = true
+	}
+	if os.Getenv("ENABLE_CVE_FILTER") != "" {
+		cveFilter = true
 	}
 
 	interval, err := time.ParseDuration(iv)
@@ -255,6 +262,23 @@ func Action(c *cli.Context) error {
 					}
 					if dbVuln.Pushed {
 						continue
+					}
+					if v.CVE != "" && cveFilter {
+						// 同一个 cve 已经有其它源推送过了
+						others, err := dbClient.VulnInformation.Query().
+							Where(vulninformation.And(vulninformation.Cve(v.CVE), vulninformation.Pushed(true))).All(ctx)
+						if err != nil {
+							log.Errorf("failed to query %s from db %s", v.UniqueKey, err)
+							continue
+						}
+						if len(others) != 0 {
+							ids := make([]string, 0, len(others))
+							for _, o := range others {
+								ids = append(ids, o.Key)
+							}
+							log.Infof("found new cve but other source has already pushed, others: %v", ids)
+							continue
+						}
 					}
 					_, err = dbVuln.Update().SetPushed(true).Save(ctx)
 					if err != nil {
