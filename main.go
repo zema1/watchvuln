@@ -86,6 +86,11 @@ func main() {
 			Aliases: []string{"webhook"},
 			Usage:   "your webhook server url, ex: http://127.0.0.1:1111/webhook",
 		},
+		&cli.StringFlag{
+			Name:    "serverchan-key",
+			Aliases: []string{"sk"},
+			Usage:   "send key for server chan",
+		},
 		&cli.BoolFlag{
 			Name:    "no-start-message",
 			Aliases: []string{"nm"},
@@ -302,7 +307,7 @@ func initPusher(c *cli.Context) (push.Pusher, error) {
 	webhook := c.String("webhook-url")
 	larkToken := c.String("lark-access-token")
 	larkSecret := c.String("lark-sign-secret")
-	serverChanKey := c.String("SERVER_CHANKEY")
+	serverChanKey := c.String("serverchan-key")
 
 	if os.Getenv("DINGDING_ACCESS_TOKEN") != "" {
 		dingToken = os.Getenv("DINGDING_ACCESS_TOKEN")
@@ -322,8 +327,8 @@ func initPusher(c *cli.Context) (push.Pusher, error) {
 	if os.Getenv("LARK_SECRET") != "" {
 		larkSecret = os.Getenv("LARK_SECRET")
 	}
-	if os.Getenv("SERVER_CHANKEY") != "" {
-		serverChanKey = os.Getenv("SERVER_CHANKEY")
+	if os.Getenv("SERVERCHAN_KEY") != "" {
+		serverChanKey = os.Getenv("SERVERCHAN_KEY")
 	}
 	var pushers []push.Pusher
 	if dingToken != "" && dingSecret != "" {

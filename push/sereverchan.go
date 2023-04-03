@@ -6,7 +6,7 @@ import (
 	serverchan "github.com/rayepeng/serverchan"
 )
 
-var _ = Pusher(&WechatWork{})
+var _ = Pusher(&ServerChan{})
 
 type ServerChan struct {
 	client *serverchan.ServerChan
@@ -21,9 +21,8 @@ func NewServerChan(botKey string) Pusher {
 }
 
 func (d *ServerChan) PushText(s string) error {
-	// fixme: ServerChan 支持 text 类型
 	d.log.Infof("sending text %s", s)
-	_, err := d.client.Send("no title", s)
+	_, err := d.client.Send("", s)
 	if err != nil {
 		return errors.Wrap(err, "server-chan")
 	}
