@@ -52,7 +52,7 @@ jobs:
           name: target
           path: target/*
 
-  collect-release:
+  upload-release:
     name: Release
     needs: [ build-cli ]
     runs-on: ubuntu-latest
