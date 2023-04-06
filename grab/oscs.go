@@ -108,8 +108,8 @@ func (t *OSCSCrawler) ParsePage(ctx context.Context, page, size int) (chan *Vuln
 
 func (t *OSCSCrawler) IsValuable(info *VulnInfo) bool {
 	// 仅有预警的 或高危严重的
-	if info.Severity == Critical {
-		return true
+	if info.Severity != Critical && info.Severity != High {
+		return false
 	}
 	for _, tag := range info.Tags {
 		if tag == "发布预警" {
