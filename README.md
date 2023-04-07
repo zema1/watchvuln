@@ -172,12 +172,25 @@ GLOBAL OPTIONS:
 $ ./watchvuln --dt DINGDING_ACCESS_TOKEN --ds DINGDING_SECRET -i 30m
 ```
 
+可以通过`,`来拼接多个机器人token，但要求和secret的对应保持一致, 如:
+
+```
+$ ./watchvuln --dt DINGDING_ACCESS_TOKEN1,DINGDING_ACCESS_TOKEN2 --ds DINGDING_SECRET1,DINGDING_SECRET2 -i 30m
+```
+其中 `DINGDING_ACCESS_TOKEN1` 的`secret`为 `DINGDING_SECRET1`, 以此类推。
+
 <details><summary>使用飞书机器人</summary>
 
 ```bash
 $ ./watchvuln --lt LARK_ACCESS_TOKEN --ls LARK_SECRET -i 30m
 
 ```
+可以通过`,`来拼接多个机器人token，但要求和secret的对应保持一致, 如: 
+
+```bash
+$ ./watchvuln --lt LARK_ACCESS_TOKEN1,LARK_ACCESS_TOKEN2 --ls LARK_SECRET1,LARK_SECRET2 -i 30m
+```
+其中 `LARK_ACCESS_TOKEN1` 的`secret`为 `LARK_SECRET1`, 以此类推。
 
 </details>
 
@@ -187,12 +200,24 @@ $ ./watchvuln --lt LARK_ACCESS_TOKEN --ls LARK_SECRET -i 30m
 $ ./watchvuln --wk WECHATWORK_KEY -i 30m
 ```
 
+可以通过`,`来拼接多个机器人key，如:
+
+```
+$ ./watchvuln --wk xxxx,xxxxx -i 30m
+```
+
 </details>
 
 <details><summary>使用server酱机器人</summary>
 
 ```
 $ ./watchvuln --sk xxxx -i 30m
+```
+
+可以通过`,`来拼接多个机器人key, 如:
+
+```
+$ ./watchvuln --sk xxxx,xxxxx -i 30m
 ```
 
 </details>
@@ -204,6 +229,12 @@ $ ./watchvuln --sk xxxx -i 30m
 
 ```
 $ ./watchvuln --webhook http://xxxx -i 30m
+```
+
+支持同时接入多个webhook，通过`,`拼接，如：
+
+```
+$ ./watchvuln --webhook http://xxxx,http://xxxxxx -i 30m
 ```
 
 </details>
