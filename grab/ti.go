@@ -34,22 +34,44 @@ func (t *TiCrawler) ProviderInfo() *Provider {
 }
 
 func (t *TiCrawler) GetPageCount(ctx context.Context, size int) (int, error) {
-	resp, err := t.client.R().
+	var body tiListResp
+
+	_, err := t.client.R().
 		SetBodyBytes(t.buildBody(1, 10)).
 		SetContext(ctx).
+		AddRetryCondition(func(resp *req.Response, err error) bool {
+			if resp == nil {
+				return true
+			}
+			if err = resp.UnmarshalJson(&body); err != nil {
+				t.log.Warnf("unmarshal json error, %s", err)
+				return true
+			}
+			if body.Status != 10000 {
+				t.log.Warnf("failed to get page count, msg: %s", body.Message)
+				return true
+			}
+			if body.Data.Total <= 0 {
+				t.log.Warnf("invalid total size %d", body.Data.Total)
+				return true
+			}
+			return false
+		}).
 		Post("https://ti.qianxin.com/alpha-api/v2/nox/api/web/portal/key_vuln/list")
 	if err != nil {
 		return 0, err
 	}
-	var body tiListResp
-	if err = resp.UnmarshalJson(&body); err != nil {
-		return 0, err
-	}
-	if body.Status != 10000 {
-		return 0, fmt.Errorf("failed to get page count, msg: %s", body.Message)
-	}
+
 	total := body.Data.Total
+
+	if total <= 0 || size <= 0 {
+		return 0, fmt.Errorf("invalid size %d %d", total, size)
+	}
+
 	pageCount := total / size
+	if pageCount == 0 {
+		return 1, nil
+	}
 	if total%pageCount != 0 {
 		pageCount += 1
 	}

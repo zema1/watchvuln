@@ -65,7 +65,7 @@ func NewHttpClient() *req.Client {
 		SetTimeout(10*time.Second).
 		SetCommonRetryCount(3).
 		SetCookieJar(nil).
-		SetCommonRetryBackoffInterval(1*time.Second, 5*time.Second).
+		SetCommonRetryBackoffInterval(5*time.Second, 10*time.Second).
 		SetCommonRetryHook(func(resp *req.Response, err error) {
 			golog.Warnf("retrying as %s", err)
 		}).SetCommonRetryCondition(func(resp *req.Response, err error) bool {

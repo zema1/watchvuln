@@ -143,7 +143,7 @@ USAGE:
    watchvuln [global options] command [command options] [arguments...]
 
 VERSION:
-   v0.4.0
+   v0.6.0
 
 COMMANDS:
    help, h  Shows a list of commands or help for one command
