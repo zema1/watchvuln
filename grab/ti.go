@@ -48,11 +48,11 @@ func (t *TiCrawler) GetPageCount(ctx context.Context, size int) (int, error) {
 				return true
 			}
 			if body.Status != 10000 {
-				t.log.Warnf("failed to get page count, msg: %s", body.Message)
+				t.log.Warnf("failed to get page count, msg: %s, retrying", body.Message)
 				return true
 			}
 			if body.Data.Total <= 0 {
-				t.log.Warnf("invalid total size %d", body.Data.Total)
+				t.log.Warnf("invalid total size %d, retrying", body.Data.Total)
 				return true
 			}
 			return false

@@ -47,11 +47,11 @@ func (t *OSCSCrawler) GetPageCount(ctx context.Context, size int) (int, error) {
 				return true
 			}
 			if body.Code != 200 || !body.Success {
-				t.log.Warnf("failed to get page count, msg: %s", body.Info)
+				t.log.Warnf("failed to get page count, msg: %s, retrying", body.Info)
 				return true
 			}
 			if body.Data.Total <= 0 {
-				t.log.Warnf("invalid total size %d", body.Data.Total)
+				t.log.Warnf("invalid total size %d, retrying", body.Data.Total)
 				return true
 			}
 			return false
