@@ -14,13 +14,14 @@ import (
 	"github.com/kataras/golog"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
+	"golang.org/x/sync/errgroup"
+	"modernc.org/sqlite"
+
 	"github.com/zema1/watchvuln/ent"
 	"github.com/zema1/watchvuln/ent/migrate"
 	"github.com/zema1/watchvuln/ent/vulninformation"
 	"github.com/zema1/watchvuln/grab"
 	"github.com/zema1/watchvuln/push"
-	"golang.org/x/sync/errgroup"
-	"modernc.org/sqlite"
 )
 
 func init() {
@@ -310,50 +311,66 @@ func initSources(c *cli.Context) ([]grab.Grabber, error) {
 }
 
 func initPusher(c *cli.Context) (push.Pusher, error) {
-	dingToken := c.String("dingding-access-token")
-	dingSecret := c.String("dingding-sign-secret")
-	wxWorkKey := c.String("wechatwork-key")
-	webhook := c.String("webhook-url")
-	larkToken := c.String("lark-access-token")
-	larkSecret := c.String("lark-sign-secret")
-	serverChanKey := c.String("serverchan-key")
+	dingTokenList := strings.Split(c.String("dingding-access-token"), ",")
+	dingSecretList := strings.Split(c.String("dingding-sign-secret"), ",")
+	wxWorkKeyList := strings.Split(c.String("wechatwork-key"), ",")
+	webhookList := strings.Split(c.String("webhook-url"), ",")
+	larkTokenList := strings.Split(c.String("lark-access-token"), ",")
+	larkSecretList := strings.Split(c.String("lark-sign-secret"), ",")
+	serverChanKeyList := strings.Split(c.String("serverchan-key"), ",")
 
 	if os.Getenv("DINGDING_ACCESS_TOKEN") != "" {
-		dingToken = os.Getenv("DINGDING_ACCESS_TOKEN")
+		dingTokenList = strings.Split(os.Getenv("DINGDING_ACCESS_TOKEN"), ",")
 	}
 	if os.Getenv("DINGDING_SECRET") != "" {
-		dingSecret = os.Getenv("DINGDING_SECRET")
+		dingSecretList = strings.Split(os.Getenv("DINGDING_SECRET"), ",")
 	}
 	if os.Getenv("WECHATWORK_KEY") != "" {
-		wxWorkKey = os.Getenv("WECHATWORK_KEY")
+		wxWorkKeyList = strings.Split(os.Getenv("WECHATWORK_KEY"), ",")
 	}
 	if os.Getenv("WEBHOOK_URL") != "" {
-		webhook = os.Getenv("WEBHOOK_URL")
+		webhookList = strings.Split(os.Getenv("WEBHOOK_URL"), ",")
 	}
 	if os.Getenv("LARK_ACCESS_TOKEN") != "" {
-		larkToken = os.Getenv("LARK_ACCESS_TOKEN")
+		larkTokenList = strings.Split(os.Getenv("LARK_ACCESS_TOKEN"), ",")
 	}
 	if os.Getenv("LARK_SECRET") != "" {
-		larkSecret = os.Getenv("LARK_SECRET")
+		larkSecretList = strings.Split(os.Getenv("LARK_SECRET"), ",")
 	}
 	if os.Getenv("SERVERCHAN_KEY") != "" {
-		serverChanKey = os.Getenv("SERVERCHAN_KEY")
+		serverChanKeyList = strings.Split(os.Getenv("SERVERCHAN_KEY"), ",")
 	}
 	var pushers []push.Pusher
-	if dingToken != "" && dingSecret != "" {
-		pushers = append(pushers, push.NewDingDing(dingToken, dingSecret))
+
+	// check: token and secret must correspond one-to-one
+	if len(dingTokenList) > 0 && len(dingTokenList) == len(dingSecretList) {
+		for i, _ := range dingTokenList {
+			pushers = append(pushers, push.NewDingDing(dingTokenList[i], dingSecretList[i]))
+		}
 	}
-	if larkToken != "" && larkSecret != "" {
-		pushers = append(pushers, push.NewLark(larkToken, larkSecret))
+
+	if len(larkTokenList) > 0 && len(larkTokenList) == len(larkSecretList) {
+		for i, _ := range larkTokenList {
+			pushers = append(pushers, push.NewLark(larkTokenList[i], larkSecretList[i]))
+		}
 	}
-	if wxWorkKey != "" {
-		pushers = append(pushers, push.NewWechatWork(wxWorkKey))
+
+	if len(wxWorkKeyList) > 0 {
+		for _, wx := range wxWorkKeyList {
+			pushers = append(pushers, push.NewWechatWork(wx))
+		}
 	}
-	if webhook != "" {
-		pushers = append(pushers, push.NewWebhook(webhook))
+
+	if len(webhookList) > 0 {
+		for _, wh := range webhookList {
+			pushers = append(pushers, push.NewWebhook(wh))
+		}
 	}
-	if serverChanKey != "" {
-		pushers = append(pushers, push.NewServerChan(serverChanKey))
+
+	if len(serverChanKeyList) > 0 {
+		for _, sc := range serverChanKeyList {
+			pushers = append(pushers, push.NewServerChan(sc))
+		}
 	}
 	if len(pushers) == 0 {
 		msg := `
