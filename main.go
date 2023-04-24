@@ -243,13 +243,13 @@ func Action(c *cli.Context) error {
 			log.Infof("found %d new vulns in this ticking", len(vulns))
 			for _, v := range vulns {
 				if noFilter || v.Creator.IsValuable(v) {
-					log.Infof("publishing new vuln %s", v)
 					dbVuln, err := dbClient.VulnInformation.Query().Where(vulninformation.Key(v.UniqueKey)).First(ctx)
 					if err != nil {
 						log.Errorf("failed to query %s from db %s", v.UniqueKey, err)
 						continue
 					}
 					if dbVuln.Pushed {
+						log.Infof("%s has been pushed, skipped", v)
 						continue
 					}
 					if v.CVE != "" && cveFilter {
@@ -274,7 +274,7 @@ func Action(c *cli.Context) error {
 						log.Errorf("failed to save pushed %s status, %s", v.UniqueKey, err)
 						continue
 					}
-
+					log.Infof("pushing %s", v)
 					err = pusher.PushMarkdown(v.Title, push.RenderVulnInfo(v))
 					if err != nil {
 						log.Errorf("send dingding msg error, %s", err)
@@ -506,6 +506,7 @@ func createOrUpdate(ctx context.Context, dbClient *ent.Client, source *grab.Prov
 			log.Infof("%s from %s add new tag %s", data.Title, data.From, newTag)
 			data.Reason = append(data.Reason, fmt.Sprintf("%s: %v => %v", grab.ReasonTagUpdated, vuln.Tags, data.Tags))
 			asNewVuln = true
+			break
 		}
 	}
 
