@@ -28,7 +28,7 @@ func init() {
 }
 
 var log = golog.Child("[main]")
-var Version = "v0.7.0"
+var Version = "v0.8.0"
 
 const MaxPageBase = 3
 
@@ -50,7 +50,7 @@ func main() {
 			Name:    "sources",
 			Aliases: []string{"s"},
 			Usage:   "set vuln sources",
-			Value:   "avd,ti,oscs",
+			Value:   "avd,ti,oscs,seebug",
 		},
 		&cli.StringFlag{
 			Name:    "interval",
@@ -302,6 +302,8 @@ func initSources(c *cli.Context) ([]grab.Grabber, error) {
 			grabs = append(grabs, grab.NewTiCrawler())
 		case "oscs":
 			grabs = append(grabs, grab.NewOSCSCrawler())
+		case "seebug":
+			grabs = append(grabs, grab.NewSeebugCrawler())
 		default:
 			return nil, fmt.Errorf("invalid grab source %s", part)
 		}
@@ -420,6 +422,9 @@ func collectUpdate(ctx context.Context, dbClient *ent.Client, grabbers []grab.Gr
 			pageCount, err := grabber.GetPageCount(ctx, pageSize)
 			if err != nil {
 				return err
+			}
+			if pageCount > MaxPageBase {
+				pageCount = MaxPageBase
 			}
 			for i := 1; i <= pageCount; i++ {
 				dataChan, err := grabber.ParsePage(ctx, i, pageSize)
