@@ -2,6 +2,10 @@
 
 package vulninformation
 
+import (
+	"entgo.io/ent/dialect/sql"
+)
+
 const (
 	// Label holds the string label denoting the vulninformation type in the database.
 	Label = "vuln_information"
@@ -77,3 +81,56 @@ var (
 	// DefaultPushed holds the default value on creation for the "pushed" field.
 	DefaultPushed bool
 )
+
+// Order defines the ordering method for the VulnInformation queries.
+type Order func(*sql.Selector)
+
+// ByID orders the results by the id field.
+func ByID(opts ...sql.OrderTermOption) Order {
+	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByKey orders the results by the key field.
+func ByKey(opts ...sql.OrderTermOption) Order {
+	return sql.OrderByField(FieldKey, opts...).ToFunc()
+}
+
+// ByTitle orders the results by the title field.
+func ByTitle(opts ...sql.OrderTermOption) Order {
+	return sql.OrderByField(FieldTitle, opts...).ToFunc()
+}
+
+// ByDescription orders the results by the description field.
+func ByDescription(opts ...sql.OrderTermOption) Order {
+	return sql.OrderByField(FieldDescription, opts...).ToFunc()
+}
+
+// BySeverity orders the results by the severity field.
+func BySeverity(opts ...sql.OrderTermOption) Order {
+	return sql.OrderByField(FieldSeverity, opts...).ToFunc()
+}
+
+// ByCve orders the results by the cve field.
+func ByCve(opts ...sql.OrderTermOption) Order {
+	return sql.OrderByField(FieldCve, opts...).ToFunc()
+}
+
+// ByDisclosure orders the results by the disclosure field.
+func ByDisclosure(opts ...sql.OrderTermOption) Order {
+	return sql.OrderByField(FieldDisclosure, opts...).ToFunc()
+}
+
+// BySolutions orders the results by the solutions field.
+func BySolutions(opts ...sql.OrderTermOption) Order {
+	return sql.OrderByField(FieldSolutions, opts...).ToFunc()
+}
+
+// ByFrom orders the results by the from field.
+func ByFrom(opts ...sql.OrderTermOption) Order {
+	return sql.OrderByField(FieldFrom, opts...).ToFunc()
+}
+
+// ByPushed orders the results by the pushed field.
+func ByPushed(opts ...sql.OrderTermOption) Order {
+	return sql.OrderByField(FieldPushed, opts...).ToFunc()
+}

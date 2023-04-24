@@ -782,8 +782,8 @@ func (vicb *VulnInformationCreateBulk) Save(ctx context.Context) ([]*VulnInforma
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, vicb.builders[i+1].mutation)
 				} else {

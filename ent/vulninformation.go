@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/zema1/watchvuln/ent/vulninformation"
 )
@@ -37,7 +38,8 @@ type VulnInformation struct {
 	// From holds the value of the "from" field.
 	From string `json:"from,omitempty"`
 	// Pushed holds the value of the "pushed" field.
-	Pushed bool `json:"pushed,omitempty"`
+	Pushed       bool `json:"pushed,omitempty"`
+	selectValues sql.SelectValues
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -54,7 +56,7 @@ func (*VulnInformation) scanValues(columns []string) ([]any, error) {
 		case vulninformation.FieldKey, vulninformation.FieldTitle, vulninformation.FieldDescription, vulninformation.FieldSeverity, vulninformation.FieldCve, vulninformation.FieldDisclosure, vulninformation.FieldSolutions, vulninformation.FieldFrom:
 			values[i] = new(sql.NullString)
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type VulnInformation", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -144,9 +146,17 @@ func (vi *VulnInformation) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				vi.Pushed = value.Bool
 			}
+		default:
+			vi.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
+}
+
+// Value returns the ent.Value that was dynamically selected and assigned to the VulnInformation.
+// This includes values selected through modifiers, order, etc.
+func (vi *VulnInformation) Value(name string) (ent.Value, error) {
+	return vi.selectValues.Get(name)
 }
 
 // Update returns a builder for updating this VulnInformation.
