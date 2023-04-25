@@ -32,6 +32,9 @@ func NewSeebugCrawler() Grabber {
 	c.client = c.newClient()
 	c.client.AddCommonRetryCondition(func(resp *req.Response, err error) bool {
 		if err != nil {
+			if errors.Is(err, context.Canceled) {
+				return false
+			}
 			return true
 		}
 		if resp.StatusCode != 200 {
@@ -44,7 +47,8 @@ func NewSeebugCrawler() Grabber {
 		}
 		if resp.StatusCode != 200 {
 			c.log.Warnf("computing cloud waf cookie")
-			if err := c.wafBypass(); err != nil {
+			if err := c.wafBypass(resp.Request.Context()); err != nil {
+				resp.Err = err
 				c.log.Errorf("bypass waf error, %s", err)
 			}
 		}
@@ -199,12 +203,12 @@ func (t *SeebugCrawler) newClient() *req.Client {
 
 var scriptRegexp = regexp.MustCompile(`(?m)<script>(.*?)</script>`)
 
-func (t *SeebugCrawler) wafBypass() error {
+func (t *SeebugCrawler) wafBypass(ctx context.Context) error {
 	jar, _ := cookiejar.New(nil)
 	client := t.newClient().SetCookieJar(jar)
 
 	getScriptContent := func() (*req.Response, string, error) {
-		resp, err := client.NewRequest().Get("https://www.seebug.org/")
+		resp, err := client.NewRequest().SetContext(ctx).Get("https://www.seebug.org/")
 		if err != nil {
 			return nil, "", err
 		}
@@ -228,6 +232,10 @@ func (t *SeebugCrawler) wafBypass() error {
 
 	loop := eventloop.NewEventLoop()
 	defer loop.StopNoWait()
+	go func() {
+		<-ctx.Done()
+		loop.StopNoWait()
+	}()
 
 	loop.Run(func(vm *goja.Runtime) {
 		globals := vm.GlobalObject()
@@ -286,7 +294,7 @@ func (t *SeebugCrawler) wafBypass() error {
 	}
 	jar.SetCookies(u, cookies)
 	t.client.SetCookieJar(jar)
-	return nil
+	return ctx.Err()
 }
 
 func (t *SeebugCrawler) getCookieFromDocument(doc map[string]interface{}) ([]*http.Cookie, error) {

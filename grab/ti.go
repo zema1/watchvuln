@@ -3,6 +3,7 @@ package grab
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/imroc/req/v3"
 	"github.com/kataras/golog"
@@ -40,7 +41,10 @@ func (t *TiCrawler) GetPageCount(ctx context.Context, size int) (int, error) {
 		SetBodyBytes(t.buildBody(1, 10)).
 		SetContext(ctx).
 		AddRetryCondition(func(resp *req.Response, err error) bool {
-			if resp == nil {
+			if err != nil {
+				if errors.Is(err, context.Canceled) {
+					return false
+				}
 				return true
 			}
 			if err = resp.UnmarshalJson(&body); err != nil {
