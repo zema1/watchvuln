@@ -48,7 +48,7 @@ Docker 方式推荐使用环境变量来配置服务参数
 | `WEBHOOK_URL`           | 自定义 webhook 服务的完整 url                      |                      |
 | `SOURCES`               | 启用哪些漏洞信息源，逗号分隔, 可选 `avd`, `ti`, `oscs`     | `avd,ti,oscs,seebug` |
 | `INTERVAL`              | 检查周期，支持秒 `60s`, 分钟 `10m`, 小时 `1h`, 最低 `1m` | `30m`                |
-| `ENABLE_CVE_FILTER`     | 启用 CVE 过滤，开启后多个数据源的统一 CVE 将只推送一次           | `false`              |
+| `ENABLE_CVE_FILTER`     | 启用 CVE 过滤，开启后多个数据源的统一 CVE 将只推送一次           | `true`               |
 | `NO_FILTER`             | 禁用上述推送过滤策略，所有新发现的漏洞都会被推送                   | `false`              |
 | `NO_START_MESSAGE`      | 禁用服务启动的提示信息                                | `false`              |
 
@@ -150,21 +150,29 @@ COMMANDS:
    help, h  Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
-   --debug, -d                                set log level to debug, print more details (default: false)
-   --sources value, -s value                  set vuln sources (default: "avd,ti,oscs,seebug")
-   --interval value, -i value                 checking every [interval], supported format like 30s, 30m, 1h (default: "30m")
+   [Push Options]
+
    --dingding-access-token value, --dt value  webhook access token of dingding bot
    --dingding-sign-secret value, --ds value   sign secret of dingding bot
-   --wechatwork-key value, --wk value         webhook key of wechat work
    --lark-access-token value, --lt value      webhook access token of lark
    --lark-sign-secret value, --ls value       sign secret of lark
-   --webhook-url value, --webhook value       your webhook server url, ex: http://127.0.0.1:1111/webhook
    --serverchan-key value, --sk value         send key for server chan
-   --enable-cve-filter                        enable a filter that vulns from multiple sources with same cve id will be sent only once (default: false)
-   --no-start-message, --nm                   disable the hello message when server starts (default: false)
-   --no-filter, --nf                          ignore the valuable filter and push all discovered vulns (default: false)
-   --help, -h                                 show help
-   --version, -v                              print the version
+   --webhook-url value, --webhook value       your webhook server url, ex: http://127.0.0.1:1111/webhook
+   --wechatwork-key value, --wk value         webhook key of wechat work
+
+   [Launch Options]
+
+   --enable-cve-filter         enable a filter that vulns from multiple sources with same cve id will be sent only once (default: true)
+   --interval value, -i value  checking every [interval], supported format like 30s, 30m, 1h (default: "30m")
+   --no-filter, --nf           ignore the valuable filter and push all discovered vulns (default: false)
+   --no-start-message, --nm    disable the hello message when server starts (default: false)
+   --sources value, -s value   set vuln sources (default: "avd,ti,oscs,seebug")
+
+   [Other Options]
+
+   --debug, -d    set log level to debug, print more details (default: false)
+   --help, -h     show help (default: false)
+   --version, -v  print the version (default: false)
 ```
 
 在参数中指定相关 Token 即可, 比如使用钉钉机器人
