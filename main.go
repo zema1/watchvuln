@@ -28,84 +28,111 @@ func init() {
 }
 
 var log = golog.Child("[main]")
-var Version = "v0.7.0"
+var Version = "v0.8.0"
 
 const MaxPageBase = 3
 
 func main() {
 	golog.Default.SetLevel("info")
+	cli.VersionFlag = &cli.BoolFlag{
+		Name:     "version",
+		Aliases:  []string{"v"},
+		Usage:    "print the version",
+		Category: "[Other Options]",
+	}
+	cli.HelpFlag = &cli.BoolFlag{
+		Name:     "help",
+		Aliases:  []string{"h"},
+		Usage:    "show help",
+		Category: "[Other Options]",
+	}
+
 	app := cli.NewApp()
 	app.Name = "watchvuln"
 	app.Usage = "A high valuable vulnerability watcher and pusher"
 	app.Version = Version
 
 	app.Flags = []cli.Flag{
-		&cli.BoolFlag{
-			Name:    "debug",
-			Aliases: []string{"d"},
-			Usage:   "set log level to debug, print more details",
-			Value:   false,
+		&cli.StringFlag{
+			Name:     "dingding-access-token",
+			Aliases:  []string{"dt"},
+			Usage:    "webhook access token of dingding bot",
+			Category: "[\x00Push Options]",
 		},
 		&cli.StringFlag{
-			Name:    "sources",
-			Aliases: []string{"s"},
-			Usage:   "set vuln sources",
-			Value:   "avd,ti,oscs",
+			Name:     "dingding-sign-secret",
+			Aliases:  []string{"ds"},
+			Usage:    "sign secret of dingding bot",
+			Category: "[\x00Push Options]",
 		},
 		&cli.StringFlag{
-			Name:    "interval",
-			Aliases: []string{"i"},
-			Usage:   "checking every [interval], supported format like 30s, 30m, 1h",
-			Value:   "30m",
+			Name:     "wechatwork-key",
+			Aliases:  []string{"wk"},
+			Usage:    "webhook key of wechat work",
+			Category: "[\x00Push Options]",
 		},
 		&cli.StringFlag{
-			Name:    "dingding-access-token",
-			Aliases: []string{"dt"},
-			Usage:   "webhook access token of dingding bot",
+			Name:     "lark-access-token",
+			Aliases:  []string{"lt"},
+			Usage:    "webhook access token of lark",
+			Category: "[\x00Push Options]",
 		},
 		&cli.StringFlag{
-			Name:    "dingding-sign-secret",
-			Aliases: []string{"ds"},
-			Usage:   "sign secret of dingding bot",
+			Name:     "lark-sign-secret",
+			Aliases:  []string{"ls"},
+			Usage:    "sign secret of lark",
+			Category: "[\x00Push Options]",
 		},
 		&cli.StringFlag{
-			Name:    "wechatwork-key",
-			Aliases: []string{"wk"},
-			Usage:   "webhook key of wechat work",
+			Name:     "serverchan-key",
+			Aliases:  []string{"sk"},
+			Usage:    "send key for server chan",
+			Category: "[\x00Push Options]",
 		},
 		&cli.StringFlag{
-			Name:    "lark-access-token",
-			Aliases: []string{"lt"},
-			Usage:   "webhook access token of lark",
+			Name:     "webhook-url",
+			Aliases:  []string{"webhook"},
+			Usage:    "your webhook server url, ex: http://127.0.0.1:1111/webhook",
+			Category: "[\x00Push Options]",
 		},
 		&cli.StringFlag{
-			Name:    "lark-sign-secret",
-			Aliases: []string{"ls"},
-			Usage:   "sign secret of lark",
+			Name:     "sources",
+			Aliases:  []string{"s"},
+			Usage:    "set vuln sources",
+			Value:    "avd,ti,oscs,seebug",
+			Category: "[Launch Options]",
 		},
 		&cli.StringFlag{
-			Name:    "webhook-url",
-			Aliases: []string{"webhook"},
-			Usage:   "your webhook server url, ex: http://127.0.0.1:1111/webhook",
-		},
-		&cli.StringFlag{
-			Name:    "serverchan-key",
-			Aliases: []string{"sk"},
-			Usage:   "send key for server chan",
-		},
-		&cli.BoolFlag{
-			Name:  "enable-cve-filter",
-			Usage: "enable a filter that vulns from multiple sources with same cve id will be sent only once",
-		},
-		&cli.BoolFlag{
-			Name:    "no-start-message",
-			Aliases: []string{"nm"},
-			Usage:   "disable the hello message when server starts",
+			Name:     "interval",
+			Aliases:  []string{"i"},
+			Usage:    "checking every [interval], supported format like 30s, 30m, 1h",
+			Value:    "30m",
+			Category: "[Launch Options]",
 		},
 		&cli.BoolFlag{
-			Name:    "no-filter",
-			Aliases: []string{"nf"},
-			Usage:   "ignore the valuable filter and push all discovered vulns",
+			Name:     "enable-cve-filter",
+			Usage:    "enable a filter that vulns from multiple sources with same cve id will be sent only once",
+			Value:    true,
+			Category: "[Launch Options]",
+		},
+		&cli.BoolFlag{
+			Name:     "no-start-message",
+			Aliases:  []string{"nm"},
+			Usage:    "disable the hello message when server starts",
+			Category: "[Launch Options]",
+		},
+		&cli.BoolFlag{
+			Name:     "no-filter",
+			Aliases:  []string{"nf"},
+			Usage:    "ignore the valuable filter and push all discovered vulns",
+			Category: "[Launch Options]",
+		},
+		&cli.BoolFlag{
+			Name:     "debug",
+			Aliases:  []string{"d"},
+			Usage:    "set log level to debug, print more details",
+			Value:    false,
+			Category: "[Other Options]",
 		},
 	}
 	app.Before = func(c *cli.Context) error {
@@ -118,7 +145,11 @@ func main() {
 
 	err := app.Run(os.Args)
 	if err != nil {
-		log.Fatal(err)
+		if errors.Is(err, context.Canceled) {
+			log.Fatal("user canceled")
+		} else {
+			log.Fatal(err)
+		}
 	}
 }
 
@@ -150,9 +181,12 @@ func Action(c *cli.Context) error {
 	if os.Getenv("NO_START_MESSAGE") != "" {
 		noStartMessage = true
 	}
-	if os.Getenv("ENABLE_CVE_FILTER") != "" {
-		cveFilter = true
+	if os.Getenv("ENABLE_CVE_FILTER") == "false" {
+		cveFilter = false
 	}
+
+	log.Infof("config: INTERVAL=%s, NO_FILTER=%v, NO_START_MESSAGE=%v, ENABLE_CVE_FILTER=%v",
+		iv, noFilter, noStartMessage, cveFilter)
 
 	interval, err := time.ParseDuration(iv)
 	if err != nil {
@@ -191,7 +225,10 @@ func Action(c *cli.Context) error {
 	}
 	log.Infof("grabber finished successfully")
 
-	localCount := dbClient.VulnInformation.Query().CountX(ctx)
+	localCount, err := dbClient.VulnInformation.Query().Count(ctx)
+	if err != nil {
+		return err
+	}
 	log.Infof("system init finished, local database has %d vulns", localCount)
 	if !noStartMessage {
 		providers := make([]*grab.Provider, 0, 3)
@@ -243,13 +280,13 @@ func Action(c *cli.Context) error {
 			log.Infof("found %d new vulns in this ticking", len(vulns))
 			for _, v := range vulns {
 				if noFilter || v.Creator.IsValuable(v) {
-					log.Infof("publishing new vuln %s", v)
 					dbVuln, err := dbClient.VulnInformation.Query().Where(vulninformation.Key(v.UniqueKey)).First(ctx)
 					if err != nil {
 						log.Errorf("failed to query %s from db %s", v.UniqueKey, err)
 						continue
 					}
 					if dbVuln.Pushed {
+						log.Infof("%s has been pushed, skipped", v)
 						continue
 					}
 					if v.CVE != "" && cveFilter {
@@ -274,7 +311,7 @@ func Action(c *cli.Context) error {
 						log.Errorf("failed to save pushed %s status, %s", v.UniqueKey, err)
 						continue
 					}
-
+					log.Infof("Pushing %s", v)
 					err = pusher.PushMarkdown(v.Title, push.RenderVulnInfo(v))
 					if err != nil {
 						log.Errorf("send dingding msg error, %s", err)
@@ -302,6 +339,8 @@ func initSources(c *cli.Context) ([]grab.Grabber, error) {
 			grabs = append(grabs, grab.NewTiCrawler())
 		case "oscs":
 			grabs = append(grabs, grab.NewOSCSCrawler())
+		case "seebug":
+			grabs = append(grabs, grab.NewSeebugCrawler())
 		default:
 			return nil, fmt.Errorf("invalid grab source %s", part)
 		}
@@ -421,6 +460,9 @@ func collectUpdate(ctx context.Context, dbClient *ent.Client, grabbers []grab.Gr
 			if err != nil {
 				return err
 			}
+			if pageCount > MaxPageBase {
+				pageCount = MaxPageBase
+			}
 			for i := 1; i <= pageCount; i++ {
 				dataChan, err := grabber.ParsePage(ctx, i, pageSize)
 				if err != nil {
@@ -501,6 +543,7 @@ func createOrUpdate(ctx context.Context, dbClient *ent.Client, source *grab.Prov
 			log.Infof("%s from %s add new tag %s", data.Title, data.From, newTag)
 			data.Reason = append(data.Reason, fmt.Sprintf("%s: %v => %v", grab.ReasonTagUpdated, vuln.Tags, data.Tags))
 			asNewVuln = true
+			break
 		}
 	}
 

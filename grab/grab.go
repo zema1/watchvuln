@@ -61,14 +61,21 @@ type Grabber interface {
 func NewHttpClient() *req.Client {
 	client := req.C()
 	client.
-		SetCommonHeader("User-Agent", "ozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.34").
-		SetTimeout(10*time.Second).
+		SetCommonHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.58").
+		SetTimeout(10 * time.Second).
 		SetCommonRetryCount(3).
 		SetCookieJar(nil).
-		SetCommonRetryBackoffInterval(5*time.Second, 10*time.Second).
+		SetCommonRetryInterval(func(resp *req.Response, attempt int) time.Duration {
+			if errors.Is(resp.Err, context.Canceled) {
+				return 0
+			}
+			return time.Second * 5
+		}).
 		SetCommonRetryHook(func(resp *req.Response, err error) {
 			if err != nil {
-				golog.Warnf("retrying as %s", err)
+				if !errors.Is(err, context.Canceled) {
+					golog.Warnf("retrying as %s", err)
+				}
 			}
 		}).SetCommonRetryCondition(func(resp *req.Response, err error) bool {
 		if err != nil {

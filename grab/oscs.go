@@ -3,6 +3,7 @@ package grab
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/imroc/req/v3"
 	"github.com/kataras/golog"
@@ -39,7 +40,10 @@ func (t *OSCSCrawler) GetPageCount(ctx context.Context, size int) (int, error) {
 		SetBodyBytes(t.buildListBody(1, 10)).
 		SetContext(ctx).
 		AddRetryCondition(func(resp *req.Response, err error) bool {
-			if resp == nil {
+			if err != nil {
+				if errors.Is(err, context.Canceled) {
+					return false
+				}
 				return true
 			}
 			if err = resp.UnmarshalJson(&body); err != nil {
@@ -115,7 +119,9 @@ func (t *OSCSCrawler) ParsePage(ctx context.Context, page, size int) (chan *Vuln
 			tags = append(tags, eventType)
 			info, err := t.parseSingeVuln(ctx, d.Mps)
 			if err != nil {
-				t.log.Errorf("failed to parse %s, %s", d.Url, err)
+				if !errors.Is(err, context.Canceled) {
+					t.log.Errorf("failed to parse %s, %s", d.Url, err)
+				}
 				continue
 			}
 			info.Tags = tags

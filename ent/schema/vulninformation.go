@@ -23,7 +23,7 @@ func (VulnInformation) Fields() []ent.Field {
 		field.Strings("references").Optional(),
 		field.Strings("tags").Optional(),
 		field.String("from").Default(""),
-		field.Bool("pushed").Default(false),
+		field.Bool("pushed").Default(true),
 	}
 }
 

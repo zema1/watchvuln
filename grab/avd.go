@@ -3,6 +3,7 @@ package grab
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/imroc/req/v3"
@@ -28,6 +29,9 @@ type AVDCrawler struct {
 func NewAVDCrawler() Grabber {
 	client := NewHttpClient().AddCommonRetryCondition(func(resp *req.Response, err error) bool {
 		if err != nil {
+			if errors.Is(err, context.Canceled) {
+				return false
+			}
 			return true
 		}
 		if resp.StatusCode != 200 {
