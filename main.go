@@ -513,6 +513,7 @@ func createOrUpdate(ctx context.Context, dbClient *ent.Client, source *grab.Prov
 			SetDisclosure(data.Disclosure).
 			SetSolutions(data.Solutions).
 			SetReferences(data.References).
+			SetPushed(false).
 			SetTags(data.Tags).
 			SetFrom(data.From).
 			Save(ctx)

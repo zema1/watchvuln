@@ -135,6 +135,7 @@ func (t *SeebugCrawler) ParsePage(ctx context.Context, page, size int) (chan *Vu
 		severityTitle, _ := tds.Eq(2).Find("div").Attr("data-original-title")
 		severityTitle = strings.TrimSpace(severityTitle)
 		var severity SeverityLevel
+		severity = Low
 		switch severityTitle {
 		case "高危":
 			severity = High
@@ -142,8 +143,6 @@ func (t *SeebugCrawler) ParsePage(ctx context.Context, page, size int) (chan *Vu
 			severity = Medium
 		case "低危":
 			severity = Low
-		default:
-			panic("")
 		}
 
 		title := tds.Eq(3).Text()
