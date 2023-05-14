@@ -23,7 +23,7 @@ type Bark struct {
 type BarkData struct {
 	Title     string `json:"title"`
 	Body      string `json:"body"`
-	DeviceKey string `json:"type"`
+	DeviceKey string `json:"device_key"`
 	Badge     int    `json:"badge"`
 	Group     string `json:"group"`
 	Sound     string `json:"sound"`
