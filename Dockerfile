@@ -7,7 +7,8 @@ ENV GO111MODULE=on \
     GOPROXY=https://goproxy.cn,direct
 
 COPY . .
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -extldflags=-static" -o main .
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -extldflags=-static" -o main .
 
 
 FROM alpine:3
