@@ -404,7 +404,7 @@ func initPusher(c *cli.Context) (push.Pusher, error) {
 	if bark != "" {
 		deviceKeys := strings.Split(bark, "/")
 		deviceKey := deviceKeys[len(deviceKeys)-1]
-		url := strings.Replace(bark, deviceKey, "", -1) + "push"
+		url := strings.Replace(bark, deviceKey, "push", -1)
 		pushers = append(pushers, push.NewBark(url, deviceKey))
 	}
 	if serverChanKey != "" {
