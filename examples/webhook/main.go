@@ -32,7 +32,6 @@ func main() {
 
 		fmt.Println("===========")
 		fmt.Printf("type: %s\ntitle: %s\ncontent: %s\n", vulnData.Type, vulnData.Title, vulnData.Content)
-		return
 	})
 	if err := http.ListenAndServe(addr, http.DefaultServeMux); err != nil {
 		panic(err)

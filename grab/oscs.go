@@ -41,10 +41,7 @@ func (t *OSCSCrawler) GetPageCount(ctx context.Context, size int) (int, error) {
 		SetContext(ctx).
 		AddRetryCondition(func(resp *req.Response, err error) bool {
 			if err != nil {
-				if errors.Is(err, context.Canceled) {
-					return false
-				}
-				return true
+				return !errors.Is(err, context.Canceled)
 			}
 			if err = resp.UnmarshalJson(&body); err != nil {
 				t.log.Warnf("unmarshal json error, %s", err)

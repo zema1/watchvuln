@@ -79,10 +79,7 @@ func NewHttpClient() *req.Client {
 			}
 		}).SetCommonRetryCondition(func(resp *req.Response, err error) bool {
 		if err != nil {
-			if errors.Is(err, context.Canceled) {
-				return false
-			}
-			return true
+			return !errors.Is(err, context.Canceled)
 		}
 		return false
 	})

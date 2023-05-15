@@ -28,3 +28,4 @@ config.yml
 
 data/
 *backup/
+watchvuln
