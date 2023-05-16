@@ -29,10 +29,7 @@ type AVDCrawler struct {
 func NewAVDCrawler() Grabber {
 	client := NewHttpClient().AddCommonRetryCondition(func(resp *req.Response, err error) bool {
 		if err != nil {
-			if errors.Is(err, context.Canceled) {
-				return false
-			}
-			return true
+			return !errors.Is(err, context.Canceled)
 		}
 		if resp.StatusCode != 200 {
 			return true
@@ -172,7 +169,6 @@ func (a *AVDCrawler) parseSingle(ctx context.Context, vulnLink string) (*VulnInf
 			cveID = value
 		} else if strings.HasSuffix(label, "披露时间") {
 			disclosure = value
-		} else {
 		}
 	}
 
