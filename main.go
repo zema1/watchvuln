@@ -96,6 +96,12 @@ func main() {
 			Category: "[\x00Push Options]",
 		},
 		&cli.StringFlag{
+			Name:     "bark-url",
+			Aliases:  []string{"bark"},
+			Usage:    "your bark server url, ex: http://127.0.0.1:1111/DeviceKey",
+			Category: "[\x00Push Options]",
+		},
+		&cli.StringFlag{
 			Name:     "sources",
 			Aliases:  []string{"s"},
 			Usage:    "set vuln sources",
@@ -353,6 +359,7 @@ func initPusher(c *cli.Context) (push.Pusher, error) {
 	dingSecret := c.String("dingding-sign-secret")
 	wxWorkKey := c.String("wechatwork-key")
 	webhook := c.String("webhook-url")
+	bark := c.String("bark-url")
 	larkToken := c.String("lark-access-token")
 	larkSecret := c.String("lark-sign-secret")
 	serverChanKey := c.String("serverchan-key")
@@ -368,6 +375,9 @@ func initPusher(c *cli.Context) (push.Pusher, error) {
 	}
 	if os.Getenv("WEBHOOK_URL") != "" {
 		webhook = os.Getenv("WEBHOOK_URL")
+	}
+	if os.Getenv("BARK_URL") != "" {
+		bark = os.Getenv("BARK_URL")
 	}
 	if os.Getenv("LARK_ACCESS_TOKEN") != "" {
 		larkToken = os.Getenv("LARK_ACCESS_TOKEN")
@@ -390,6 +400,12 @@ func initPusher(c *cli.Context) (push.Pusher, error) {
 	}
 	if webhook != "" {
 		pushers = append(pushers, push.NewWebhook(webhook))
+	}
+	if bark != "" {
+		deviceKeys := strings.Split(bark, "/")
+		deviceKey := deviceKeys[len(deviceKeys)-1]
+		url := strings.Replace(bark, deviceKey, "push", -1)
+		pushers = append(pushers, push.NewBark(url, deviceKey))
 	}
 	if serverChanKey != "" {
 		pushers = append(pushers, push.NewServerChan(serverChanKey))
