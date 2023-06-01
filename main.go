@@ -281,7 +281,6 @@ func Action(c *cli.Context) error {
 			vulns, err := collectUpdate(ctx, dbClient, grabbers)
 			if err != nil {
 				log.Errorf("failed to get updates, %s", err)
-				continue
 			}
 			log.Infof("found %d new vulns in this ticking", len(vulns))
 			for _, v := range vulns {
