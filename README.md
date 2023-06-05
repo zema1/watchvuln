@@ -30,8 +30,9 @@
 - [钉钉群组机器人](https://open.dingtalk.com/document/robots/custom-robot-access)
 - [微信企业版群组机器人](https://open.work.weixin.qq.com/help2/pc/14931)
 - [飞书群组机器人](https://open.feishu.cn/document/ukTMukTMukTM/ucTM5YjL3ETO24yNxkjN)
-- [server酱](https://sct.ftqq.com/)
-- [自定义Webhook服务](./examples/webhook)
+- [Server 酱](https://sct.ftqq.com/)
+- [自定义 Bark 服务](https://github.com/Finb/Bark)
+- [自定义 Webhook 服务](./examples/webhook)
 
 ### 使用 Docker
 
@@ -46,6 +47,7 @@ Docker 方式推荐使用环境变量来配置服务参数
 | `WECHATWORK_KEY `       | 微信机器人 url 的 `key` 部分                       |                      |
 | `SERVERCHAN_KEY `       | Server酱的 `SCKEY`                           |                      |
 | `WEBHOOK_URL`           | 自定义 webhook 服务的完整 url                      |                      |
+| `BARK_URL`              | Bark 服务的完整 url, 路径需要包含 DeviceKey           |                      |
 | `SOURCES`               | 启用哪些漏洞信息源，逗号分隔, 可选 `avd`, `ti`, `oscs`     | `avd,ti,oscs,seebug` |
 | `INTERVAL`              | 检查周期，支持秒 `60s`, 分钟 `10m`, 小时 `1h`, 最低 `1m` | `30m`                |
 | `ENABLE_CVE_FILTER`     | 启用 CVE 过滤，开启后多个数据源的统一 CVE 将只推送一次           | `true`               |
@@ -86,6 +88,17 @@ docker run --restart always -d \
 ```bash
 docker run --restart always -d \
   -e WECHATWORK_KEY=xxxx \
+  -e INTERVAL=30m \
+  zemal/watchvuln:latest
+```
+
+</details>
+
+<details><summary>使用自定义 Bark 服务</summary>
+
+```bash
+docker run --restart always -d \
+  -e BARK_URL=http://xxxx \
   -e INTERVAL=30m \
   zemal/watchvuln:latest
 ```
@@ -140,11 +153,14 @@ docker run --restart always -d \
 前往 Release 下载对应平台的二进制，然后在命令行执行。
 
 ```bash
+NAME:
+   watchvuln - A high valuable vulnerability watcher and pusher
+
 USAGE:
    watchvuln [global options] command [command options] [arguments...]
 
 VERSION:
-   v0.9.0
+   v1.0.0
 
 COMMANDS:
    help, h  Shows a list of commands or help for one command
@@ -152,6 +168,7 @@ COMMANDS:
 GLOBAL OPTIONS:
    [Push Options]
 
+   --bark-url value, --bark value             your bark server url, ex: http://127.0.0.1:1111/DeviceKey
    --dingding-access-token value, --dt value  webhook access token of dingding bot
    --dingding-sign-secret value, --ds value   sign secret of dingding bot
    --lark-access-token value, --lt value      webhook access token of lark
@@ -206,6 +223,14 @@ $ ./watchvuln --sk xxxx -i 30m
 
 </details>
 
+
+<details><summary>使用自定义 Bark 服务</summary>
+
+```
+$ ./watchvuln --bark http://xxxx -i 30m
+```
+
+</details>
 
 <details><summary>使用自定义 Webhook 服务</summary>
 

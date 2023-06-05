@@ -28,7 +28,7 @@ func init() {
 }
 
 var log = golog.Child("[main]")
-var Version = "v0.9.0"
+var Version = "v1.0.0"
 
 const MaxPageBase = 3
 
