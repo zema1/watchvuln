@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-var _ = Pusher(&Lark{})
+var _ = TextPusher(&Lark{})
 
 type Lark struct {
 	log  *golog.Logger
@@ -17,7 +17,7 @@ type Lark struct {
 	sign string
 }
 
-func NewLark(botKey, sign string) Pusher {
+func NewLark(botKey, sign string) TextPusher {
 	if !strings.HasPrefix(botKey, "https://open.feishu.cn") {
 		botKey = "https://open.feishu.cn/open-apis/bot/v2/hook/" + botKey
 	}

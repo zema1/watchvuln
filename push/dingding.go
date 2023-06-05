@@ -7,14 +7,14 @@ import (
 	"strings"
 )
 
-var _ = Pusher(&DingDing{})
+var _ = TextPusher(&DingDing{})
 
 type DingDing struct {
 	client *dingtalk.Client
 	log    *golog.Logger
 }
 
-func NewDingDing(accessToken, secret string) Pusher {
+func NewDingDing(accessToken, secret string) TextPusher {
 	return &DingDing{
 		client: dingtalk.NewClient(accessToken, secret),
 		log:    golog.Child("[pusher-dingding]"),
