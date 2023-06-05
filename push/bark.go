@@ -11,7 +11,7 @@ import (
 	"github.com/kataras/golog"
 )
 
-var _ = Pusher(&Bark{})
+var _ = TextPusher(&Bark{})
 
 type Bark struct {
 	url       string
@@ -31,7 +31,7 @@ type BarkData struct {
 	Url       string `json:"url"`
 }
 
-func NewBark(url string, deviceKey string) Pusher {
+func NewBark(url string, deviceKey string) TextPusher {
 	return &Bark{
 		url:       url,
 		deviceKey: deviceKey,

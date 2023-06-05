@@ -163,7 +163,7 @@ func Action(c *cli.Context) error {
 	ctx, cancel := signalCtx()
 	defer cancel()
 
-	pusher, err := initPusher(c)
+	textPusher, rawPusher, err := initPusher(c)
 	if err != nil {
 		return err
 	}
@@ -241,14 +241,16 @@ func Action(c *cli.Context) error {
 		for _, p := range grabbers {
 			providers = append(providers, p.ProviderInfo())
 		}
-		msg := push.InitialMsg{
+		msg := &push.InitialMessage{
 			Version:   Version,
 			VulnCount: localCount,
 			Interval:  interval.String(),
 			Provider:  providers,
 		}
-		md := push.RenderInitialMsg(&msg)
-		if err := pusher.PushMarkdown("WatchVuln 初始化完成", md); err != nil {
+		if err := textPusher.PushMarkdown("WatchVuln 初始化完成", push.RenderInitialMsg(msg)); err != nil {
+			return err
+		}
+		if err := rawPusher.PushRaw(push.NewRawInitialMessage(msg)); err != nil {
 			return err
 		}
 	}
@@ -256,7 +258,11 @@ func Action(c *cli.Context) error {
 	log.Infof("ticking every %s", interval)
 
 	defer func() {
-		if err = pusher.PushText("注意: WatchVuln 进程退出"); err != nil {
+		msg := "注意: WatchVuln 进程退出"
+		if err = textPusher.PushText(msg); err != nil {
+			log.Error(err)
+		}
+		if err = rawPusher.PushRaw(push.NewRawTextMessage(msg)); err != nil {
 			log.Error(err)
 		}
 		time.Sleep(time.Second)
@@ -317,10 +323,13 @@ func Action(c *cli.Context) error {
 						continue
 					}
 					log.Infof("Pushing %s", v)
-					err = pusher.PushMarkdown(v.Title, push.RenderVulnInfo(v))
+					err = textPusher.PushMarkdown(v.Title, push.RenderVulnInfo(v))
 					if err != nil {
-						log.Errorf("send dingding msg error, %s", err)
-						break
+						log.Errorf("text-pusher send dingding msg error, %s", err)
+					}
+					err = rawPusher.PushRaw(push.NewRawVulnInfoMessage(v))
+					if err != nil {
+						log.Errorf("raw-pusher send dingding msg error, %s", err)
 					}
 				}
 			}
@@ -353,7 +362,7 @@ func initSources(c *cli.Context) ([]grab.Grabber, error) {
 	return grabs, nil
 }
 
-func initPusher(c *cli.Context) (push.Pusher, error) {
+func initPusher(c *cli.Context) (push.TextPusher, push.RawPusher, error) {
 	dingToken := c.String("dingding-access-token")
 	dingSecret := c.String("dingding-sign-secret")
 	wxWorkKey := c.String("wechatwork-key")
@@ -387,37 +396,38 @@ func initPusher(c *cli.Context) (push.Pusher, error) {
 	if os.Getenv("SERVERCHAN_KEY") != "" {
 		serverChanKey = os.Getenv("SERVERCHAN_KEY")
 	}
-	var pushers []push.Pusher
+	var textPusher []push.TextPusher
+	var rawPusher []push.RawPusher
 	if dingToken != "" && dingSecret != "" {
-		pushers = append(pushers, push.NewDingDing(dingToken, dingSecret))
+		textPusher = append(textPusher, push.NewDingDing(dingToken, dingSecret))
 	}
 	if larkToken != "" && larkSecret != "" {
-		pushers = append(pushers, push.NewLark(larkToken, larkSecret))
+		textPusher = append(textPusher, push.NewLark(larkToken, larkSecret))
 	}
 	if wxWorkKey != "" {
-		pushers = append(pushers, push.NewWechatWork(wxWorkKey))
+		textPusher = append(textPusher, push.NewWechatWork(wxWorkKey))
 	}
 	if webhook != "" {
-		pushers = append(pushers, push.NewWebhook(webhook))
+		rawPusher = append(rawPusher, push.NewWebhook(webhook))
 	}
 	if bark != "" {
 		deviceKeys := strings.Split(bark, "/")
 		deviceKey := deviceKeys[len(deviceKeys)-1]
 		url := strings.Replace(bark, deviceKey, "push", -1)
-		pushers = append(pushers, push.NewBark(url, deviceKey))
+		textPusher = append(textPusher, push.NewBark(url, deviceKey))
 	}
 	if serverChanKey != "" {
-		pushers = append(pushers, push.NewServerChan(serverChanKey))
+		textPusher = append(textPusher, push.NewServerChan(serverChanKey))
 	}
-	if len(pushers) == 0 {
+	if len(textPusher) == 0 && len(rawPusher) == 0 {
 		msg := `
 you must setup a pusher, eg: 
 use dingding: %s --dt DINGDING_ACCESS_TOKEN --ds DINGDING_SECRET
 use wechat:   %s --wk WECHATWORK_KEY
 use API:   %s --webhook WEBHOOK_URL`
-		return nil, fmt.Errorf(msg, os.Args[0], os.Args[0], os.Args[0])
+		return nil, nil, fmt.Errorf(msg, os.Args[0], os.Args[0], os.Args[0])
 	}
-	return push.Multi(pushers...), nil
+	return push.MultiTextPusher(textPusher...), push.MultiRawPusher(rawPusher...), nil
 }
 func initData(ctx context.Context, dbClient *ent.Client, grabber grab.Grabber) error {
 	pageSize := 100

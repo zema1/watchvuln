@@ -55,7 +55,7 @@ func RenderVulnInfo(v *grab.VulnInfo) string {
 	return builder.String()
 }
 
-func RenderInitialMsg(v *InitialMsg) string {
+func RenderInitialMsg(v *InitialMessage) string {
 	var builder strings.Builder
 	if err := initialMsgTpl.Execute(&builder, v); err != nil {
 		return err.Error()
@@ -63,9 +63,45 @@ func RenderInitialMsg(v *InitialMsg) string {
 	return builder.String()
 }
 
-type InitialMsg struct {
-	Version   string
-	VulnCount int
-	Interval  string
-	Provider  []*grab.Provider
+type InitialMessage struct {
+	Version   string           `json:"version"`
+	VulnCount int              `json:"vuln_count"`
+	Interval  string           `json:"interval"`
+	Provider  []*grab.Provider `json:"provider"`
+}
+
+type TextMessage struct {
+	Message string `json:"message"`
+}
+
+const (
+	RawMessageTypeInitial  = "watchvuln-initial"
+	RawMessageTypeText     = "watchvuln-text"
+	RawMessageTypeVulnInfo = "watchvuln-vulninfo"
+)
+
+type RawMessage struct {
+	Content any    `json:"content"`
+	Type    string `json:"type"`
+}
+
+func NewRawInitialMessage(m *InitialMessage) *RawMessage {
+	return &RawMessage{
+		Content: m,
+		Type:    RawMessageTypeInitial,
+	}
+}
+
+func NewRawTextMessage(m string) *RawMessage {
+	return &RawMessage{
+		Content: &TextMessage{Message: m},
+		Type:    RawMessageTypeText,
+	}
+}
+
+func NewRawVulnInfoMessage(m *grab.VulnInfo) *RawMessage {
+	return &RawMessage{
+		Content: m,
+		Type:    RawMessageTypeVulnInfo,
+	}
 }

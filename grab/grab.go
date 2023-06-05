@@ -46,9 +46,9 @@ func (v *VulnInfo) String() string {
 }
 
 type Provider struct {
-	Name        string
-	DisplayName string
-	Link        string
+	Name        string `json:"name"`
+	DisplayName string `json:"display_name"`
+	Link        string `json:"link"`
 }
 
 type Grabber interface {

@@ -6,14 +6,14 @@ import (
 	serverchan "github.com/rayepeng/serverchan"
 )
 
-var _ = Pusher(&ServerChan{})
+var _ = TextPusher(&ServerChan{})
 
 type ServerChan struct {
 	client *serverchan.ServerChan
 	log    *golog.Logger
 }
 
-func NewServerChan(botKey string) Pusher {
+func NewServerChan(botKey string) TextPusher {
 	return &ServerChan{
 		client: serverchan.NewServerChan(botKey),
 		log:    golog.Child("[pusher-server-chan]"),

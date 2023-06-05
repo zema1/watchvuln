@@ -6,14 +6,14 @@ import (
 	wxworkbot "github.com/vimsucks/wxwork-bot-go"
 )
 
-var _ = Pusher(&WechatWork{})
+var _ = TextPusher(&WechatWork{})
 
 type WechatWork struct {
 	client *wxworkbot.WxWorkBot
 	log    *golog.Logger
 }
 
-func NewWechatWork(botKey string) Pusher {
+func NewWechatWork(botKey string) TextPusher {
 	return &WechatWork{
 		client: wxworkbot.New(botKey),
 		log:    golog.Child("[pusher-wechat-work]"),
