@@ -1,19 +1,20 @@
 ## v1.0.0 (2023.06.05)
 
 ### 新增
-- 增加 bark 推送支持， 感谢 [@freeAhao](https://github.com/freeAhao)
-- 
+
+- 增加 bark 推送支持， 感谢 [@freeAhao](https://github.com/freeAhao) 贡献
+- 重写 webhook 推送格式，改为原始数据推送，具体格式说明见 [examples/webhook](./examples/webhook)
+- avd 数据源增加利用情况的获取，如 `Poc已公开` `Exp已公开`
 
 ### 修复
 
-
+- 修复当某个数据源抓取错误时，其它数据源即使有新增也没有推送的问题
 
 ## v0.9.0 (2023.04.26)
 
 ### 修复
 
 - 推送非预期的不推送的问题
-
 
 ## v0.8.0 (2023.04.25)
 
@@ -62,7 +63,9 @@
 ### 新增
 
 -
+
 增加飞书群组机器人推送  [#2](https://github.com/zema1/watchvuln/issues/2) [#8](https://github.com/zema1/watchvuln/issues/8) [#11](https://github.com/zema1/watchvuln/issues/11)
+
 - 增加自定义 webhook 服务的方式 [#10](https://github.com/zema1/watchvuln/pull/10),
   感谢 [@lzskyline](https://github.com/lzskyline)
 - 增加漏洞等级和漏洞标签变更的支持，比如开始是低危，后面改成高危了也可以正常推送
