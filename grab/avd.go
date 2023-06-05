@@ -152,6 +152,7 @@ func (a *AVDCrawler) parseSingle(ctx context.Context, vulnLink string) (*VulnInf
 	disclosure := ""
 	avd := ""
 	var refs []string
+	var tags []string
 
 	// parse avd id
 	u, _ := url.Parse(vulnLink)
@@ -167,6 +168,11 @@ func (a *AVDCrawler) parseSingle(ctx context.Context, vulnLink string) (*VulnInf
 
 		if strings.HasPrefix(label, "CVE") {
 			cveID = value
+		} else if strings.HasPrefix(label, "利用情况") {
+			if value != "暂无" {
+				value = strings.ReplaceAll(value, " ", "")
+				tags = append(tags, value)
+			}
 		} else if strings.HasSuffix(label, "披露时间") {
 			disclosure = value
 		}
@@ -261,6 +267,7 @@ func (a *AVDCrawler) parseSingle(ctx context.Context, vulnLink string) (*VulnInf
 		References:  refs,
 		Solutions:   fixSteps,
 		From:        vulnLink,
+		Tags:        tags,
 		Creator:     a,
 	}
 	return data, nil
