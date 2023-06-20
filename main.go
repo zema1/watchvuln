@@ -4,22 +4,16 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/zema1/watchvuln/ctrl"
 	"os"
 	"os/signal"
 	"strings"
-	"sync"
 	"time"
 
-	entSql "entgo.io/ent/dialect/sql"
 	"github.com/kataras/golog"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
-	"github.com/zema1/watchvuln/ent"
-	"github.com/zema1/watchvuln/ent/migrate"
-	"github.com/zema1/watchvuln/ent/vulninformation"
-	"github.com/zema1/watchvuln/grab"
 	"github.com/zema1/watchvuln/push"
-	"golang.org/x/sync/errgroup"
 	"modernc.org/sqlite"
 )
 
@@ -29,8 +23,6 @@ func init() {
 
 var log = golog.Child("[main]")
 var Version = "v1.0.0"
-
-const MaxPageBase = 3
 
 func main() {
 	golog.Default.SetLevel("info")
@@ -134,6 +126,12 @@ func main() {
 			Category: "[Launch Options]",
 		},
 		&cli.BoolFlag{
+			Name:     "no-nuclei-search",
+			Aliases:  []string{"nu"},
+			Usage:    "don't search nuclei templates for every cve vuln",
+			Category: "[Launch Options]",
+		},
+		&cli.BoolFlag{
 			Name:     "debug",
 			Aliases:  []string{"d"},
 			Usage:    "set log level to debug, print more details",
@@ -167,13 +165,16 @@ func Action(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	grabbers, err := initSources(c)
-	if err != nil {
-		return err
+
+	sources := c.String("sources")
+	if os.Getenv("SOURCES") != "" {
+		sources = os.Getenv("SOURCES")
 	}
+	sourcesParts := strings.Split(sources, ",")
 
 	noStartMessage := c.Bool("no-start-message")
 	noFilter := c.Bool("no-filter")
+	noNucleiSearch := c.Bool("no-nuclei-search")
 	cveFilter := c.Bool("enable-cve-filter")
 	debug := c.Bool("debug")
 	iv := c.String("interval")
@@ -187,12 +188,15 @@ func Action(c *cli.Context) error {
 	if os.Getenv("NO_START_MESSAGE") != "" {
 		noStartMessage = true
 	}
+	if os.Getenv("NO_NUCLEI_SEARCH") != "" {
+		noNucleiSearch = true
+	}
 	if os.Getenv("ENABLE_CVE_FILTER") == "false" {
 		cveFilter = false
 	}
 
-	log.Infof("config: INTERVAL=%s, NO_FILTER=%v, NO_START_MESSAGE=%v, ENABLE_CVE_FILTER=%v",
-		iv, noFilter, noStartMessage, cveFilter)
+	log.Infof("config: INTERVAL=%s, NO_FILTER=%v, NO_START_MESSAGE=%v, NO_NUCLEI_SEARCH=%v, ENABLE_CVE_FILTER=%v",
+		iv, noFilter, noStartMessage, noNucleiSearch, cveFilter)
 
 	interval, err := time.ParseDuration(iv)
 	if err != nil {
@@ -201,165 +205,26 @@ func Action(c *cli.Context) error {
 	if interval.Minutes() < 1 && !debug {
 		return fmt.Errorf("interval is too small, at least 1m")
 	}
+	config := &ctrl.WatchVulnAppConfig{
+		DBConn:          "",
+		Sources:         sourcesParts,
+		Interval:        interval,
+		EnableCVEFilter: cveFilter,
+		NoStartMessage:  noStartMessage,
+		NoNucleiSearch:  noNucleiSearch,
+		NoFilter:        noFilter,
+		Version:         Version,
+	}
 
-	drv, err := entSql.Open("sqlite3", "file:vuln_v2.sqlite3?cache=shared&_pragma=foreign_keys(1)")
+	app, err := ctrl.NewApp(config, textPusher, rawPusher)
 	if err != nil {
-		return errors.Wrap(err, "failed opening connection to sqlite")
+		return errors.Wrap(err, "failed to create app")
 	}
-	db := drv.DB()
-	db.SetMaxOpenConns(1)
-	dbClient := ent.NewClient(ent.Driver(drv))
-
-	defer dbClient.Close()
-	if err := dbClient.Schema.Create(ctx, migrate.WithDropIndex(true), migrate.WithDropColumn(true)); err != nil {
-		return errors.Wrap(err, "failed creating schema resources")
+	defer app.Close()
+	if err = app.Run(ctx); err != nil {
+		return errors.Wrap(err, "failed to run app")
 	}
-
-	log.Infof("initialize local database..")
-	// 抓取前3页作为基准漏洞数据
-	eg, initCtx := errgroup.WithContext(ctx)
-	eg.SetLimit(len(grabbers))
-	for _, grabber := range grabbers {
-		grabber := grabber
-		eg.Go(func() error {
-			return initData(initCtx, dbClient, grabber)
-		})
-	}
-	err = eg.Wait()
-	if err != nil {
-		return errors.Wrap(err, "init data")
-	}
-	log.Infof("grabber finished successfully")
-
-	localCount, err := dbClient.VulnInformation.Query().Count(ctx)
-	if err != nil {
-		return err
-	}
-	log.Infof("system init finished, local database has %d vulns", localCount)
-	if !noStartMessage {
-		providers := make([]*grab.Provider, 0, 3)
-		for _, p := range grabbers {
-			providers = append(providers, p.ProviderInfo())
-		}
-		msg := &push.InitialMessage{
-			Version:   Version,
-			VulnCount: localCount,
-			Interval:  interval.String(),
-			Provider:  providers,
-		}
-		if err := textPusher.PushMarkdown("WatchVuln 初始化完成", push.RenderInitialMsg(msg)); err != nil {
-			return err
-		}
-		if err := rawPusher.PushRaw(push.NewRawInitialMessage(msg)); err != nil {
-			return err
-		}
-	}
-
-	log.Infof("ticking every %s", interval)
-
-	defer func() {
-		msg := "注意: WatchVuln 进程退出"
-		if err = textPusher.PushText(msg); err != nil {
-			log.Error(err)
-		}
-		if err = rawPusher.PushRaw(push.NewRawTextMessage(msg)); err != nil {
-			log.Error(err)
-		}
-		time.Sleep(time.Second)
-	}()
-
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-	for {
-		log.Infof("next checking at %s\n", time.Now().Add(interval).Format("2006-01-02 15:04:05"))
-
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-ticker.C:
-			hour := time.Now().Hour()
-			if hour >= 0 && hour < 7 {
-				// we must sleep in this time
-				log.Infof("sleeping..")
-				continue
-			}
-
-			vulns, err := collectUpdate(ctx, dbClient, grabbers)
-			if err != nil {
-				log.Errorf("failed to get updates, %s", err)
-			}
-			log.Infof("found %d new vulns in this ticking", len(vulns))
-			for _, v := range vulns {
-				if noFilter || v.Creator.IsValuable(v) {
-					dbVuln, err := dbClient.VulnInformation.Query().Where(vulninformation.Key(v.UniqueKey)).First(ctx)
-					if err != nil {
-						log.Errorf("failed to query %s from db %s", v.UniqueKey, err)
-						continue
-					}
-					if dbVuln.Pushed {
-						log.Infof("%s has been pushed, skipped", v)
-						continue
-					}
-					if v.CVE != "" && cveFilter {
-						// 同一个 cve 已经有其它源推送过了
-						others, err := dbClient.VulnInformation.Query().
-							Where(vulninformation.And(vulninformation.Cve(v.CVE), vulninformation.Pushed(true))).All(ctx)
-						if err != nil {
-							log.Errorf("failed to query %s from db %s", v.UniqueKey, err)
-							continue
-						}
-						if len(others) != 0 {
-							ids := make([]string, 0, len(others))
-							for _, o := range others {
-								ids = append(ids, o.Key)
-							}
-							log.Infof("found new cve but other source has already pushed, others: %v", ids)
-							continue
-						}
-					}
-					_, err = dbVuln.Update().SetPushed(true).Save(ctx)
-					if err != nil {
-						log.Errorf("failed to save pushed %s status, %s", v.UniqueKey, err)
-						continue
-					}
-					log.Infof("Pushing %s", v)
-					err = textPusher.PushMarkdown(v.Title, push.RenderVulnInfo(v))
-					if err != nil {
-						log.Errorf("text-pusher send dingding msg error, %s", err)
-					}
-					err = rawPusher.PushRaw(push.NewRawVulnInfoMessage(v))
-					if err != nil {
-						log.Errorf("raw-pusher send dingding msg error, %s", err)
-					}
-				}
-			}
-		}
-	}
-}
-
-func initSources(c *cli.Context) ([]grab.Grabber, error) {
-	sources := c.String("sources")
-	if os.Getenv("SOURCES") != "" {
-		sources = os.Getenv("SOURCES")
-	}
-	parts := strings.Split(sources, ",")
-	var grabs []grab.Grabber
-	for _, part := range parts {
-		part = strings.ToLower(strings.TrimSpace(part))
-		switch part {
-		case "avd":
-			grabs = append(grabs, grab.NewAVDCrawler())
-		case "ti":
-			grabs = append(grabs, grab.NewTiCrawler())
-		case "oscs":
-			grabs = append(grabs, grab.NewOSCSCrawler())
-		case "seebug":
-			grabs = append(grabs, grab.NewSeebugCrawler())
-		default:
-			return nil, fmt.Errorf("invalid grab source %s", part)
-		}
-	}
-	return grabs, nil
+	return nil
 }
 
 func initPusher(c *cli.Context) (push.TextPusher, push.RawPusher, error) {
@@ -428,168 +293,6 @@ use API:   %s --webhook WEBHOOK_URL`
 		return nil, nil, fmt.Errorf(msg, os.Args[0], os.Args[0], os.Args[0])
 	}
 	return push.MultiTextPusher(textPusher...), push.MultiRawPusher(rawPusher...), nil
-}
-func initData(ctx context.Context, dbClient *ent.Client, grabber grab.Grabber) error {
-	pageSize := 100
-	source := grabber.ProviderInfo()
-	total, err := grabber.GetPageCount(ctx, pageSize)
-	if err != nil {
-		return nil
-	}
-	if total == 0 {
-		return fmt.Errorf("%s got unexpected zero page", source.Name)
-	}
-	if total > MaxPageBase {
-		total = MaxPageBase
-	}
-	log.Infof("start grab %s, total page: %d", source.Name, total)
-
-	eg, ctx := errgroup.WithContext(ctx)
-	eg.SetLimit(total)
-
-	for i := 1; i <= total; i++ {
-		i := i
-		eg.Go(func() error {
-			dataChan, err := grabber.ParsePage(ctx, i, pageSize)
-			if err != nil {
-				return err
-			}
-			for data := range dataChan {
-				if _, err = createOrUpdate(ctx, dbClient, source, data); err != nil {
-					return errors.Wrap(err, data.String())
-				}
-			}
-			return nil
-		})
-	}
-	err = eg.Wait()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func collectUpdate(ctx context.Context, dbClient *ent.Client, grabbers []grab.Grabber) ([]*grab.VulnInfo, error) {
-	pageSize := 10
-	eg, ctx := errgroup.WithContext(ctx)
-	eg.SetLimit(len(grabbers))
-
-	var mu sync.Mutex
-	var newVulns []*grab.VulnInfo
-
-	for _, grabber := range grabbers {
-		grabber := grabber
-		eg.Go(func() error {
-			source := grabber.ProviderInfo()
-			pageCount, err := grabber.GetPageCount(ctx, pageSize)
-			if err != nil {
-				return err
-			}
-			if pageCount > MaxPageBase {
-				pageCount = MaxPageBase
-			}
-			for i := 1; i <= pageCount; i++ {
-				dataChan, err := grabber.ParsePage(ctx, i, pageSize)
-				if err != nil {
-					return err
-				}
-				hasNewVuln := false
-
-				for data := range dataChan {
-					isNewVuln, err := createOrUpdate(ctx, dbClient, source, data)
-					if err != nil {
-						return err
-					}
-					if isNewVuln {
-						log.Infof("found new vuln: %s", data)
-						mu.Lock()
-						newVulns = append(newVulns, data)
-						mu.Unlock()
-						hasNewVuln = true
-					}
-				}
-
-				// 如果一整页漏洞都是旧的，说明没有更新，不必再继续下一页了
-				if !hasNewVuln {
-					return nil
-				}
-			}
-			return nil
-		})
-	}
-	err := eg.Wait()
-	return newVulns, err
-}
-
-func createOrUpdate(ctx context.Context, dbClient *ent.Client, source *grab.Provider, data *grab.VulnInfo) (bool, error) {
-	vuln, err := dbClient.VulnInformation.Query().
-		Where(vulninformation.Key(data.UniqueKey)).
-		First(ctx)
-	// not exist
-	if err != nil {
-		data.Reason = append(data.Reason, grab.ReasonNewCreated)
-		newVuln, err := dbClient.VulnInformation.
-			Create().
-			SetKey(data.UniqueKey).
-			SetTitle(data.Title).
-			SetDescription(data.Description).
-			SetSeverity(string(data.Severity)).
-			SetCve(data.CVE).
-			SetDisclosure(data.Disclosure).
-			SetSolutions(data.Solutions).
-			SetReferences(data.References).
-			SetPushed(false).
-			SetTags(data.Tags).
-			SetFrom(data.From).
-			Save(ctx)
-		if err != nil {
-			return false, err
-		}
-		log.Debugf("vuln %d created from %s %s", newVuln.ID, newVuln.Key, source.Name)
-		return true, nil
-	}
-
-	// 如果一个漏洞之前是低危，后来改成了严重，这种可能也需要推送, 走一下高价值的判断逻辑
-	asNewVuln := false
-	if string(data.Severity) != vuln.Severity {
-		log.Infof("%s from %s change severity from %s to %s", data.Title, data.From, vuln.Severity, data.Severity)
-		data.Reason = append(data.Reason, fmt.Sprintf("%s: %s => %s", grab.ReasonSeverityUpdated, vuln.Severity, data.Severity))
-		asNewVuln = true
-	}
-	for _, newTag := range data.Tags {
-		found := false
-		for _, dbTag := range vuln.Tags {
-			if newTag == dbTag {
-				found = true
-				break
-			}
-		}
-		// tag 有更新
-		if !found {
-			log.Infof("%s from %s add new tag %s", data.Title, data.From, newTag)
-			data.Reason = append(data.Reason, fmt.Sprintf("%s: %v => %v", grab.ReasonTagUpdated, vuln.Tags, data.Tags))
-			asNewVuln = true
-			break
-		}
-	}
-
-	// update
-	newVuln, err := vuln.Update().SetKey(data.UniqueKey).
-		SetTitle(data.Title).
-		SetDescription(data.Description).
-		SetSeverity(string(data.Severity)).
-		SetCve(data.CVE).
-		SetDisclosure(data.Disclosure).
-		SetSolutions(data.Solutions).
-		SetReferences(data.References).
-		SetTags(data.Tags).
-		SetFrom(data.From).
-		Save(ctx)
-	if err != nil {
-		return false, err
-	}
-	log.Debugf("vuln %d updated from %s %s", newVuln.ID, newVuln.Key, source.Name)
-	return asNewVuln, nil
 }
 
 func signalCtx() (context.Context, func()) {
