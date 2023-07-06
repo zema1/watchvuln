@@ -3,6 +3,8 @@
 package vulninformation
 
 import (
+	"time"
+
 	"entgo.io/ent/dialect/sql"
 )
 
@@ -29,10 +31,16 @@ const (
 	FieldReferences = "references"
 	// FieldTags holds the string denoting the tags field in the database.
 	FieldTags = "tags"
+	// FieldGithubSearch holds the string denoting the github_search field in the database.
+	FieldGithubSearch = "github_search"
 	// FieldFrom holds the string denoting the from field in the database.
 	FieldFrom = "from"
 	// FieldPushed holds the string denoting the pushed field in the database.
 	FieldPushed = "pushed"
+	// FieldCreateTime holds the string denoting the create_time field in the database.
+	FieldCreateTime = "create_time"
+	// FieldUpdateTime holds the string denoting the update_time field in the database.
+	FieldUpdateTime = "update_time"
 	// Table holds the table name of the vulninformation in the database.
 	Table = "vuln_informations"
 )
@@ -49,8 +57,11 @@ var Columns = []string{
 	FieldSolutions,
 	FieldReferences,
 	FieldTags,
+	FieldGithubSearch,
 	FieldFrom,
 	FieldPushed,
+	FieldCreateTime,
+	FieldUpdateTime,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -80,6 +91,12 @@ var (
 	DefaultFrom string
 	// DefaultPushed holds the default value on creation for the "pushed" field.
 	DefaultPushed bool
+	// DefaultCreateTime holds the default value on creation for the "create_time" field.
+	DefaultCreateTime func() time.Time
+	// DefaultUpdateTime holds the default value on creation for the "update_time" field.
+	DefaultUpdateTime func() time.Time
+	// UpdateDefaultUpdateTime holds the default value on update for the "update_time" field.
+	UpdateDefaultUpdateTime func() time.Time
 )
 
 // Order defines the ordering method for the VulnInformation queries.
@@ -133,4 +150,14 @@ func ByFrom(opts ...sql.OrderTermOption) Order {
 // ByPushed orders the results by the pushed field.
 func ByPushed(opts ...sql.OrderTermOption) Order {
 	return sql.OrderByField(FieldPushed, opts...).ToFunc()
+}
+
+// ByCreateTime orders the results by the create_time field.
+func ByCreateTime(opts ...sql.OrderTermOption) Order {
+	return sql.OrderByField(FieldCreateTime, opts...).ToFunc()
+}
+
+// ByUpdateTime orders the results by the update_time field.
+func ByUpdateTime(opts ...sql.OrderTermOption) Order {
+	return sql.OrderByField(FieldUpdateTime, opts...).ToFunc()
 }

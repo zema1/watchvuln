@@ -3,6 +3,8 @@
 package vulninformation
 
 import (
+	"time"
+
 	"entgo.io/ent/dialect/sql"
 	"github.com/zema1/watchvuln/ent/predicate"
 )
@@ -95,6 +97,16 @@ func From(v string) predicate.VulnInformation {
 // Pushed applies equality check predicate on the "pushed" field. It's identical to PushedEQ.
 func Pushed(v bool) predicate.VulnInformation {
 	return predicate.VulnInformation(sql.FieldEQ(FieldPushed, v))
+}
+
+// CreateTime applies equality check predicate on the "create_time" field. It's identical to CreateTimeEQ.
+func CreateTime(v time.Time) predicate.VulnInformation {
+	return predicate.VulnInformation(sql.FieldEQ(FieldCreateTime, v))
+}
+
+// UpdateTime applies equality check predicate on the "update_time" field. It's identical to UpdateTimeEQ.
+func UpdateTime(v time.Time) predicate.VulnInformation {
+	return predicate.VulnInformation(sql.FieldEQ(FieldUpdateTime, v))
 }
 
 // KeyEQ applies the EQ predicate on the "key" field.
@@ -572,6 +584,16 @@ func TagsNotNil() predicate.VulnInformation {
 	return predicate.VulnInformation(sql.FieldNotNull(FieldTags))
 }
 
+// GithubSearchIsNil applies the IsNil predicate on the "github_search" field.
+func GithubSearchIsNil() predicate.VulnInformation {
+	return predicate.VulnInformation(sql.FieldIsNull(FieldGithubSearch))
+}
+
+// GithubSearchNotNil applies the NotNil predicate on the "github_search" field.
+func GithubSearchNotNil() predicate.VulnInformation {
+	return predicate.VulnInformation(sql.FieldNotNull(FieldGithubSearch))
+}
+
 // FromEQ applies the EQ predicate on the "from" field.
 func FromEQ(v string) predicate.VulnInformation {
 	return predicate.VulnInformation(sql.FieldEQ(FieldFrom, v))
@@ -645,6 +667,86 @@ func PushedEQ(v bool) predicate.VulnInformation {
 // PushedNEQ applies the NEQ predicate on the "pushed" field.
 func PushedNEQ(v bool) predicate.VulnInformation {
 	return predicate.VulnInformation(sql.FieldNEQ(FieldPushed, v))
+}
+
+// CreateTimeEQ applies the EQ predicate on the "create_time" field.
+func CreateTimeEQ(v time.Time) predicate.VulnInformation {
+	return predicate.VulnInformation(sql.FieldEQ(FieldCreateTime, v))
+}
+
+// CreateTimeNEQ applies the NEQ predicate on the "create_time" field.
+func CreateTimeNEQ(v time.Time) predicate.VulnInformation {
+	return predicate.VulnInformation(sql.FieldNEQ(FieldCreateTime, v))
+}
+
+// CreateTimeIn applies the In predicate on the "create_time" field.
+func CreateTimeIn(vs ...time.Time) predicate.VulnInformation {
+	return predicate.VulnInformation(sql.FieldIn(FieldCreateTime, vs...))
+}
+
+// CreateTimeNotIn applies the NotIn predicate on the "create_time" field.
+func CreateTimeNotIn(vs ...time.Time) predicate.VulnInformation {
+	return predicate.VulnInformation(sql.FieldNotIn(FieldCreateTime, vs...))
+}
+
+// CreateTimeGT applies the GT predicate on the "create_time" field.
+func CreateTimeGT(v time.Time) predicate.VulnInformation {
+	return predicate.VulnInformation(sql.FieldGT(FieldCreateTime, v))
+}
+
+// CreateTimeGTE applies the GTE predicate on the "create_time" field.
+func CreateTimeGTE(v time.Time) predicate.VulnInformation {
+	return predicate.VulnInformation(sql.FieldGTE(FieldCreateTime, v))
+}
+
+// CreateTimeLT applies the LT predicate on the "create_time" field.
+func CreateTimeLT(v time.Time) predicate.VulnInformation {
+	return predicate.VulnInformation(sql.FieldLT(FieldCreateTime, v))
+}
+
+// CreateTimeLTE applies the LTE predicate on the "create_time" field.
+func CreateTimeLTE(v time.Time) predicate.VulnInformation {
+	return predicate.VulnInformation(sql.FieldLTE(FieldCreateTime, v))
+}
+
+// UpdateTimeEQ applies the EQ predicate on the "update_time" field.
+func UpdateTimeEQ(v time.Time) predicate.VulnInformation {
+	return predicate.VulnInformation(sql.FieldEQ(FieldUpdateTime, v))
+}
+
+// UpdateTimeNEQ applies the NEQ predicate on the "update_time" field.
+func UpdateTimeNEQ(v time.Time) predicate.VulnInformation {
+	return predicate.VulnInformation(sql.FieldNEQ(FieldUpdateTime, v))
+}
+
+// UpdateTimeIn applies the In predicate on the "update_time" field.
+func UpdateTimeIn(vs ...time.Time) predicate.VulnInformation {
+	return predicate.VulnInformation(sql.FieldIn(FieldUpdateTime, vs...))
+}
+
+// UpdateTimeNotIn applies the NotIn predicate on the "update_time" field.
+func UpdateTimeNotIn(vs ...time.Time) predicate.VulnInformation {
+	return predicate.VulnInformation(sql.FieldNotIn(FieldUpdateTime, vs...))
+}
+
+// UpdateTimeGT applies the GT predicate on the "update_time" field.
+func UpdateTimeGT(v time.Time) predicate.VulnInformation {
+	return predicate.VulnInformation(sql.FieldGT(FieldUpdateTime, v))
+}
+
+// UpdateTimeGTE applies the GTE predicate on the "update_time" field.
+func UpdateTimeGTE(v time.Time) predicate.VulnInformation {
+	return predicate.VulnInformation(sql.FieldGTE(FieldUpdateTime, v))
+}
+
+// UpdateTimeLT applies the LT predicate on the "update_time" field.
+func UpdateTimeLT(v time.Time) predicate.VulnInformation {
+	return predicate.VulnInformation(sql.FieldLT(FieldUpdateTime, v))
+}
+
+// UpdateTimeLTE applies the LTE predicate on the "update_time" field.
+func UpdateTimeLTE(v time.Time) predicate.VulnInformation {
+	return predicate.VulnInformation(sql.FieldLTE(FieldUpdateTime, v))
 }
 
 // And groups predicates with the AND operator between them.

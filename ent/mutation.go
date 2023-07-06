@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -29,26 +30,30 @@ const (
 // VulnInformationMutation represents an operation that mutates the VulnInformation nodes in the graph.
 type VulnInformationMutation struct {
 	config
-	op               Op
-	typ              string
-	id               *int
-	key              *string
-	title            *string
-	description      *string
-	severity         *string
-	cve              *string
-	disclosure       *string
-	solutions        *string
-	references       *[]string
-	appendreferences []string
-	tags             *[]string
-	appendtags       []string
-	from             *string
-	pushed           *bool
-	clearedFields    map[string]struct{}
-	done             bool
-	oldValue         func(context.Context) (*VulnInformation, error)
-	predicates       []predicate.VulnInformation
+	op                  Op
+	typ                 string
+	id                  *int
+	key                 *string
+	title               *string
+	description         *string
+	severity            *string
+	cve                 *string
+	disclosure          *string
+	solutions           *string
+	references          *[]string
+	appendreferences    []string
+	tags                *[]string
+	appendtags          []string
+	github_search       *[]string
+	appendgithub_search []string
+	from                *string
+	pushed              *bool
+	create_time         *time.Time
+	update_time         *time.Time
+	clearedFields       map[string]struct{}
+	done                bool
+	oldValue            func(context.Context) (*VulnInformation, error)
+	predicates          []predicate.VulnInformation
 }
 
 var _ ent.Mutation = (*VulnInformationMutation)(nil)
@@ -531,6 +536,71 @@ func (m *VulnInformationMutation) ResetTags() {
 	delete(m.clearedFields, vulninformation.FieldTags)
 }
 
+// SetGithubSearch sets the "github_search" field.
+func (m *VulnInformationMutation) SetGithubSearch(s []string) {
+	m.github_search = &s
+	m.appendgithub_search = nil
+}
+
+// GithubSearch returns the value of the "github_search" field in the mutation.
+func (m *VulnInformationMutation) GithubSearch() (r []string, exists bool) {
+	v := m.github_search
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGithubSearch returns the old "github_search" field's value of the VulnInformation entity.
+// If the VulnInformation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VulnInformationMutation) OldGithubSearch(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGithubSearch is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGithubSearch requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGithubSearch: %w", err)
+	}
+	return oldValue.GithubSearch, nil
+}
+
+// AppendGithubSearch adds s to the "github_search" field.
+func (m *VulnInformationMutation) AppendGithubSearch(s []string) {
+	m.appendgithub_search = append(m.appendgithub_search, s...)
+}
+
+// AppendedGithubSearch returns the list of values that were appended to the "github_search" field in this mutation.
+func (m *VulnInformationMutation) AppendedGithubSearch() ([]string, bool) {
+	if len(m.appendgithub_search) == 0 {
+		return nil, false
+	}
+	return m.appendgithub_search, true
+}
+
+// ClearGithubSearch clears the value of the "github_search" field.
+func (m *VulnInformationMutation) ClearGithubSearch() {
+	m.github_search = nil
+	m.appendgithub_search = nil
+	m.clearedFields[vulninformation.FieldGithubSearch] = struct{}{}
+}
+
+// GithubSearchCleared returns if the "github_search" field was cleared in this mutation.
+func (m *VulnInformationMutation) GithubSearchCleared() bool {
+	_, ok := m.clearedFields[vulninformation.FieldGithubSearch]
+	return ok
+}
+
+// ResetGithubSearch resets all changes to the "github_search" field.
+func (m *VulnInformationMutation) ResetGithubSearch() {
+	m.github_search = nil
+	m.appendgithub_search = nil
+	delete(m.clearedFields, vulninformation.FieldGithubSearch)
+}
+
 // SetFrom sets the "from" field.
 func (m *VulnInformationMutation) SetFrom(s string) {
 	m.from = &s
@@ -603,6 +673,78 @@ func (m *VulnInformationMutation) ResetPushed() {
 	m.pushed = nil
 }
 
+// SetCreateTime sets the "create_time" field.
+func (m *VulnInformationMutation) SetCreateTime(t time.Time) {
+	m.create_time = &t
+}
+
+// CreateTime returns the value of the "create_time" field in the mutation.
+func (m *VulnInformationMutation) CreateTime() (r time.Time, exists bool) {
+	v := m.create_time
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreateTime returns the old "create_time" field's value of the VulnInformation entity.
+// If the VulnInformation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VulnInformationMutation) OldCreateTime(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreateTime is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreateTime requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreateTime: %w", err)
+	}
+	return oldValue.CreateTime, nil
+}
+
+// ResetCreateTime resets all changes to the "create_time" field.
+func (m *VulnInformationMutation) ResetCreateTime() {
+	m.create_time = nil
+}
+
+// SetUpdateTime sets the "update_time" field.
+func (m *VulnInformationMutation) SetUpdateTime(t time.Time) {
+	m.update_time = &t
+}
+
+// UpdateTime returns the value of the "update_time" field in the mutation.
+func (m *VulnInformationMutation) UpdateTime() (r time.Time, exists bool) {
+	v := m.update_time
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdateTime returns the old "update_time" field's value of the VulnInformation entity.
+// If the VulnInformation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VulnInformationMutation) OldUpdateTime(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdateTime is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdateTime requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdateTime: %w", err)
+	}
+	return oldValue.UpdateTime, nil
+}
+
+// ResetUpdateTime resets all changes to the "update_time" field.
+func (m *VulnInformationMutation) ResetUpdateTime() {
+	m.update_time = nil
+}
+
 // Where appends a list predicates to the VulnInformationMutation builder.
 func (m *VulnInformationMutation) Where(ps ...predicate.VulnInformation) {
 	m.predicates = append(m.predicates, ps...)
@@ -637,7 +779,7 @@ func (m *VulnInformationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *VulnInformationMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 14)
 	if m.key != nil {
 		fields = append(fields, vulninformation.FieldKey)
 	}
@@ -665,11 +807,20 @@ func (m *VulnInformationMutation) Fields() []string {
 	if m.tags != nil {
 		fields = append(fields, vulninformation.FieldTags)
 	}
+	if m.github_search != nil {
+		fields = append(fields, vulninformation.FieldGithubSearch)
+	}
 	if m.from != nil {
 		fields = append(fields, vulninformation.FieldFrom)
 	}
 	if m.pushed != nil {
 		fields = append(fields, vulninformation.FieldPushed)
+	}
+	if m.create_time != nil {
+		fields = append(fields, vulninformation.FieldCreateTime)
+	}
+	if m.update_time != nil {
+		fields = append(fields, vulninformation.FieldUpdateTime)
 	}
 	return fields
 }
@@ -697,10 +848,16 @@ func (m *VulnInformationMutation) Field(name string) (ent.Value, bool) {
 		return m.References()
 	case vulninformation.FieldTags:
 		return m.Tags()
+	case vulninformation.FieldGithubSearch:
+		return m.GithubSearch()
 	case vulninformation.FieldFrom:
 		return m.From()
 	case vulninformation.FieldPushed:
 		return m.Pushed()
+	case vulninformation.FieldCreateTime:
+		return m.CreateTime()
+	case vulninformation.FieldUpdateTime:
+		return m.UpdateTime()
 	}
 	return nil, false
 }
@@ -728,10 +885,16 @@ func (m *VulnInformationMutation) OldField(ctx context.Context, name string) (en
 		return m.OldReferences(ctx)
 	case vulninformation.FieldTags:
 		return m.OldTags(ctx)
+	case vulninformation.FieldGithubSearch:
+		return m.OldGithubSearch(ctx)
 	case vulninformation.FieldFrom:
 		return m.OldFrom(ctx)
 	case vulninformation.FieldPushed:
 		return m.OldPushed(ctx)
+	case vulninformation.FieldCreateTime:
+		return m.OldCreateTime(ctx)
+	case vulninformation.FieldUpdateTime:
+		return m.OldUpdateTime(ctx)
 	}
 	return nil, fmt.Errorf("unknown VulnInformation field %s", name)
 }
@@ -804,6 +967,13 @@ func (m *VulnInformationMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetTags(v)
 		return nil
+	case vulninformation.FieldGithubSearch:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGithubSearch(v)
+		return nil
 	case vulninformation.FieldFrom:
 		v, ok := value.(string)
 		if !ok {
@@ -817,6 +987,20 @@ func (m *VulnInformationMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetPushed(v)
+		return nil
+	case vulninformation.FieldCreateTime:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreateTime(v)
+		return nil
+	case vulninformation.FieldUpdateTime:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdateTime(v)
 		return nil
 	}
 	return fmt.Errorf("unknown VulnInformation field %s", name)
@@ -854,6 +1038,9 @@ func (m *VulnInformationMutation) ClearedFields() []string {
 	if m.FieldCleared(vulninformation.FieldTags) {
 		fields = append(fields, vulninformation.FieldTags)
 	}
+	if m.FieldCleared(vulninformation.FieldGithubSearch) {
+		fields = append(fields, vulninformation.FieldGithubSearch)
+	}
 	return fields
 }
 
@@ -873,6 +1060,9 @@ func (m *VulnInformationMutation) ClearField(name string) error {
 		return nil
 	case vulninformation.FieldTags:
 		m.ClearTags()
+		return nil
+	case vulninformation.FieldGithubSearch:
+		m.ClearGithubSearch()
 		return nil
 	}
 	return fmt.Errorf("unknown VulnInformation nullable field %s", name)
@@ -909,11 +1099,20 @@ func (m *VulnInformationMutation) ResetField(name string) error {
 	case vulninformation.FieldTags:
 		m.ResetTags()
 		return nil
+	case vulninformation.FieldGithubSearch:
+		m.ResetGithubSearch()
+		return nil
 	case vulninformation.FieldFrom:
 		m.ResetFrom()
 		return nil
 	case vulninformation.FieldPushed:
 		m.ResetPushed()
+		return nil
+	case vulninformation.FieldCreateTime:
+		m.ResetCreateTime()
+		return nil
+	case vulninformation.FieldUpdateTime:
+		m.ResetUpdateTime()
 		return nil
 	}
 	return fmt.Errorf("unknown VulnInformation field %s", name)

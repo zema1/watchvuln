@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"github.com/zema1/watchvuln/ctrl"
 	"os"
@@ -14,12 +13,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
 	"github.com/zema1/watchvuln/push"
-	"modernc.org/sqlite"
 )
-
-func init() {
-	sql.Register("sqlite3", &sqlite.Driver{})
-}
 
 var log = golog.Child("[main]")
 var Version = "v1.0.0"
@@ -126,9 +120,9 @@ func main() {
 			Category: "[Launch Options]",
 		},
 		&cli.BoolFlag{
-			Name:     "no-nuclei-search",
-			Aliases:  []string{"nu"},
-			Usage:    "don't search nuclei templates for every cve vuln",
+			Name:     "no-github-search",
+			Aliases:  []string{"ng"},
+			Usage:    "don't search github repos and pull requests for every cve vuln",
 			Category: "[Launch Options]",
 		},
 		&cli.BoolFlag{
@@ -174,7 +168,7 @@ func Action(c *cli.Context) error {
 
 	noStartMessage := c.Bool("no-start-message")
 	noFilter := c.Bool("no-filter")
-	noNucleiSearch := c.Bool("no-nuclei-search")
+	noGithubSearch := c.Bool("no-github-search")
 	cveFilter := c.Bool("enable-cve-filter")
 	debug := c.Bool("debug")
 	iv := c.String("interval")
@@ -188,15 +182,15 @@ func Action(c *cli.Context) error {
 	if os.Getenv("NO_START_MESSAGE") != "" {
 		noStartMessage = true
 	}
-	if os.Getenv("NO_NUCLEI_SEARCH") != "" {
-		noNucleiSearch = true
+	if os.Getenv("NO_GITHUB_SEARCH") != "" {
+		noGithubSearch = true
 	}
 	if os.Getenv("ENABLE_CVE_FILTER") == "false" {
 		cveFilter = false
 	}
 
-	log.Infof("config: INTERVAL=%s, NO_FILTER=%v, NO_START_MESSAGE=%v, NO_NUCLEI_SEARCH=%v, ENABLE_CVE_FILTER=%v",
-		iv, noFilter, noStartMessage, noNucleiSearch, cveFilter)
+	log.Infof("config: INTERVAL=%s, NO_FILTER=%v, NO_START_MESSAGE=%v, NO_GITHUB_SEARCH=%v, ENABLE_CVE_FILTER=%v",
+		iv, noFilter, noStartMessage, noGithubSearch, cveFilter)
 
 	interval, err := time.ParseDuration(iv)
 	if err != nil {
@@ -211,7 +205,7 @@ func Action(c *cli.Context) error {
 		Interval:        interval,
 		EnableCVEFilter: cveFilter,
 		NoStartMessage:  noStartMessage,
-		NoNucleiSearch:  noNucleiSearch,
+		NoGithubSearch:  noGithubSearch,
 		NoFilter:        noFilter,
 		Version:         Version,
 	}
