@@ -3,6 +3,8 @@
 package ent
 
 import (
+	"time"
+
 	"github.com/zema1/watchvuln/ent/schema"
 	"github.com/zema1/watchvuln/ent/vulninformation"
 )
@@ -38,11 +40,21 @@ func init() {
 	// vulninformation.DefaultSolutions holds the default value on creation for the solutions field.
 	vulninformation.DefaultSolutions = vulninformationDescSolutions.Default.(string)
 	// vulninformationDescFrom is the schema descriptor for from field.
-	vulninformationDescFrom := vulninformationFields[9].Descriptor()
+	vulninformationDescFrom := vulninformationFields[10].Descriptor()
 	// vulninformation.DefaultFrom holds the default value on creation for the from field.
 	vulninformation.DefaultFrom = vulninformationDescFrom.Default.(string)
 	// vulninformationDescPushed is the schema descriptor for pushed field.
-	vulninformationDescPushed := vulninformationFields[10].Descriptor()
+	vulninformationDescPushed := vulninformationFields[11].Descriptor()
 	// vulninformation.DefaultPushed holds the default value on creation for the pushed field.
 	vulninformation.DefaultPushed = vulninformationDescPushed.Default.(bool)
+	// vulninformationDescCreateTime is the schema descriptor for create_time field.
+	vulninformationDescCreateTime := vulninformationFields[12].Descriptor()
+	// vulninformation.DefaultCreateTime holds the default value on creation for the create_time field.
+	vulninformation.DefaultCreateTime = vulninformationDescCreateTime.Default.(func() time.Time)
+	// vulninformationDescUpdateTime is the schema descriptor for update_time field.
+	vulninformationDescUpdateTime := vulninformationFields[13].Descriptor()
+	// vulninformation.DefaultUpdateTime holds the default value on creation for the update_time field.
+	vulninformation.DefaultUpdateTime = vulninformationDescUpdateTime.Default.(func() time.Time)
+	// vulninformation.UpdateDefaultUpdateTime holds the default value on update for the update_time field.
+	vulninformation.UpdateDefaultUpdateTime = vulninformationDescUpdateTime.UpdateDefault.(func() time.Time)
 }

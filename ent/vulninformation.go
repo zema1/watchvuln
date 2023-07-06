@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -35,10 +36,16 @@ type VulnInformation struct {
 	References []string `json:"references,omitempty"`
 	// Tags holds the value of the "tags" field.
 	Tags []string `json:"tags,omitempty"`
+	// GithubSearch holds the value of the "github_search" field.
+	GithubSearch []string `json:"github_search,omitempty"`
 	// From holds the value of the "from" field.
 	From string `json:"from,omitempty"`
 	// Pushed holds the value of the "pushed" field.
-	Pushed       bool `json:"pushed,omitempty"`
+	Pushed bool `json:"pushed,omitempty"`
+	// CreateTime holds the value of the "create_time" field.
+	CreateTime time.Time `json:"create_time,omitempty"`
+	// UpdateTime holds the value of the "update_time" field.
+	UpdateTime   time.Time `json:"update_time,omitempty"`
 	selectValues sql.SelectValues
 }
 
@@ -47,7 +54,7 @@ func (*VulnInformation) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case vulninformation.FieldReferences, vulninformation.FieldTags:
+		case vulninformation.FieldReferences, vulninformation.FieldTags, vulninformation.FieldGithubSearch:
 			values[i] = new([]byte)
 		case vulninformation.FieldPushed:
 			values[i] = new(sql.NullBool)
@@ -55,6 +62,8 @@ func (*VulnInformation) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case vulninformation.FieldKey, vulninformation.FieldTitle, vulninformation.FieldDescription, vulninformation.FieldSeverity, vulninformation.FieldCve, vulninformation.FieldDisclosure, vulninformation.FieldSolutions, vulninformation.FieldFrom:
 			values[i] = new(sql.NullString)
+		case vulninformation.FieldCreateTime, vulninformation.FieldUpdateTime:
+			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -134,6 +143,14 @@ func (vi *VulnInformation) assignValues(columns []string, values []any) error {
 					return fmt.Errorf("unmarshal field tags: %w", err)
 				}
 			}
+		case vulninformation.FieldGithubSearch:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field github_search", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &vi.GithubSearch); err != nil {
+					return fmt.Errorf("unmarshal field github_search: %w", err)
+				}
+			}
 		case vulninformation.FieldFrom:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field from", values[i])
@@ -145,6 +162,18 @@ func (vi *VulnInformation) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field pushed", values[i])
 			} else if value.Valid {
 				vi.Pushed = value.Bool
+			}
+		case vulninformation.FieldCreateTime:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field create_time", values[i])
+			} else if value.Valid {
+				vi.CreateTime = value.Time
+			}
+		case vulninformation.FieldUpdateTime:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field update_time", values[i])
+			} else if value.Valid {
+				vi.UpdateTime = value.Time
 			}
 		default:
 			vi.selectValues.Set(columns[i], values[i])
@@ -209,11 +238,20 @@ func (vi *VulnInformation) String() string {
 	builder.WriteString("tags=")
 	builder.WriteString(fmt.Sprintf("%v", vi.Tags))
 	builder.WriteString(", ")
+	builder.WriteString("github_search=")
+	builder.WriteString(fmt.Sprintf("%v", vi.GithubSearch))
+	builder.WriteString(", ")
 	builder.WriteString("from=")
 	builder.WriteString(vi.From)
 	builder.WriteString(", ")
 	builder.WriteString("pushed=")
 	builder.WriteString(fmt.Sprintf("%v", vi.Pushed))
+	builder.WriteString(", ")
+	builder.WriteString("create_time=")
+	builder.WriteString(vi.CreateTime.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("update_time=")
+	builder.WriteString(vi.UpdateTime.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

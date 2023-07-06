@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -123,6 +124,12 @@ func (vic *VulnInformationCreate) SetTags(s []string) *VulnInformationCreate {
 	return vic
 }
 
+// SetGithubSearch sets the "github_search" field.
+func (vic *VulnInformationCreate) SetGithubSearch(s []string) *VulnInformationCreate {
+	vic.mutation.SetGithubSearch(s)
+	return vic
+}
+
 // SetFrom sets the "from" field.
 func (vic *VulnInformationCreate) SetFrom(s string) *VulnInformationCreate {
 	vic.mutation.SetFrom(s)
@@ -147,6 +154,34 @@ func (vic *VulnInformationCreate) SetPushed(b bool) *VulnInformationCreate {
 func (vic *VulnInformationCreate) SetNillablePushed(b *bool) *VulnInformationCreate {
 	if b != nil {
 		vic.SetPushed(*b)
+	}
+	return vic
+}
+
+// SetCreateTime sets the "create_time" field.
+func (vic *VulnInformationCreate) SetCreateTime(t time.Time) *VulnInformationCreate {
+	vic.mutation.SetCreateTime(t)
+	return vic
+}
+
+// SetNillableCreateTime sets the "create_time" field if the given value is not nil.
+func (vic *VulnInformationCreate) SetNillableCreateTime(t *time.Time) *VulnInformationCreate {
+	if t != nil {
+		vic.SetCreateTime(*t)
+	}
+	return vic
+}
+
+// SetUpdateTime sets the "update_time" field.
+func (vic *VulnInformationCreate) SetUpdateTime(t time.Time) *VulnInformationCreate {
+	vic.mutation.SetUpdateTime(t)
+	return vic
+}
+
+// SetNillableUpdateTime sets the "update_time" field if the given value is not nil.
+func (vic *VulnInformationCreate) SetNillableUpdateTime(t *time.Time) *VulnInformationCreate {
+	if t != nil {
+		vic.SetUpdateTime(*t)
 	}
 	return vic
 }
@@ -218,6 +253,14 @@ func (vic *VulnInformationCreate) defaults() {
 		v := vulninformation.DefaultPushed
 		vic.mutation.SetPushed(v)
 	}
+	if _, ok := vic.mutation.CreateTime(); !ok {
+		v := vulninformation.DefaultCreateTime()
+		vic.mutation.SetCreateTime(v)
+	}
+	if _, ok := vic.mutation.UpdateTime(); !ok {
+		v := vulninformation.DefaultUpdateTime()
+		vic.mutation.SetUpdateTime(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -248,6 +291,12 @@ func (vic *VulnInformationCreate) check() error {
 	}
 	if _, ok := vic.mutation.Pushed(); !ok {
 		return &ValidationError{Name: "pushed", err: errors.New(`ent: missing required field "VulnInformation.pushed"`)}
+	}
+	if _, ok := vic.mutation.CreateTime(); !ok {
+		return &ValidationError{Name: "create_time", err: errors.New(`ent: missing required field "VulnInformation.create_time"`)}
+	}
+	if _, ok := vic.mutation.UpdateTime(); !ok {
+		return &ValidationError{Name: "update_time", err: errors.New(`ent: missing required field "VulnInformation.update_time"`)}
 	}
 	return nil
 }
@@ -312,6 +361,10 @@ func (vic *VulnInformationCreate) createSpec() (*VulnInformation, *sqlgraph.Crea
 		_spec.SetField(vulninformation.FieldTags, field.TypeJSON, value)
 		_node.Tags = value
 	}
+	if value, ok := vic.mutation.GithubSearch(); ok {
+		_spec.SetField(vulninformation.FieldGithubSearch, field.TypeJSON, value)
+		_node.GithubSearch = value
+	}
 	if value, ok := vic.mutation.From(); ok {
 		_spec.SetField(vulninformation.FieldFrom, field.TypeString, value)
 		_node.From = value
@@ -319,6 +372,14 @@ func (vic *VulnInformationCreate) createSpec() (*VulnInformation, *sqlgraph.Crea
 	if value, ok := vic.mutation.Pushed(); ok {
 		_spec.SetField(vulninformation.FieldPushed, field.TypeBool, value)
 		_node.Pushed = value
+	}
+	if value, ok := vic.mutation.CreateTime(); ok {
+		_spec.SetField(vulninformation.FieldCreateTime, field.TypeTime, value)
+		_node.CreateTime = value
+	}
+	if value, ok := vic.mutation.UpdateTime(); ok {
+		_spec.SetField(vulninformation.FieldUpdateTime, field.TypeTime, value)
+		_node.UpdateTime = value
 	}
 	return _node, _spec
 }
@@ -492,6 +553,24 @@ func (u *VulnInformationUpsert) ClearTags() *VulnInformationUpsert {
 	return u
 }
 
+// SetGithubSearch sets the "github_search" field.
+func (u *VulnInformationUpsert) SetGithubSearch(v []string) *VulnInformationUpsert {
+	u.Set(vulninformation.FieldGithubSearch, v)
+	return u
+}
+
+// UpdateGithubSearch sets the "github_search" field to the value that was provided on create.
+func (u *VulnInformationUpsert) UpdateGithubSearch() *VulnInformationUpsert {
+	u.SetExcluded(vulninformation.FieldGithubSearch)
+	return u
+}
+
+// ClearGithubSearch clears the value of the "github_search" field.
+func (u *VulnInformationUpsert) ClearGithubSearch() *VulnInformationUpsert {
+	u.SetNull(vulninformation.FieldGithubSearch)
+	return u
+}
+
 // SetFrom sets the "from" field.
 func (u *VulnInformationUpsert) SetFrom(v string) *VulnInformationUpsert {
 	u.Set(vulninformation.FieldFrom, v)
@@ -516,6 +595,18 @@ func (u *VulnInformationUpsert) UpdatePushed() *VulnInformationUpsert {
 	return u
 }
 
+// SetUpdateTime sets the "update_time" field.
+func (u *VulnInformationUpsert) SetUpdateTime(v time.Time) *VulnInformationUpsert {
+	u.Set(vulninformation.FieldUpdateTime, v)
+	return u
+}
+
+// UpdateUpdateTime sets the "update_time" field to the value that was provided on create.
+func (u *VulnInformationUpsert) UpdateUpdateTime() *VulnInformationUpsert {
+	u.SetExcluded(vulninformation.FieldUpdateTime)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
@@ -526,6 +617,11 @@ func (u *VulnInformationUpsert) UpdatePushed() *VulnInformationUpsert {
 //		Exec(ctx)
 func (u *VulnInformationUpsertOne) UpdateNewValues() *VulnInformationUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.CreateTime(); exists {
+			s.SetIgnore(vulninformation.FieldCreateTime)
+		}
+	}))
 	return u
 }
 
@@ -696,6 +792,27 @@ func (u *VulnInformationUpsertOne) ClearTags() *VulnInformationUpsertOne {
 	})
 }
 
+// SetGithubSearch sets the "github_search" field.
+func (u *VulnInformationUpsertOne) SetGithubSearch(v []string) *VulnInformationUpsertOne {
+	return u.Update(func(s *VulnInformationUpsert) {
+		s.SetGithubSearch(v)
+	})
+}
+
+// UpdateGithubSearch sets the "github_search" field to the value that was provided on create.
+func (u *VulnInformationUpsertOne) UpdateGithubSearch() *VulnInformationUpsertOne {
+	return u.Update(func(s *VulnInformationUpsert) {
+		s.UpdateGithubSearch()
+	})
+}
+
+// ClearGithubSearch clears the value of the "github_search" field.
+func (u *VulnInformationUpsertOne) ClearGithubSearch() *VulnInformationUpsertOne {
+	return u.Update(func(s *VulnInformationUpsert) {
+		s.ClearGithubSearch()
+	})
+}
+
 // SetFrom sets the "from" field.
 func (u *VulnInformationUpsertOne) SetFrom(v string) *VulnInformationUpsertOne {
 	return u.Update(func(s *VulnInformationUpsert) {
@@ -721,6 +838,20 @@ func (u *VulnInformationUpsertOne) SetPushed(v bool) *VulnInformationUpsertOne {
 func (u *VulnInformationUpsertOne) UpdatePushed() *VulnInformationUpsertOne {
 	return u.Update(func(s *VulnInformationUpsert) {
 		s.UpdatePushed()
+	})
+}
+
+// SetUpdateTime sets the "update_time" field.
+func (u *VulnInformationUpsertOne) SetUpdateTime(v time.Time) *VulnInformationUpsertOne {
+	return u.Update(func(s *VulnInformationUpsert) {
+		s.SetUpdateTime(v)
+	})
+}
+
+// UpdateUpdateTime sets the "update_time" field to the value that was provided on create.
+func (u *VulnInformationUpsertOne) UpdateUpdateTime() *VulnInformationUpsertOne {
+	return u.Update(func(s *VulnInformationUpsert) {
+		s.UpdateUpdateTime()
 	})
 }
 
@@ -894,6 +1025,13 @@ type VulnInformationUpsertBulk struct {
 //		Exec(ctx)
 func (u *VulnInformationUpsertBulk) UpdateNewValues() *VulnInformationUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.CreateTime(); exists {
+				s.SetIgnore(vulninformation.FieldCreateTime)
+			}
+		}
+	}))
 	return u
 }
 
@@ -1064,6 +1202,27 @@ func (u *VulnInformationUpsertBulk) ClearTags() *VulnInformationUpsertBulk {
 	})
 }
 
+// SetGithubSearch sets the "github_search" field.
+func (u *VulnInformationUpsertBulk) SetGithubSearch(v []string) *VulnInformationUpsertBulk {
+	return u.Update(func(s *VulnInformationUpsert) {
+		s.SetGithubSearch(v)
+	})
+}
+
+// UpdateGithubSearch sets the "github_search" field to the value that was provided on create.
+func (u *VulnInformationUpsertBulk) UpdateGithubSearch() *VulnInformationUpsertBulk {
+	return u.Update(func(s *VulnInformationUpsert) {
+		s.UpdateGithubSearch()
+	})
+}
+
+// ClearGithubSearch clears the value of the "github_search" field.
+func (u *VulnInformationUpsertBulk) ClearGithubSearch() *VulnInformationUpsertBulk {
+	return u.Update(func(s *VulnInformationUpsert) {
+		s.ClearGithubSearch()
+	})
+}
+
 // SetFrom sets the "from" field.
 func (u *VulnInformationUpsertBulk) SetFrom(v string) *VulnInformationUpsertBulk {
 	return u.Update(func(s *VulnInformationUpsert) {
@@ -1089,6 +1248,20 @@ func (u *VulnInformationUpsertBulk) SetPushed(v bool) *VulnInformationUpsertBulk
 func (u *VulnInformationUpsertBulk) UpdatePushed() *VulnInformationUpsertBulk {
 	return u.Update(func(s *VulnInformationUpsert) {
 		s.UpdatePushed()
+	})
+}
+
+// SetUpdateTime sets the "update_time" field.
+func (u *VulnInformationUpsertBulk) SetUpdateTime(v time.Time) *VulnInformationUpsertBulk {
+	return u.Update(func(s *VulnInformationUpsert) {
+		s.SetUpdateTime(v)
+	})
+}
+
+// UpdateUpdateTime sets the "update_time" field to the value that was provided on create.
+func (u *VulnInformationUpsertBulk) UpdateUpdateTime() *VulnInformationUpsertBulk {
+	return u.Update(func(s *VulnInformationUpsert) {
+		s.UpdateUpdateTime()
 	})
 }
 

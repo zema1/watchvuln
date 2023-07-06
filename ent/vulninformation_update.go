@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -154,6 +155,24 @@ func (viu *VulnInformationUpdate) ClearTags() *VulnInformationUpdate {
 	return viu
 }
 
+// SetGithubSearch sets the "github_search" field.
+func (viu *VulnInformationUpdate) SetGithubSearch(s []string) *VulnInformationUpdate {
+	viu.mutation.SetGithubSearch(s)
+	return viu
+}
+
+// AppendGithubSearch appends s to the "github_search" field.
+func (viu *VulnInformationUpdate) AppendGithubSearch(s []string) *VulnInformationUpdate {
+	viu.mutation.AppendGithubSearch(s)
+	return viu
+}
+
+// ClearGithubSearch clears the value of the "github_search" field.
+func (viu *VulnInformationUpdate) ClearGithubSearch() *VulnInformationUpdate {
+	viu.mutation.ClearGithubSearch()
+	return viu
+}
+
 // SetFrom sets the "from" field.
 func (viu *VulnInformationUpdate) SetFrom(s string) *VulnInformationUpdate {
 	viu.mutation.SetFrom(s)
@@ -182,6 +201,12 @@ func (viu *VulnInformationUpdate) SetNillablePushed(b *bool) *VulnInformationUpd
 	return viu
 }
 
+// SetUpdateTime sets the "update_time" field.
+func (viu *VulnInformationUpdate) SetUpdateTime(t time.Time) *VulnInformationUpdate {
+	viu.mutation.SetUpdateTime(t)
+	return viu
+}
+
 // Mutation returns the VulnInformationMutation object of the builder.
 func (viu *VulnInformationUpdate) Mutation() *VulnInformationMutation {
 	return viu.mutation
@@ -189,6 +214,7 @@ func (viu *VulnInformationUpdate) Mutation() *VulnInformationMutation {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (viu *VulnInformationUpdate) Save(ctx context.Context) (int, error) {
+	viu.defaults()
 	return withHooks[int, VulnInformationMutation](ctx, viu.sqlSave, viu.mutation, viu.hooks)
 }
 
@@ -211,6 +237,14 @@ func (viu *VulnInformationUpdate) Exec(ctx context.Context) error {
 func (viu *VulnInformationUpdate) ExecX(ctx context.Context) {
 	if err := viu.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (viu *VulnInformationUpdate) defaults() {
+	if _, ok := viu.mutation.UpdateTime(); !ok {
+		v := vulninformation.UpdateDefaultUpdateTime()
+		viu.mutation.SetUpdateTime(v)
 	}
 }
 
@@ -266,11 +300,25 @@ func (viu *VulnInformationUpdate) sqlSave(ctx context.Context) (n int, err error
 	if viu.mutation.TagsCleared() {
 		_spec.ClearField(vulninformation.FieldTags, field.TypeJSON)
 	}
+	if value, ok := viu.mutation.GithubSearch(); ok {
+		_spec.SetField(vulninformation.FieldGithubSearch, field.TypeJSON, value)
+	}
+	if value, ok := viu.mutation.AppendedGithubSearch(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, vulninformation.FieldGithubSearch, value)
+		})
+	}
+	if viu.mutation.GithubSearchCleared() {
+		_spec.ClearField(vulninformation.FieldGithubSearch, field.TypeJSON)
+	}
 	if value, ok := viu.mutation.From(); ok {
 		_spec.SetField(vulninformation.FieldFrom, field.TypeString, value)
 	}
 	if value, ok := viu.mutation.Pushed(); ok {
 		_spec.SetField(vulninformation.FieldPushed, field.TypeBool, value)
+	}
+	if value, ok := viu.mutation.UpdateTime(); ok {
+		_spec.SetField(vulninformation.FieldUpdateTime, field.TypeTime, value)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, viu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -418,6 +466,24 @@ func (viuo *VulnInformationUpdateOne) ClearTags() *VulnInformationUpdateOne {
 	return viuo
 }
 
+// SetGithubSearch sets the "github_search" field.
+func (viuo *VulnInformationUpdateOne) SetGithubSearch(s []string) *VulnInformationUpdateOne {
+	viuo.mutation.SetGithubSearch(s)
+	return viuo
+}
+
+// AppendGithubSearch appends s to the "github_search" field.
+func (viuo *VulnInformationUpdateOne) AppendGithubSearch(s []string) *VulnInformationUpdateOne {
+	viuo.mutation.AppendGithubSearch(s)
+	return viuo
+}
+
+// ClearGithubSearch clears the value of the "github_search" field.
+func (viuo *VulnInformationUpdateOne) ClearGithubSearch() *VulnInformationUpdateOne {
+	viuo.mutation.ClearGithubSearch()
+	return viuo
+}
+
 // SetFrom sets the "from" field.
 func (viuo *VulnInformationUpdateOne) SetFrom(s string) *VulnInformationUpdateOne {
 	viuo.mutation.SetFrom(s)
@@ -446,6 +512,12 @@ func (viuo *VulnInformationUpdateOne) SetNillablePushed(b *bool) *VulnInformatio
 	return viuo
 }
 
+// SetUpdateTime sets the "update_time" field.
+func (viuo *VulnInformationUpdateOne) SetUpdateTime(t time.Time) *VulnInformationUpdateOne {
+	viuo.mutation.SetUpdateTime(t)
+	return viuo
+}
+
 // Mutation returns the VulnInformationMutation object of the builder.
 func (viuo *VulnInformationUpdateOne) Mutation() *VulnInformationMutation {
 	return viuo.mutation
@@ -466,6 +538,7 @@ func (viuo *VulnInformationUpdateOne) Select(field string, fields ...string) *Vu
 
 // Save executes the query and returns the updated VulnInformation entity.
 func (viuo *VulnInformationUpdateOne) Save(ctx context.Context) (*VulnInformation, error) {
+	viuo.defaults()
 	return withHooks[*VulnInformation, VulnInformationMutation](ctx, viuo.sqlSave, viuo.mutation, viuo.hooks)
 }
 
@@ -488,6 +561,14 @@ func (viuo *VulnInformationUpdateOne) Exec(ctx context.Context) error {
 func (viuo *VulnInformationUpdateOne) ExecX(ctx context.Context) {
 	if err := viuo.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (viuo *VulnInformationUpdateOne) defaults() {
+	if _, ok := viuo.mutation.UpdateTime(); !ok {
+		v := vulninformation.UpdateDefaultUpdateTime()
+		viuo.mutation.SetUpdateTime(v)
 	}
 }
 
@@ -560,11 +641,25 @@ func (viuo *VulnInformationUpdateOne) sqlSave(ctx context.Context) (_node *VulnI
 	if viuo.mutation.TagsCleared() {
 		_spec.ClearField(vulninformation.FieldTags, field.TypeJSON)
 	}
+	if value, ok := viuo.mutation.GithubSearch(); ok {
+		_spec.SetField(vulninformation.FieldGithubSearch, field.TypeJSON, value)
+	}
+	if value, ok := viuo.mutation.AppendedGithubSearch(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, vulninformation.FieldGithubSearch, value)
+		})
+	}
+	if viuo.mutation.GithubSearchCleared() {
+		_spec.ClearField(vulninformation.FieldGithubSearch, field.TypeJSON)
+	}
 	if value, ok := viuo.mutation.From(); ok {
 		_spec.SetField(vulninformation.FieldFrom, field.TypeString, value)
 	}
 	if value, ok := viuo.mutation.Pushed(); ok {
 		_spec.SetField(vulninformation.FieldPushed, field.TypeBool, value)
+	}
+	if value, ok := viuo.mutation.UpdateTime(); ok {
+		_spec.SetField(vulninformation.FieldUpdateTime, field.TypeTime, value)
 	}
 	_node = &VulnInformation{config: viuo.config}
 	_spec.Assign = _node.assignValues

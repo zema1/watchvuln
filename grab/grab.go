@@ -26,17 +26,18 @@ const (
 )
 
 type VulnInfo struct {
-	UniqueKey   string        `json:"unique_key"`
-	Title       string        `json:"title"`
-	Description string        `json:"description"`
-	Severity    SeverityLevel `json:"severity"`
-	CVE         string        `json:"cve"`
-	Disclosure  string        `json:"disclosure"`
-	Solutions   string        `json:"solutions"`
-	References  []string      `json:"references"`
-	Tags        []string      `json:"tags"`
-	From        string        `json:"from"`
-	Reason      []string      `json:"reason"`
+	UniqueKey    string        `json:"unique_key"`
+	Title        string        `json:"title"`
+	Description  string        `json:"description"`
+	Severity     SeverityLevel `json:"severity"`
+	CVE          string        `json:"cve"`
+	Disclosure   string        `json:"disclosure"`
+	Solutions    string        `json:"solutions"`
+	GithubSearch []string      `json:"github_search"`
+	References   []string      `json:"references"`
+	Tags         []string      `json:"tags"`
+	From         string        `json:"from"`
+	Reason       []string      `json:"reason"`
 
 	Creator Grabber `json:"-"`
 }
