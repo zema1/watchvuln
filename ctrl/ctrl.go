@@ -2,6 +2,7 @@ package ctrl
 
 import (
 	"context"
+	"database/sql"
 	entSql "entgo.io/ent/dialect/sql"
 	"fmt"
 	"github.com/google/go-github/v53/github"
@@ -13,12 +14,17 @@ import (
 	"github.com/zema1/watchvuln/grab"
 	"github.com/zema1/watchvuln/push"
 	"golang.org/x/sync/errgroup"
+	"modernc.org/sqlite"
 	"net/http"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
 )
+
+func init() {
+	sql.Register("sqlite3", &sqlite.Driver{})
+}
 
 const MaxPageBase = 3
 
@@ -35,7 +41,7 @@ type WatchVulnApp struct {
 }
 
 func NewApp(config *WatchVulnAppConfig, textPusher push.TextPusher, rawPusher push.RawPusher) (*WatchVulnApp, error) {
-	drv, err := entSql.Open("sqlite3", "file:vuln_v2.sqlite3?cache=shared&_pragma=foreign_keys(1)")
+	drv, err := entSql.Open("sqlite3", "file:vuln_v3.sqlite3?cache=shared&_pragma=foreign_keys(1)")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed opening connection to sqlite")
 	}
@@ -68,7 +74,7 @@ func NewApp(config *WatchVulnAppConfig, textPusher push.TextPusher, rawPusher pu
 	tr := http.DefaultTransport.(*http.Transport).Clone()
 	tr.Proxy = http.ProxyFromEnvironment
 	githubClient := github.NewClient(&http.Client{
-		Timeout:   time.Second * 5,
+		Timeout:   time.Second * 10,
 		Transport: tr,
 	})
 
@@ -194,15 +200,15 @@ func (w *WatchVulnApp) Run(ctx context.Context) error {
 					}
 
 					// find cve pr in nuclei repo
-					if v.CVE != "" && !w.config.NoNucleiSearch {
-						links, err := w.findNucleiPRLink(ctx, v.CVE)
+					if v.CVE != "" && !w.config.NoGithubSearch {
+						links, err := w.FindGithubPoc(ctx, v.CVE)
 						if err != nil {
-							w.log.Warnf("failed to get nuclei link, %s", err)
+							w.log.Warn(err)
 						}
-						w.log.Infof("%s found %d prs from nuclei-templates", v.CVE, len(links))
+						w.log.Infof("%s found %d prs from github, %v", v.CVE, len(links), links)
 						if len(links) != 0 {
-							v.References = mergeUniqueString(v.References, links)
-							_, err = dbVuln.Update().SetReferences(v.References).Save(ctx)
+							v.GithubSearch = mergeUniqueString(v.GithubSearch, links)
+							_, err = dbVuln.Update().SetGithubSearch(v.GithubSearch).Save(ctx)
 							if err != nil {
 								w.log.Warnf("failed to save %s references,  %s", v.UniqueKey, err)
 							}
@@ -392,16 +398,75 @@ func (w *WatchVulnApp) createOrUpdate(ctx context.Context, source *grab.Provider
 	return asNewVuln, nil
 }
 
-func (w *WatchVulnApp) findNucleiPRLink(ctx context.Context, cveId string) ([]string, error) {
-	if w.prs == nil {
-		prs, _, err := w.githubClient.PullRequests.List(ctx, "projectdiscovery", "nuclei-templates", &github.PullRequestListOptions{
-			State:       "all",
-			ListOptions: github.ListOptions{Page: 1, PerPage: 100},
-		})
+func (w *WatchVulnApp) FindGithubPoc(ctx context.Context, cveId string) ([]string, error) {
+	var eg errgroup.Group
+	var results []string
+	var mu sync.Mutex
+
+	eg.Go(func() error {
+		links, err := w.findGithubRepo(ctx, cveId)
 		if err != nil {
-			return nil, err
+			return errors.Wrap(err, "find github repo")
 		}
-		w.prs = prs
+		mu.Lock()
+		defer mu.Unlock()
+		results = append(results, links...)
+		return nil
+	})
+	eg.Go(func() error {
+		links, err := w.findNucleiPR(ctx, cveId)
+		if err != nil {
+			return errors.Wrap(err, "find nuclei PR")
+		}
+		mu.Lock()
+		defer mu.Unlock()
+		results = append(results, links...)
+		return nil
+	})
+	err := eg.Wait()
+	return results, err
+}
+
+func (w *WatchVulnApp) findGithubRepo(ctx context.Context, cveId string) ([]string, error) {
+	lastYear := time.Now().AddDate(-1, 0, 0).Format("2006-01-02")
+	query := fmt.Sprintf(`language:Python language:JavaScript language:C language:C++ language:Java language:PHP language:Ruby language:Rust language:C# created:>%s %s`, lastYear, cveId)
+	result, _, err := w.githubClient.Search.Repositories(ctx, query, &github.SearchOptions{
+		ListOptions: github.ListOptions{Page: 1, PerPage: 100},
+	})
+	if err != nil {
+		return nil, err
+	}
+	var links []string
+	re, err := regexp.Compile(fmt.Sprintf(`(?)\b%s\b`, cveId))
+	if err != nil {
+		return nil, err
+	}
+	for _, repo := range result.Repositories {
+		if re.MatchString(repo.GetHTMLURL()) {
+			links = append(links, repo.GetHTMLURL())
+		}
+	}
+	return links, nil
+}
+
+func (w *WatchVulnApp) findNucleiPR(ctx context.Context, cveId string) ([]string, error) {
+	if w.prs == nil {
+		// 检查200个pr
+		for page := 1; page < 2; page++ {
+			prs, _, err := w.githubClient.PullRequests.List(ctx, "projectdiscovery", "nuclei-templates", &github.PullRequestListOptions{
+				State:       "all",
+				ListOptions: github.ListOptions{Page: page, PerPage: 100},
+			})
+			if err != nil {
+				if len(w.prs) == 0 {
+					return nil, err
+				} else {
+					w.log.Warnf("list nuclei pr failed: %v", err)
+					continue
+				}
+			}
+			w.prs = append(w.prs, prs...)
+		}
 	}
 
 	var links []string

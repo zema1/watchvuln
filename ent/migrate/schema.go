@@ -20,8 +20,11 @@ var (
 		{Name: "solutions", Type: field.TypeString, Default: ""},
 		{Name: "references", Type: field.TypeJSON, Nullable: true},
 		{Name: "tags", Type: field.TypeJSON, Nullable: true},
+		{Name: "github_search", Type: field.TypeJSON, Nullable: true},
 		{Name: "from", Type: field.TypeString, Default: ""},
 		{Name: "pushed", Type: field.TypeBool, Default: true},
+		{Name: "create_time", Type: field.TypeTime},
+		{Name: "update_time", Type: field.TypeTime},
 	}
 	// VulnInformationsTable holds the schema information for the "vuln_informations" table.
 	VulnInformationsTable = &schema.Table{
