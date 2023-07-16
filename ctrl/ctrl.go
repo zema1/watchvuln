@@ -30,7 +30,7 @@ func init() {
 	sql.Register("postgres", &stdlib.Driver{})
 }
 
-const MaxPageBase = 3
+const MaxPageBase = 2
 
 type WatchVulnApp struct {
 	config     *WatchVulnAppConfig
@@ -217,7 +217,7 @@ func (w *WatchVulnApp) Run(ctx context.Context) error {
 						}
 						w.log.Infof("%s found %d prs from github, %v", v.CVE, len(links), links)
 						if len(links) != 0 {
-							v.GithubSearch = mergeUniqueString(v.GithubSearch, links)
+							v.GithubSearch = grab.MergeUniqueString(v.GithubSearch, links)
 							_, err = dbVuln.Update().SetGithubSearch(v.GithubSearch).Save(ctx)
 							if err != nil {
 								w.log.Warnf("failed to save %s references,  %s", v.UniqueKey, err)
@@ -258,7 +258,7 @@ func (w *WatchVulnApp) initData(ctx context.Context, grabber grab.Grabber) error
 	if total > MaxPageBase {
 		total = MaxPageBase
 	}
-	w.log.Infof("start grab %s, total page: %d", source.Name, total)
+	w.log.Infof("start to grab %s, total page: %d", source.Name, total)
 
 	eg, ctx := errgroup.WithContext(ctx)
 	eg.SetLimit(total)
@@ -361,7 +361,7 @@ func (w *WatchVulnApp) createOrUpdate(ctx context.Context, source *grab.Provider
 		if err != nil {
 			return false, err
 		}
-		w.log.Debugf("vuln %d created from %s %s", newVuln.ID, newVuln.Key, source.Name)
+		w.log.Infof("vuln %s(%s) created from %s %s", newVuln.Title, newVuln.Key, source.Name)
 		return true, nil
 	}
 
@@ -490,19 +490,4 @@ func (w *WatchVulnApp) findNucleiPR(ctx context.Context, cveId string) ([]string
 		}
 	}
 	return links, nil
-}
-
-func mergeUniqueString(s1 []string, s2 []string) []string {
-	m := make(map[string]struct{}, len(s1)+len(s2))
-	for _, s := range s1 {
-		m[s] = struct{}{}
-	}
-	for _, s := range s2 {
-		m[s] = struct{}{}
-	}
-	res := make([]string, 0, len(m))
-	for k := range m {
-		res = append(res, k)
-	}
-	return res
 }

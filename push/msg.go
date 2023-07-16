@@ -17,7 +17,12 @@ const vulnInfoMsg = `
 - 推送原因: {{ range .Reason }}{{ . }} {{ end }}
 
 {{ if .Description }}### **漏洞描述**
-{{ .Description }}{{end}}
+{{ .Description }}{{ end }}
+
+{{ if .Solutions }}###  **修复方案**
+{{ .Solutions }}
+
+{{ end -}}
 
 {{ if .References }}### **参考链接**
 {{ range $i, $ref := .References }}{{ inc $i }}. [{{ $ref }}]({{ $ref }})
@@ -27,7 +32,7 @@ const vulnInfoMsg = `
 {{ if and .CVE }}### **开源检索**
 {{ if .GithubSearch }}{{ range $i, $ref := .GithubSearch }}{{ inc $i }}. [{{ $ref }}]({{ $ref }})
 {{ end }}
-{{else}}暂无
+{{else}}暂未找到
 {{ end -}}{{ end -}}
 `
 

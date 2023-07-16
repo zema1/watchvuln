@@ -18,6 +18,7 @@ func TestRenderVulnInfo(t *testing.T) {
 		Description:  "Pipreqs 存在任意代码执行漏洞，Pipreqs中的依赖项混淆允许攻击者通过将精心设计的 PyPI 包上传到所选存储库服务器来执行任意代码。",
 		GithubSearch: []string{"https://github.com/pipreqs/pipreqs/issues/1"},
 		References:   []string{"https://ti.qianxin.com/blog/articles/pipreqs-code-execution-vulnerability/"},
+		Solutions:    "1. 升级到最新版本\n2. 更新",
 	}
 	fmt.Println(RenderVulnInfo(v))
 	fmt.Println("============================")
@@ -33,5 +34,9 @@ func TestRenderVulnInfo(t *testing.T) {
 
 	fmt.Println("============================")
 	v.CVE = "CVE-2023-31543"
+	fmt.Println(RenderVulnInfo(v))
+
+	fmt.Println("============================")
+	v.Solutions = ""
 	fmt.Println(RenderVulnInfo(v))
 }

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/imroc/req/v3"
 	"github.com/kataras/golog"
+	"strings"
 	"time"
 )
 
@@ -184,11 +185,19 @@ func (t *OSCSCrawler) parseSingeVuln(ctx context.Context, mps string) (*VulnInfo
 		Disclosure:  disclosure,
 		References:  refs,
 		Tags:        nil,
-		Solutions:   "",
-		From:        t.ProviderInfo().Link,
+		Solutions:   t.buildSolution(data.SoulutionData),
+		From:        "https://www.oscs1024.com/hd/" + data.VulnNo,
 		Creator:     t,
 	}
 	return info, nil
+}
+
+func (t *OSCSCrawler) buildSolution(solution []string) string {
+	var builder strings.Builder
+	for i, s := range solution {
+		builder.WriteString(fmt.Sprintf("%d. %s\n", i+1, s))
+	}
+	return builder.String()
 }
 
 func (t *OSCSCrawler) buildListBody(page, size int) []byte {
