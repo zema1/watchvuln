@@ -1,3 +1,20 @@
+## v1.1.0 (2023.07.16)
+
+### 新增
+
+- 增加开源检索信息，CVE 漏洞推送时自动搜索 Github 仓库和 Nuclei
+  模板相关连接 [#38](https://github.com/zema1/watchvuln/issues/38)
+- 增加 `mysql` 和 `postgres` 数据库支持 [#36](https://github.com/zema1/watchvuln/issues/36)
+- 奇安信威胁情报中心(`ti`) 改为奇安信安全监测平台(`nox`) [#40](https://github.com/zema1/watchvuln/issues/40)
+- 增加漏洞修复方案的抓取和推送逻辑
+- 数据库表增加 `create_time` 和 `update_time` 字段
+- 重构控制器逻辑, 优化代码结构
+
+### 变更
+
+- 因 seebug 存在 waf，默认不再启用 seebug 数据源
+- 初始化时的 `pagesize` 从 100 改为 10
+
 ## v1.0.0 (2023.06.05)
 
 ### 新增

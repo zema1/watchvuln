@@ -9,11 +9,12 @@
 | 名称            | 地址                                    | 推送策略                                             |
 |---------------|---------------------------------------|--------------------------------------------------|
 | 阿里云漏洞库        | https://avd.aliyun.com/high-risk/list | 等级为高危或严重                                         |
-| OSCS开源安全情报预警  | https://www.oscs1024.com/cm           | 等级为严重**并且**包含 `预警` 标签                            |
-| 奇安信威胁情报中心     | https://ti.qianxin.com/vulnerability  | 等级为高危严重**并且**包含 `奇安信CERT验证` `POC公开` `技术细节公布`标签之一 |
-| 知道创宇Seebug漏洞库 | https://www.seebug.org/               | 等级为高危或严重                                         |
+| OSCS开源安全情报预警  | https://www.oscs1024.com/cm           | 等级为高危或严重**并且**包含 `预警` 标签                         |
+| 奇安信安全监测平台     | https://nox.qianxin.com/KeyPoint      | 等级为高危严重**并且**包含 `奇安信CERT验证` `POC公开` `技术细节公布`标签之一 |
+| 知道创宇Seebug漏洞库 | https://www.seebug.org/               | 存在 WAF，默认不启用，若手动启用，则推送等级为高危或严重                   |
 
-> 如果有侵权，请提交 issue, 我会删除相关源。
+> 所有信息来自网站公开页面, 如果有侵权，请提交 issue, 我会删除相关源。
+>
 > 如果有更好的信息源也可以反馈给我，需要能够响应及时 & 有办法过滤出有价值的漏洞
 
 具体来说，消息的推送有两种情况, 两种情况有内置去重，不会重复推送:
@@ -38,21 +39,22 @@
 
 Docker 方式推荐使用环境变量来配置服务参数
 
-| 环境变量名                   | 说明                                         | 默认值                  |
-|-------------------------|--------------------------------------------|----------------------|
-| `DINGDING_ACCESS_TOKEN` | 钉钉机器人 url 的 `access_token` 部分              |                      |
-| `DINGDING_SECRET`       | 钉钉机器人的加签值 （仅支持加签方式）                        |                      |
-| `LARK_ACCESS_TOKEN`     | 飞书机器人 url 的 `/open-apis/bot/v2/hook/` 后的部分 |                      |
-| `LARK_SECRET`           | 飞书机器人的加签值 （仅支持加签方式）                        |                      |
-| `WECHATWORK_KEY `       | 微信机器人 url 的 `key` 部分                       |                      |
-| `SERVERCHAN_KEY `       | Server酱的 `SCKEY`                           |                      |
-| `WEBHOOK_URL`           | 自定义 webhook 服务的完整 url                      |                      |
-| `BARK_URL`              | Bark 服务的完整 url, 路径需要包含 DeviceKey           |                      |
-| `SOURCES`               | 启用哪些漏洞信息源，逗号分隔, 可选 `avd`, `ti`, `oscs`     | `avd,ti,oscs,seebug` |
-| `INTERVAL`              | 检查周期，支持秒 `60s`, 分钟 `10m`, 小时 `1h`, 最低 `1m` | `30m`                |
-| `ENABLE_CVE_FILTER`     | 启用 CVE 过滤，开启后多个数据源的统一 CVE 将只推送一次           | `true`               |
-| `NO_FILTER`             | 禁用上述推送过滤策略，所有新发现的漏洞都会被推送                   | `false`              |
-| `NO_START_MESSAGE`      | 禁用服务启动的提示信息                                | `false`              |
+| 环境变量名                   | 说明                                              | 默认值                         |
+|-------------------------|-------------------------------------------------|-----------------------------|
+| `DB_CONN`               | 数据库链接字符串，详情见 [数据库连接](#数据库连接)                    | `sqlite3://vuln_v3.sqlite3` |
+| `DINGDING_ACCESS_TOKEN` | 钉钉机器人 url 的 `access_token` 部分                   |                             |
+| `DINGDING_SECRET`       | 钉钉机器人的加签值 （仅支持加签方式）                             |                             |
+| `LARK_ACCESS_TOKEN`     | 飞书机器人 url 的 `/open-apis/bot/v2/hook/` 后的部分      |                             |
+| `LARK_SECRET`           | 飞书机器人的加签值 （仅支持加签方式）                             |                             |
+| `WECHATWORK_KEY `       | 微信机器人 url 的 `key` 部分                            |                             |
+| `SERVERCHAN_KEY `       | Server酱的 `SCKEY`                                |                             |
+| `WEBHOOK_URL`           | 自定义 webhook 服务的完整 url                           |                             |
+| `BARK_URL`              | Bark 服务的完整 url, 路径需要包含 DeviceKey                |                             |
+| `SOURCES`               | 启用哪些漏洞信息源，逗号分隔, 可选 `avd`, `ti`, `nox`, `seebug` | `avd,nox,oscs`              |
+| `INTERVAL`              | 检查周期，支持秒 `60s`, 分钟 `10m`, 小时 `1h`, 最低 `1m`      | `30m`                       |
+| `ENABLE_CVE_FILTER`     | 启用 CVE 过滤，开启后多个数据源的统一 CVE 将只推送一次                | `true`                      |
+| `NO_FILTER`             | 禁用上述推送过滤策略，所有新发现的漏洞都会被推送                        | `false`                     |
+| `NO_START_MESSAGE`      | 禁用服务启动的提示信息                                     | `false`                     |
 
 比如使用钉钉机器人
 
@@ -145,25 +147,16 @@ docker run --restart always -d \
 </details>
 
 
-初次运行会在本地建立全量数据库，大约需要 1~5 分钟，可以使用 `docker logs -f [containerId]` 来查看进度,
+初次运行会在本地建立全量数据库，大约需要 1 分钟，可以使用 `docker logs -f [containerId]` 来查看进度,
 完成后会在群内收到一个提示消息，表示服务已经在正常运行了。
 
 ### 使用二进制
 
-前往 Release 下载对应平台的二进制，然后在命令行执行。
+前往 Release 下载对应平台的二进制，然后在命令行执行。命令行参数请参考 Docker 环境变量部分的说明，可以一一对应。
 
 ```bash
-NAME:
-   watchvuln - A high valuable vulnerability watcher and pusher
-
 USAGE:
    watchvuln [global options] command [command options] [arguments...]
-
-VERSION:
-   v1.0.0
-
-COMMANDS:
-   help, h  Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
    [Push Options]
@@ -179,11 +172,13 @@ GLOBAL OPTIONS:
 
    [Launch Options]
 
-   --enable-cve-filter         enable a filter that vulns from multiple sources with same cve id will be sent only once (default: true)
-   --interval value, -i value  checking every [interval], supported format like 30s, 30m, 1h (default: "30m")
-   --no-filter, --nf           ignore the valuable filter and push all discovered vulns (default: false)
-   --no-start-message, --nm    disable the hello message when server starts (default: false)
-   --sources value, -s value   set vuln sources (default: "avd,ti,oscs,seebug")
+   --db-conn value, --db value  database connection string (default: "sqlite3://vuln_v3.sqlite3")
+   --enable-cve-filter          enable a filter that vulns from multiple sources with same cve id will be sent only once (default: true)
+   --interval value, -i value   checking every [interval], supported format like 30s, 30m, 1h (default: "30m")
+   --no-filter, --nf            ignore the valuable filter and push all discovered vulns (default: false)
+   --no-github-search, --ng     don't search github repos and pull requests for every cve vuln (default: false)
+   --no-start-message, --nm     disable the hello message when server starts (default: false)
+   --sources value, -s value    set vuln sources (default: "avd,nox,oscs")
 
    [Other Options]
 
@@ -253,14 +248,27 @@ $ ./watchvuln --dt DINGDING_ACCESS_TOKEN --ds DINGDING_SECRET --wk WECHATWORK_KE
 
 </details>
 
+## 数据库连接
+
+默认使用 sqlite3 作为数据库，数据库文件为 `vuln_v3.sqlite3`，如果需要使用其他数据库，可以通过 `--db`
+参数或是环境变量 `DB_CONN` 指定连接字符串，当前支持的数据库有:
+
+- `sqlite3://filename`
+- `mysql://user:pass@host:port/dbname`
+- `postgres://user:pass@host:port/dbname`
+
+注意：该项目不做数据向后兼容保证，版本升级可能存在数据不兼容的情况，如果报错需要删库重来。
+
 ## 常见问题
 
 1. 服务重启后支持增量更新吗
 
-   支持，数据会保存在运行目录的 `vuln_vx.sqlite3` 中，这是一个 sqlite3 的数据库，服务重启后将按照一定的策略去增量抓取。
-2. 如何强制重新创建本地数据库
+   支持，每次检查会按照一定的策略去增量抓取
 
-   删除运行目录的 `vuln_vx.sqlite3` 文件再重新运行即可
+2. Docker 拉取镜像提示 `not found`
+
+   你使用的 Docker 版本太老了，不支持新的镜像格式，需要升级一下 Docker
+   版本，参考 [#16](https://github.com/zema1/watchvuln/issues/16)
 
 ## 其他
 

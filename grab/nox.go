@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/imroc/req/v3"
 	"github.com/kataras/golog"
-	"strconv"
 	"strings"
 )
 
@@ -132,10 +131,11 @@ func (t *NoxCrawler) ParsePage(ctx context.Context, page, size int) (chan *VulnI
 				From:        "https://nox.qianxin.com/vulnerability/detail/" + d.QvdCode,
 				Creator:     t,
 			}
-			err = t.updateDetail(strconv.Itoa(d.Id), info)
-			if err != nil {
-				t.log.Warnf("failed to update %s detail, %s", d.QvdCode, err)
-			}
+			// 有限制先去掉了: 您今日的漏洞详情查看次数已达上限，请明天再试
+			//err = t.updateDetail(strconv.Itoa(d.Id), info)
+			//if err != nil {
+			//	t.log.Warnf("failed to update %s detail, %s", d.QvdCode, err)
+			//}
 			result <- info
 		}
 	}()

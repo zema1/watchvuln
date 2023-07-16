@@ -9,12 +9,12 @@ import (
 const vulnInfoMsg = `
 # {{ .Title }}
 
-- CVE编号: **{{ .CVE }}**
+- CVE编号: {{ if .CVE }}**{{ .CVE }}**{{ else }}暂无{{ end }}
 - 危害定级: **{{ .Severity }}**
 - 漏洞标签: {{ range .Tags }}**{{ . }}** {{ end }}
 - 披露日期: **{{ .Disclosure }}**
-- 信息来源: [{{ .From }}]({{ .From }})
 - 推送原因: {{ range .Reason }}{{ . }} {{ end }}
+- 信息来源: [{{ .From }}]({{ .From }})
 
 {{ if .Description }}### **漏洞描述**
 {{ .Description }}{{ end }}
@@ -29,10 +29,10 @@ const vulnInfoMsg = `
 {{ end }}
 {{ end -}}
 
-{{ if and .CVE }}### **开源检索**
+{{ if .CVE }}### **开源检索**
 {{ if .GithubSearch }}{{ range $i, $ref := .GithubSearch }}{{ inc $i }}. [{{ $ref }}]({{ $ref }})
 {{ end }}
-{{else}}暂未找到
+{{ else }}暂未找到
 {{ end -}}{{ end -}}
 `
 

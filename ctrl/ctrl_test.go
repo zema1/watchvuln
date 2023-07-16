@@ -4,14 +4,16 @@ import (
 	"context"
 	"fmt"
 	"github.com/stretchr/testify/require"
+	"regexp"
 	"testing"
 )
 
 func TestGithubSearch(t *testing.T) {
 	assert := require.New(t)
+	t.Skipf("local tests")
 
 	app, err := NewApp(&WatchVulnAppConfig{
-		DBConn:          "",
+		DBConn:          "sqlite3://vuln_v3.sqlite3",
 		Sources:         nil,
 		Interval:        30,
 		EnableCVEFilter: false,
@@ -21,7 +23,12 @@ func TestGithubSearch(t *testing.T) {
 		Version:         "",
 	}, nil, nil)
 	assert.Nil(err)
-	links, err := app.FindGithubPoc(context.Background(), "CVE-2023-25157")
+	links, err := app.FindGithubPoc(context.Background(), "CVE-2023-37582")
 	assert.Nil(err)
 	fmt.Println(links)
+}
+
+func TestReMatch(t *testing.T) {
+	re := regexp.MustCompile("(?i)[\b/_]CVE-2023-37582[\b/_]")
+	fmt.Println(re.MatchString("https://github.com/Malayke/CVE-2023-37582_EXPLOIT"))
 }

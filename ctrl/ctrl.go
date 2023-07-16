@@ -30,7 +30,11 @@ func init() {
 	sql.Register("postgres", &stdlib.Driver{})
 }
 
-const MaxPageBase = 2
+const (
+	MaxPageBase       = 2
+	InitDataPageSize  = 10
+	GetUpdatePageSize = 10
+)
 
 type WatchVulnApp struct {
 	config     *WatchVulnAppConfig
@@ -70,7 +74,7 @@ func NewApp(config *WatchVulnAppConfig, textPusher push.TextPusher, rawPusher pu
 		switch part {
 		case "avd":
 			grabs = append(grabs, grab.NewAVDCrawler())
-		case "nox":
+		case "nox", "ti":
 			grabs = append(grabs, grab.NewNoxCrawler())
 		case "oscs":
 			grabs = append(grabs, grab.NewOSCSCrawler())
@@ -102,12 +106,15 @@ func NewApp(config *WatchVulnAppConfig, textPusher push.TextPusher, rawPusher pu
 func (w *WatchVulnApp) Run(ctx context.Context) error {
 	w.log.Infof("initialize local database..")
 	// 抓取前3页作为基准漏洞数据
-	eg, initCtx := errgroup.WithContext(ctx)
+	var eg errgroup.Group
 	eg.SetLimit(len(w.grabbers))
 	for _, grabber := range w.grabbers {
 		grabber := grabber
 		eg.Go(func() error {
-			return w.initData(initCtx, grabber)
+			if err := w.initData(ctx, grabber); err != nil {
+				return errors.Wrap(err, grabber.ProviderInfo().Name)
+			}
+			return nil
 		})
 	}
 	err := eg.Wait()
@@ -215,7 +222,7 @@ func (w *WatchVulnApp) Run(ctx context.Context) error {
 						if err != nil {
 							w.log.Warn(err)
 						}
-						w.log.Infof("%s found %d prs from github, %v", v.CVE, len(links), links)
+						w.log.Infof("%s found %d links from github, %v", v.CVE, len(links), links)
 						if len(links) != 0 {
 							v.GithubSearch = grab.MergeUniqueString(v.GithubSearch, links)
 							_, err = dbVuln.Update().SetGithubSearch(v.GithubSearch).Save(ctx)
@@ -246,11 +253,10 @@ func (w *WatchVulnApp) Close() {
 }
 
 func (w *WatchVulnApp) initData(ctx context.Context, grabber grab.Grabber) error {
-	pageSize := 10
 	source := grabber.ProviderInfo()
-	total, err := grabber.GetPageCount(ctx, pageSize)
+	total, err := grabber.GetPageCount(ctx, InitDataPageSize)
 	if err != nil {
-		return nil
+		return err
 	}
 	if total == 0 {
 		return fmt.Errorf("%s got unexpected zero page", source.Name)
@@ -266,9 +272,9 @@ func (w *WatchVulnApp) initData(ctx context.Context, grabber grab.Grabber) error
 	for i := 1; i <= total; i++ {
 		i := i
 		eg.Go(func() error {
-			dataChan, err := grabber.ParsePage(ctx, i, pageSize)
+			dataChan, err := grabber.ParsePage(ctx, i, InitDataPageSize)
 			if err != nil {
-				return err
+				return errors.Wrap(err, grabber.ProviderInfo().Name)
 			}
 			for data := range dataChan {
 				if _, err = w.createOrUpdate(ctx, source, data); err != nil {
@@ -286,8 +292,7 @@ func (w *WatchVulnApp) initData(ctx context.Context, grabber grab.Grabber) error
 }
 
 func (w *WatchVulnApp) collectUpdate(ctx context.Context) ([]*grab.VulnInfo, error) {
-	pageSize := 10
-	eg, ctx := errgroup.WithContext(ctx)
+	var eg errgroup.Group
 	eg.SetLimit(len(w.grabbers))
 
 	var mu sync.Mutex
@@ -297,24 +302,24 @@ func (w *WatchVulnApp) collectUpdate(ctx context.Context) ([]*grab.VulnInfo, err
 		grabber := grabber
 		eg.Go(func() error {
 			source := grabber.ProviderInfo()
-			pageCount, err := grabber.GetPageCount(ctx, pageSize)
+			pageCount, err := grabber.GetPageCount(ctx, GetUpdatePageSize)
 			if err != nil {
-				return err
+				return errors.Wrap(err, grabber.ProviderInfo().Name)
 			}
 			if pageCount > MaxPageBase {
 				pageCount = MaxPageBase
 			}
 			for i := 1; i <= pageCount; i++ {
-				dataChan, err := grabber.ParsePage(ctx, i, pageSize)
+				dataChan, err := grabber.ParsePage(ctx, i, GetUpdatePageSize)
 				if err != nil {
-					return err
+					return errors.Wrap(err, grabber.ProviderInfo().Name)
 				}
 				hasNewVuln := false
 
 				for data := range dataChan {
 					isNewVuln, err := w.createOrUpdate(ctx, source, data)
 					if err != nil {
-						return err
+						return errors.Wrap(err, grabber.ProviderInfo().Name)
 					}
 					if isNewVuln {
 						w.log.Infof("found new vuln: %s", data)
@@ -361,7 +366,7 @@ func (w *WatchVulnApp) createOrUpdate(ctx context.Context, source *grab.Provider
 		if err != nil {
 			return false, err
 		}
-		w.log.Infof("vuln %s(%s) created from %s %s", newVuln.Title, newVuln.Key, source.Name)
+		w.log.Infof("vuln %s(%s) created from %s", newVuln.Title, newVuln.Key, source.Name)
 		return true, nil
 	}
 
@@ -438,6 +443,11 @@ func (w *WatchVulnApp) FindGithubPoc(ctx context.Context, cveId string) ([]strin
 }
 
 func (w *WatchVulnApp) findGithubRepo(ctx context.Context, cveId string) ([]string, error) {
+	w.log.Infof("finding github repo of %s", cveId)
+	re, err := regexp.Compile(fmt.Sprintf("(?i)[\b/_]%s[\b/_]", cveId))
+	if err != nil {
+		return nil, err
+	}
 	lastYear := time.Now().AddDate(-1, 0, 0).Format("2006-01-02")
 	query := fmt.Sprintf(`language:Python language:JavaScript language:C language:C++ language:Java language:PHP language:Ruby language:Rust language:C# created:>%s %s`, lastYear, cveId)
 	result, _, err := w.githubClient.Search.Repositories(ctx, query, &github.SearchOptions{
@@ -447,10 +457,6 @@ func (w *WatchVulnApp) findGithubRepo(ctx context.Context, cveId string) ([]stri
 		return nil, err
 	}
 	var links []string
-	re, err := regexp.Compile(fmt.Sprintf(`(?)\b%s\b`, cveId))
-	if err != nil {
-		return nil, err
-	}
 	for _, repo := range result.Repositories {
 		if re.MatchString(repo.GetHTMLURL()) {
 			links = append(links, repo.GetHTMLURL())
@@ -460,6 +466,7 @@ func (w *WatchVulnApp) findGithubRepo(ctx context.Context, cveId string) ([]stri
 }
 
 func (w *WatchVulnApp) findNucleiPR(ctx context.Context, cveId string) ([]string, error) {
+	w.log.Infof("finding nuclei PR of %s", cveId)
 	if w.prs == nil {
 		// 检查200个pr
 		for page := 1; page < 2; page++ {
@@ -480,7 +487,7 @@ func (w *WatchVulnApp) findNucleiPR(ctx context.Context, cveId string) ([]string
 	}
 
 	var links []string
-	re, err := regexp.Compile(fmt.Sprintf(`(?)\b%s\b`, cveId))
+	re, err := regexp.Compile(fmt.Sprintf("(?i)[\b/_]%s[\b/_]", cveId))
 	if err != nil {
 		return nil, err
 	}
