@@ -16,11 +16,11 @@ func (VulnInformation) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("key").Unique(),
 		field.String("title").Default(""),
-		field.String("description").Default(""),
+		field.Text("description").Default(""),
 		field.String("severity").Default(""),
 		field.String("cve").Default(""),
 		field.String("disclosure").Default(""),
-		field.String("solutions").Default(""),
+		field.Text("solutions").Default(""),
 		field.Strings("references").Optional(),
 		field.Strings("tags").Optional(),
 		field.Strings("github_search").Optional(),

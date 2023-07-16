@@ -26,4 +26,12 @@ func TestRenderVulnInfo(t *testing.T) {
 	fmt.Println("============================")
 	v.CVE = ""
 	fmt.Println(RenderVulnInfo(v))
+
+	fmt.Println("============================")
+	v.References = nil
+	fmt.Println(RenderVulnInfo(v))
+
+	fmt.Println("============================")
+	v.CVE = "CVE-2023-31543"
+	fmt.Println(RenderVulnInfo(v))
 }

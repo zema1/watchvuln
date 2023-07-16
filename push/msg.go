@@ -16,19 +16,19 @@ const vulnInfoMsg = `
 - 信息来源: [{{ .From }}]({{ .From }})
 - 推送原因: {{ range .Reason }}{{ . }} {{ end }}
 
-### **漏洞描述**
-{{ .Description }}
+{{ if .Description }}### **漏洞描述**
+{{ .Description }}{{end}}
+
+{{ if .References }}### **参考链接**
+{{ range $i, $ref := .References }}{{ inc $i }}. [{{ $ref }}]({{ $ref }})
+{{ end }}
+{{ end -}}
 
 {{ if and .CVE }}### **开源检索**
 {{ if .GithubSearch }}{{ range $i, $ref := .GithubSearch }}{{ inc $i }}. [{{ $ref }}]({{ $ref }})
 {{ end }}
 {{else}}暂无
-
-{{ end }}{{ end -}}
-
-### **参考链接**
-{{ range $i, $ref := .References }}{{ inc $i }}. [{{ $ref }}]({{ $ref }})
-{{ end }}
+{{ end -}}{{ end -}}
 `
 
 const initialMsg = `
