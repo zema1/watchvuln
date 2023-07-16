@@ -100,3 +100,18 @@ func wrapApiClient(client *req.Client) *req.Client {
 		"sec-ch-ua-platform": `"Windows"`,
 	})
 }
+
+func MergeUniqueString(s1 []string, s2 []string) []string {
+	m := make(map[string]struct{}, len(s1)+len(s2))
+	for _, s := range s1 {
+		m[s] = struct{}{}
+	}
+	for _, s := range s2 {
+		m[s] = struct{}{}
+	}
+	res := make([]string, 0, len(m))
+	for k := range m {
+		res = append(res, k)
+	}
+	return res
+}

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/imroc/req/v3"
 	"github.com/kataras/golog"
+	"strconv"
 	"strings"
 )
 
@@ -92,7 +93,7 @@ func (t *NoxCrawler) ParsePage(ctx context.Context, page, size int) (chan *VulnI
 	if err = resp.UnmarshalJson(&body); err != nil {
 		return nil, err
 	}
-	t.log.Infof("page %d contains %d vulns", page, len(body.Data.Data))
+	t.log.Infof("got %d vulns from page %d", len(body.Data.Data), page)
 	result := make(chan *VulnInfo, 1)
 	go func() {
 		defer close(result)
@@ -125,11 +126,15 @@ func (t *NoxCrawler) ParsePage(ctx context.Context, page, size int) (chan *VulnI
 				Severity:    severity,
 				CVE:         d.CveCode,
 				Disclosure:  d.PublishTime,
-				References:  []string{},
+				References:  nil,
 				Tags:        tags,
 				Solutions:   "",
-				From:        t.ProviderInfo().Link,
+				From:        "https://nox.qianxin.com/vulnerability/detail/" + d.QvdCode,
 				Creator:     t,
+			}
+			err = t.updateDetail(strconv.Itoa(d.Id), info)
+			if err != nil {
+				t.log.Warnf("failed to update %s detail, %s", d.QvdCode, err)
 			}
 			result <- info
 		}
@@ -160,6 +165,36 @@ func (t *NoxCrawler) buildBody(page, size int) []byte {
 	}
 	data, _ := json.Marshal(m)
 	return data
+}
+
+func (t *NoxCrawler) updateDetail(id string, v *VulnInfo) error {
+	t.log.Debugf("parsing details of %s", v.From)
+	resp, err := t.client.R().
+		SetBodyBytes([]byte(fmt.Sprintf(`{"id":"%s"}`, id))).
+		Post("https://nox.qianxin.com/api/web/portal/vuln/residence/temp/show")
+	if err != nil {
+		return err
+	}
+	var body noxDetailResp
+	if err = resp.UnmarshalJson(&body); err != nil {
+		return err
+	}
+	if body.RespCode != 0 {
+		return fmt.Errorf("failed to get detail, msg: %s", body.RespMessage)
+	}
+	for _, info := range body.Data.ResidenceLatest {
+		info.Value = strings.TrimSpace(info.Value)
+		switch info.Key {
+		case "fix_method":
+			v.Solutions = info.Value
+		case "related_links":
+			if info.Value == "" {
+				continue
+			}
+			v.References = MergeUniqueString(v.References, strings.Split(info.Value, "\n"))
+		}
+	}
+	return nil
 }
 
 type noxListResp struct {
@@ -206,5 +241,22 @@ type noxListResp struct {
 			QpeManufactureName string `json:"qpe_manufacture_name"`
 		} `json:"data"`
 		Total int `json:"total"`
+	} `json:"data"`
+}
+
+type noxDetailResp struct {
+	Sid         string `json:"sid"`
+	RespCode    int    `json:"resp_code"`
+	RespMessage string `json:"resp_message"`
+	Data        struct {
+		ResidenceLatest []struct {
+			Label string `json:"label"`
+			Key   string `json:"key"`
+			Value string `json:"value"`
+		} `json:"residence_latest"`
+		ResidenceTemp []interface{} `json:"residence_temp"`
+		Id            int           `json:"id"`
+		VulnName      string        `json:"vuln_name"`
+		CveCode       string        `json:"cve_code"`
 	} `json:"data"`
 }
