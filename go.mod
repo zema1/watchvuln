@@ -8,8 +8,10 @@ require (
 	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/dop251/goja v0.0.0-20230402114112-623f9dda9079
 	github.com/dop251/goja_nodejs v0.0.0-20230322100729-2550c7b6c124
+	github.com/go-sql-driver/mysql v1.7.1
 	github.com/google/go-github/v53 v53.1.0
 	github.com/imroc/req/v3 v3.33.2
+	github.com/jackc/pgx/v5 v5.4.1
 	github.com/kataras/golog v0.1.8
 	github.com/larksuite/oapi-sdk-go/v2 v2.0.11
 	github.com/pkg/errors v0.9.1
@@ -45,6 +47,8 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/hcl/v2 v2.16.2 // indirect
+	github.com/jackc/pgpassfile v1.0.0 // indirect
+	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/kataras/pio v0.0.11 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/mattn/go-isatty v0.0.18 // indirect
@@ -59,12 +63,12 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	github.com/zclconf/go-cty v1.13.1 // indirect
-	golang.org/x/crypto v0.8.0 // indirect
+	golang.org/x/crypto v0.11.0 // indirect
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29 // indirect
 	golang.org/x/mod v0.10.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
-	golang.org/x/sys v0.8.0 // indirect
-	golang.org/x/text v0.9.0 // indirect
+	golang.org/x/sys v0.10.0 // indirect
+	golang.org/x/text v0.11.0 // indirect
 	golang.org/x/tools v0.8.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect

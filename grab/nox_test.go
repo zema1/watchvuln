@@ -11,7 +11,7 @@ func TestTiCrawler(t *testing.T) {
 	assert := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
-	grab := NewTiCrawler()
+	grab := NewNoxCrawler()
 	count, err := grab.GetPageCount(ctx, 30)
 	assert.Nil(err)
 	assert.True(count > 0)

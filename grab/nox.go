@@ -10,32 +10,32 @@ import (
 	"strings"
 )
 
-type TiCrawler struct {
+type NoxCrawler struct {
 	client *req.Client
 	log    *golog.Logger
 }
 
-func NewTiCrawler() Grabber {
+func NewNoxCrawler() Grabber {
 	client := wrapApiClient(NewHttpClient())
-	client.SetCommonHeader("Referer", "https://ti.qianxin.com/vulnerability")
-	client.SetCommonHeader("Origin", "https://ti.qianxin.com")
-	c := &TiCrawler{
-		log:    golog.Child("[qianxin-ti]"),
+	client.SetCommonHeader("Referer", "https://nox.qianxin.com/KeyPoint")
+	client.SetCommonHeader("Origin", "https://nox.qianxin.com")
+	c := &NoxCrawler{
+		log:    golog.Child("[qianxin-nox]"),
 		client: client,
 	}
 	return c
 }
 
-func (t *TiCrawler) ProviderInfo() *Provider {
+func (t *NoxCrawler) ProviderInfo() *Provider {
 	return &Provider{
-		Name:        "qianxin-ti",
-		DisplayName: "奇安信威胁情报中心",
-		Link:        "https://ti.qianxin.com/vulnerability",
+		Name:        "qianxin-nox",
+		DisplayName: "奇安信安全监测平台",
+		Link:        "https://nox.qianxin.com/KeyPoint",
 	}
 }
 
-func (t *TiCrawler) GetPageCount(ctx context.Context, size int) (int, error) {
-	var body tiListResp
+func (t *NoxCrawler) GetPageCount(ctx context.Context, size int) (int, error) {
+	var body noxListResp
 
 	_, err := t.client.R().
 		SetBodyBytes(t.buildBody(1, 10)).
@@ -48,8 +48,8 @@ func (t *TiCrawler) GetPageCount(ctx context.Context, size int) (int, error) {
 				t.log.Warnf("unmarshal json error, %s", err)
 				return true
 			}
-			if body.Status != 10000 {
-				t.log.Warnf("failed to get page count, msg: %s, retrying", body.Message)
+			if body.RespCode != 0 {
+				t.log.Warnf("failed to get page count, msg: %s, retrying", body.RespMessage)
 				return true
 			}
 			if body.Data.Total <= 0 {
@@ -58,7 +58,7 @@ func (t *TiCrawler) GetPageCount(ctx context.Context, size int) (int, error) {
 			}
 			return false
 		}).
-		Post("https://ti.qianxin.com/alpha-api/v2/nox/api/web/portal/key_vuln/list")
+		Post("https://nox.qianxin.com/api/web/portal/key_vuln/list")
 	if err != nil {
 		return 0, err
 	}
@@ -79,16 +79,16 @@ func (t *TiCrawler) GetPageCount(ctx context.Context, size int) (int, error) {
 	return pageCount, nil
 }
 
-func (t *TiCrawler) ParsePage(ctx context.Context, page, size int) (chan *VulnInfo, error) {
+func (t *NoxCrawler) ParsePage(ctx context.Context, page, size int) (chan *VulnInfo, error) {
 	t.log.Infof("parsing page %d", page)
 	resp, err := t.client.R().
 		SetContext(ctx).
 		SetBodyBytes(t.buildBody(page, size)).
-		Post("https://ti.qianxin.com/alpha-api/v2/nox/api/web/portal/key_vuln/list")
+		Post("https://nox.qianxin.com/api/web/portal/key_vuln/list")
 	if err != nil {
 		return nil, err
 	}
-	var body tiListResp
+	var body noxListResp
 	if err = resp.UnmarshalJson(&body); err != nil {
 		return nil, err
 	}
@@ -137,13 +137,14 @@ func (t *TiCrawler) ParsePage(ctx context.Context, page, size int) (chan *VulnIn
 	return result, nil
 }
 
-func (t *TiCrawler) IsValuable(info *VulnInfo) bool {
+func (t *NoxCrawler) IsValuable(info *VulnInfo) bool {
 	if info.Severity != High && info.Severity != Critical {
 		return false
 	}
 	for _, tag := range info.Tags {
 		if tag == "奇安信CERT验证" ||
 			tag == "POC公开" ||
+			tag == "EXP公开" ||
 			tag == "技术细节公布" {
 			return true
 		}
@@ -151,7 +152,7 @@ func (t *TiCrawler) IsValuable(info *VulnInfo) bool {
 	return false
 }
 
-func (t *TiCrawler) buildBody(page, size int) []byte {
+func (t *NoxCrawler) buildBody(page, size int) []byte {
 	m := map[string]interface{}{
 		"page_no":      page,
 		"page_size":    size,
@@ -161,11 +162,12 @@ func (t *TiCrawler) buildBody(page, size int) []byte {
 	return data
 }
 
-type tiListResp struct {
-	Status  int    `json:"status"`
-	Message string `json:"message"`
-	Data    struct {
-		Data []*struct {
+type noxListResp struct {
+	Sid         string `json:"sid"`
+	RespCode    int    `json:"resp_code"`
+	RespMessage string `json:"resp_message"`
+	Data        struct {
+		Data []struct {
 			Id                int     `json:"id"`
 			VulnName          string  `json:"vuln_name"`
 			VulnNameEn        string  `json:"vuln_name_en"`
@@ -183,7 +185,7 @@ type tiListResp struct {
 			DescriptionEn     string  `json:"description_en"`
 			ChangeImpact      int     `json:"change_impact"`
 			OperatorHid       string  `json:"operator_hid"`
-			CreateHid         *string `json:"create_hid"`
+			CreateHid         string  `json:"create_hid"`
 			Temp              int     `json:"temp"`
 			OtherRating       int     `json:"other_rating"`
 			CreateTime        string  `json:"create_time"`

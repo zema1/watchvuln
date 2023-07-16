@@ -16,7 +16,7 @@ import (
 )
 
 var log = golog.Child("[main]")
-var Version = "v1.0.0"
+var Version = "v1.1.0"
 
 func main() {
 	golog.Default.SetLevel("info")
@@ -86,6 +86,13 @@ func main() {
 			Aliases:  []string{"bark"},
 			Usage:    "your bark server url, ex: http://127.0.0.1:1111/DeviceKey",
 			Category: "[\x00Push Options]",
+		},
+		&cli.StringFlag{
+			Name:     "db-conn",
+			Aliases:  []string{"db"},
+			Usage:    "database connection string",
+			Value:    "sqlite3://vuln_v3.sqlite3",
+			Category: "[Launch Options]",
 		},
 		&cli.StringFlag{
 			Name:     "sources",
@@ -172,6 +179,7 @@ func Action(c *cli.Context) error {
 	cveFilter := c.Bool("enable-cve-filter")
 	debug := c.Bool("debug")
 	iv := c.String("interval")
+	db := c.String("db")
 
 	if os.Getenv("INTERVAL") != "" {
 		iv = os.Getenv("INTERVAL")
@@ -188,6 +196,9 @@ func Action(c *cli.Context) error {
 	if os.Getenv("ENABLE_CVE_FILTER") == "false" {
 		cveFilter = false
 	}
+	if os.Getenv("DB_CONN") != "" {
+		db = os.Getenv("DB_CONN")
+	}
 
 	log.Infof("config: INTERVAL=%s, NO_FILTER=%v, NO_START_MESSAGE=%v, NO_GITHUB_SEARCH=%v, ENABLE_CVE_FILTER=%v",
 		iv, noFilter, noStartMessage, noGithubSearch, cveFilter)
@@ -200,7 +211,7 @@ func Action(c *cli.Context) error {
 		return fmt.Errorf("interval is too small, at least 1m")
 	}
 	config := &ctrl.WatchVulnAppConfig{
-		DBConn:          "",
+		DBConn:          db,
 		Sources:         sourcesParts,
 		Interval:        interval,
 		EnableCVEFilter: cveFilter,

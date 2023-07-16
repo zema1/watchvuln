@@ -5,7 +5,10 @@ import (
 	"database/sql"
 	entSql "entgo.io/ent/dialect/sql"
 	"fmt"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/go-github/v53/github"
+	"github.com/jackc/pgx/v5/stdlib"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/kataras/golog"
 	"github.com/pkg/errors"
 	"github.com/zema1/watchvuln/ent"
@@ -24,6 +27,7 @@ import (
 
 func init() {
 	sql.Register("sqlite3", &sqlite.Driver{})
+	sql.Register("postgres", &stdlib.Driver{})
 }
 
 const MaxPageBase = 3
@@ -41,12 +45,18 @@ type WatchVulnApp struct {
 }
 
 func NewApp(config *WatchVulnAppConfig, textPusher push.TextPusher, rawPusher push.RawPusher) (*WatchVulnApp, error) {
-	drv, err := entSql.Open("sqlite3", "file:vuln_v3.sqlite3?cache=shared&_pragma=foreign_keys(1)")
+	drvName, connStr, err := config.DBConnForEnt()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed opening connection to sqlite")
+		return nil, err
+	}
+	drv, err := entSql.Open(drvName, connStr)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed opening connection to db")
 	}
 	db := drv.DB()
 	db.SetMaxOpenConns(1)
+	db.SetConnMaxLifetime(time.Minute * 1)
+	db.SetMaxIdleConns(1)
 	dbClient := ent.NewClient(ent.Driver(drv))
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
@@ -60,8 +70,8 @@ func NewApp(config *WatchVulnAppConfig, textPusher push.TextPusher, rawPusher pu
 		switch part {
 		case "avd":
 			grabs = append(grabs, grab.NewAVDCrawler())
-		case "ti":
-			grabs = append(grabs, grab.NewTiCrawler())
+		case "nox":
+			grabs = append(grabs, grab.NewNoxCrawler())
 		case "oscs":
 			grabs = append(grabs, grab.NewOSCSCrawler())
 		case "seebug":
@@ -236,7 +246,7 @@ func (w *WatchVulnApp) Close() {
 }
 
 func (w *WatchVulnApp) initData(ctx context.Context, grabber grab.Grabber) error {
-	pageSize := 100
+	pageSize := 10
 	source := grabber.ProviderInfo()
 	total, err := grabber.GetPageCount(ctx, pageSize)
 	if err != nil {
