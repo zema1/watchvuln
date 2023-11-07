@@ -10,8 +10,8 @@
 |---------------|---------------------------------------|--------------------------------------------------|
 | 阿里云漏洞库        | https://avd.aliyun.com/high-risk/list | 等级为高危或严重                                         |
 | OSCS开源安全情报预警  | https://www.oscs1024.com/cm           | 等级为高危或严重**并且**包含 `预警` 标签                         |
-| 奇安信安全监测平台     | https://nox.qianxin.com/KeyPoint      | 等级为高危严重**并且**包含 `奇安信CERT验证` `POC公开` `技术细节公布`标签之一 |
-| 知道创宇Seebug漏洞库 | https://www.seebug.org/               | 存在 WAF，默认不启用，若手动启用，则推送等级为高危或严重                   |
+| 奇安信威胁情报中心     | https://ti.qianxin.com/               | 等级为高危严重**并且**包含 `奇安信CERT验证` `POC公开` `技术细节公布`标签之一 |
+| 知道创宇Seebug漏洞库 | https://www.seebug.org/               | 存在 WAF，默认不启用，若通过 `SOURCES`/`-s` 手动启用，则推送等级为高危或严重 |
 
 > 所有信息来自网站公开页面, 如果有侵权，请提交 issue, 我会删除相关源。
 >
@@ -50,7 +50,7 @@ Docker 方式推荐使用环境变量来配置服务参数
 | `SERVERCHAN_KEY `       | Server酱的 `SCKEY`                                |                             |
 | `WEBHOOK_URL`           | 自定义 webhook 服务的完整 url                           |                             |
 | `BARK_URL`              | Bark 服务的完整 url, 路径需要包含 DeviceKey                |                             |
-| `SOURCES`               | 启用哪些漏洞信息源，逗号分隔, 可选 `avd`, `ti`, `nox`, `seebug` | `avd,nox,oscs`              |
+| `SOURCES`               | 启用哪些漏洞信息源，逗号分隔, 可选 `avd`, `ti`, `nox`, `seebug` | `avd,ti,oscs`               |
 | `INTERVAL`              | 检查周期，支持秒 `60s`, 分钟 `10m`, 小时 `1h`, 最低 `1m`      | `30m`                       |
 | `ENABLE_CVE_FILTER`     | 启用 CVE 过滤，开启后多个数据源的统一 CVE 将只推送一次                | `true`                      |
 | `NO_FILTER`             | 禁用上述推送过滤策略，所有新发现的漏洞都会被推送                        | `false`                     |
@@ -66,6 +66,8 @@ docker run --restart always -d \
   -e ENABLE_CVE_FILTER=true \
   zemal/watchvuln:latest
 ```
+
+当然，你可以仓靠使用本仓库的 `docker-compose.yaml` 文件，使用 `docker-compose` 来启动容器。
 
 每次更新记得重新拉镜像:
 
