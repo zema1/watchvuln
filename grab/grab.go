@@ -54,8 +54,7 @@ type Provider struct {
 
 type Grabber interface {
 	ProviderInfo() *Provider
-	GetPageCount(ctx context.Context, size int) (int, error)
-	ParsePage(ctx context.Context, page int, size int) (chan *VulnInfo, error)
+	GetUpdate(ctx context.Context, pageLimit int) ([]*VulnInfo, error)
 	IsValuable(info *VulnInfo) bool
 }
 

@@ -3,11 +3,11 @@ package grab
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/imroc/req/v3"
 	"github.com/kataras/golog"
+	"github.com/pkg/errors"
 	"golang.org/x/net/html"
 	"net/url"
 	"regexp"
@@ -48,7 +48,36 @@ func (a *AVDCrawler) ProviderInfo() *Provider {
 		Link:        "https://avd.aliyun.com/high-risk/list",
 	}
 }
-func (a *AVDCrawler) GetPageCount(ctx context.Context, _ int) (int, error) {
+func (a *AVDCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*VulnInfo, error) {
+	pageCount, err := a.getPageCount(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "get page count")
+	}
+	if pageCount == 0 {
+		return nil, fmt.Errorf("invalid page count")
+	}
+	if pageCount > pageLimit {
+		pageCount = pageLimit
+	}
+
+	var results []*VulnInfo
+	for i := 1; i <= pageCount; i++ {
+		select {
+		case <-ctx.Done():
+			return results, ctx.Err()
+		default:
+		}
+		pageResult, err := a.parsePage(ctx, i)
+		if err != nil {
+			return results, err
+		}
+		a.log.Infof("got %d vulns from page %d", len(pageResult), i)
+		results = append(results, pageResult...)
+	}
+	return results, nil
+}
+
+func (a *AVDCrawler) getPageCount(ctx context.Context) (int, error) {
 	u := `https://avd.aliyun.com/high-risk/list`
 	resp, err := a.client.R().SetContext(ctx).Get(u)
 	if err != nil {
@@ -61,9 +90,8 @@ func (a *AVDCrawler) GetPageCount(ctx context.Context, _ int) (int, error) {
 	return strconv.Atoi(results[1])
 }
 
-func (a *AVDCrawler) ParsePage(ctx context.Context, page, _ int) (chan *VulnInfo, error) {
+func (a *AVDCrawler) parsePage(ctx context.Context, page int) ([]*VulnInfo, error) {
 	u := fmt.Sprintf("https://avd.aliyun.com/high-risk/list?page=%d", page)
-	a.log.Infof("parsing page %s", u)
 	resp, err := a.client.R().SetContext(ctx).Get(u)
 	if err != nil {
 		return nil, err
@@ -78,7 +106,6 @@ func (a *AVDCrawler) ParsePage(ctx context.Context, page, _ int) (chan *VulnInfo
 		a.log.Errorf("invalid response is \n%s", resp.Dump())
 		return nil, fmt.Errorf("goquery find zero vulns")
 	}
-	a.log.Infof("page %d contains %d vulns", page, count)
 
 	hrefs := make([]string, 0, count)
 	for i := 0; i < count; i++ {
@@ -100,30 +127,27 @@ func (a *AVDCrawler) ParsePage(ctx context.Context, page, _ int) (chan *VulnInfo
 		return nil, fmt.Errorf("can't get all href")
 	}
 
-	results := make(chan *VulnInfo, 1)
-	go func() {
-		defer close(results)
-		for _, href := range hrefs {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-			}
-			base, _ := url.Parse("https://avd.aliyun.com/")
-			uri, err := url.ParseRequestURI(href)
-			if err != nil {
-				a.log.Errorf("%s", err)
-				return
-			}
-			vulnLink := base.ResolveReference(uri).String()
-			avdInfo, err := a.parseSingle(ctx, vulnLink)
-			if err != nil {
-				a.log.Errorf("%s %s", err, vulnLink)
-				return
-			}
-			results <- avdInfo
+	results := make([]*VulnInfo, 0, count)
+	for _, href := range hrefs {
+		select {
+		case <-ctx.Done():
+			return results, nil
+		default:
 		}
-	}()
+		base, _ := url.Parse("https://avd.aliyun.com/")
+		uri, err := url.ParseRequestURI(href)
+		if err != nil {
+			a.log.Errorf("%s", err)
+			return results, nil
+		}
+		vulnLink := base.ResolveReference(uri).String()
+		avdInfo, err := a.parseSingle(ctx, vulnLink)
+		if err != nil {
+			a.log.Errorf("%s %s", err, vulnLink)
+			return results, nil
+		}
+		results = append(results, avdInfo)
+	}
 
 	return results, nil
 }

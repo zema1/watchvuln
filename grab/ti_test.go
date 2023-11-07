@@ -7,12 +7,12 @@ import (
 	"time"
 )
 
-func TestAVD(t *testing.T) {
+func TestTi(t *testing.T) {
 	assert := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*300)
 	defer cancel()
-	grab := NewAVDCrawler()
-	vulns, err := grab.GetUpdate(ctx, 1)
+	grab := NewTiCrawler()
+	vulns, err := grab.GetUpdate(ctx, 3)
 	assert.Nil(err)
 
 	count := 0
@@ -25,5 +25,5 @@ func TestAVD(t *testing.T) {
 		assert.NotEmpty(v.Disclosure)
 		assert.NotEmpty(v.From)
 	}
-	assert.Equal(count, 30)
+	assert.True(count > 0)
 }

@@ -61,7 +61,36 @@ func (t *SeebugCrawler) ProviderInfo() *Provider {
 	}
 }
 
-func (t *SeebugCrawler) GetPageCount(ctx context.Context, size int) (int, error) {
+func (t *SeebugCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*VulnInfo, error) {
+	pageCount, err := t.getPageCount(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "get page count")
+	}
+	if pageCount == 0 {
+		return nil, fmt.Errorf("invalid page count")
+	}
+	if pageCount > pageLimit {
+		pageCount = pageLimit
+	}
+
+	var results []*VulnInfo
+	for i := 1; i <= pageCount; i++ {
+		select {
+		case <-ctx.Done():
+			return results, ctx.Err()
+		default:
+		}
+		pageResult, err := t.parsePage(ctx, i)
+		if err != nil {
+			return results, err
+		}
+		t.log.Infof("got %d vulns from page %d", len(pageResult), i)
+		results = append(results, pageResult...)
+	}
+	return results, nil
+}
+
+func (t *SeebugCrawler) getPageCount(ctx context.Context) (int, error) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	resp, err := t.client.R().SetContext(ctx).Get("https://www.seebug.org/vuldb/vulnerabilities")
@@ -88,12 +117,11 @@ func (t *SeebugCrawler) GetPageCount(ctx context.Context, size int) (int, error)
 	return c, nil
 }
 
-func (t *SeebugCrawler) ParsePage(ctx context.Context, page, size int) (chan *VulnInfo, error) {
+func (t *SeebugCrawler) parsePage(ctx context.Context, page int) ([]*VulnInfo, error) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
 	u := fmt.Sprintf("https://www.seebug.org/vuldb/vulnerabilities?page=%d", page)
-	t.log.Infof("parsing page %s", u)
 	resp, err := t.client.R().SetContext(ctx).Get(u)
 	if err != nil {
 		return nil, err
@@ -108,7 +136,6 @@ func (t *SeebugCrawler) ParsePage(ctx context.Context, page, size int) (chan *Vu
 		t.log.Errorf("invalid response\n%s", resp.Dump())
 		return nil, fmt.Errorf("goquery find zero vulns")
 	}
-	t.log.Infof("page %d contains %d vulns", page, count)
 
 	var vulnInfo []*VulnInfo
 	for i := 0; i < count; i++ {
@@ -175,14 +202,7 @@ func (t *SeebugCrawler) ParsePage(ctx context.Context, page, size int) (chan *Vu
 			Creator:     t,
 		})
 	}
-	results := make(chan *VulnInfo, 1)
-	go func() {
-		defer close(results)
-		for _, v := range vulnInfo {
-			results <- v
-		}
-	}()
-	return results, nil
+	return vulnInfo, nil
 }
 
 func (t *SeebugCrawler) IsValuable(info *VulnInfo) bool {

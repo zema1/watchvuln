@@ -9,24 +9,21 @@ import (
 
 func TestSeebug(t *testing.T) {
 	assert := require.New(t)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*300)
 	defer cancel()
 	grab := NewSeebugCrawler()
-	count, err := grab.GetPageCount(ctx, 100)
-	assert.Nil(err)
-	assert.True(count > 0)
-
-	vulns, err := grab.ParsePage(ctx, 1, 100)
+	vulns, err := grab.GetUpdate(ctx, 2)
 	assert.Nil(err)
 
-	count = 0
-	for v := range vulns {
+	count := 0
+	for _, v := range vulns {
 		t.Logf("get vuln info %s", v)
 		count++
 		assert.NotEmpty(v.UniqueKey)
+		//assert.NotEmpty(v.Description)
 		assert.NotEmpty(v.Title)
 		assert.NotEmpty(v.Disclosure)
 		assert.NotEmpty(v.From)
 	}
-	assert.Equal(count, 20)
+	assert.Equal(count, 40)
 }
