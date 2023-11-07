@@ -3,13 +3,15 @@ package grab
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/imroc/req/v3"
 	"github.com/kataras/golog"
+	"github.com/pkg/errors"
 	"strings"
 	"time"
 )
+
+const OSCSPageSize = 10
 
 type OSCSCrawler struct {
 	client *req.Client
@@ -35,7 +37,36 @@ func (t *OSCSCrawler) ProviderInfo() *Provider {
 	}
 }
 
-func (t *OSCSCrawler) GetPageCount(ctx context.Context, size int) (int, error) {
+func (t *OSCSCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*VulnInfo, error) {
+	pageCount, err := t.getPageCount(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "get page count")
+	}
+	if pageCount == 0 {
+		return nil, fmt.Errorf("invalid page count")
+	}
+	if pageCount > pageLimit {
+		pageCount = pageLimit
+	}
+
+	var results []*VulnInfo
+	for i := 1; i <= pageCount; i++ {
+		select {
+		case <-ctx.Done():
+			return results, ctx.Err()
+		default:
+		}
+		pageResult, err := t.parsePage(ctx, i)
+		if err != nil {
+			return results, err
+		}
+		t.log.Infof("got %d vulns from page %d", len(pageResult), i)
+		results = append(results, pageResult...)
+	}
+	return results, nil
+}
+
+func (t *OSCSCrawler) getPageCount(ctx context.Context) (int, error) {
 	var body oscsListResp
 	_, err := t.client.R().
 		SetBodyBytes(t.buildListBody(1, 10)).
@@ -64,10 +95,10 @@ func (t *OSCSCrawler) GetPageCount(ctx context.Context, size int) (int, error) {
 	}
 
 	total := body.Data.Total
-	if total <= 0 || size <= 0 {
-		return 0, fmt.Errorf("invalid size %d %d", total, size)
+	if total <= 0 {
+		return 0, fmt.Errorf("failed to get total count, %v", body)
 	}
-	pageCount := total / size
+	pageCount := total / OSCSPageSize
 	if pageCount == 0 {
 		return 1, nil
 	}
@@ -77,11 +108,10 @@ func (t *OSCSCrawler) GetPageCount(ctx context.Context, size int) (int, error) {
 	return pageCount, nil
 }
 
-func (t *OSCSCrawler) ParsePage(ctx context.Context, page, size int) (chan *VulnInfo, error) {
-	t.log.Infof("parsing page %d", page)
+func (t *OSCSCrawler) parsePage(ctx context.Context, page int) ([]*VulnInfo, error) {
 	resp, err := t.client.R().
 		SetContext(ctx).
-		SetBodyBytes(t.buildListBody(page, size)).
+		SetBodyBytes(t.buildListBody(page, OSCSPageSize)).
 		Post("https://www.oscs1024.com/oscs/v1/intelligence/list")
 	if err != nil {
 		return nil, err
@@ -90,43 +120,39 @@ func (t *OSCSCrawler) ParsePage(ctx context.Context, page, size int) (chan *Vuln
 	if err = resp.UnmarshalJson(&body); err != nil {
 		return nil, err
 	}
-	t.log.Infof("page %d contains %d vulns", page, len(body.Data.Data))
-	result := make(chan *VulnInfo, 1)
-	go func() {
-		defer close(result)
-		for _, d := range body.Data.Data {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-			}
-
-			var tags []string
-			if d.IsPush == 1 {
-				tags = append(tags, "发布预警")
-			}
-			eventType := "公开漏洞"
-			switch d.IntelligenceType {
-			case 1:
-				eventType = "公开漏洞"
-			case 2:
-				eventType = "墨菲安全独家"
-			case 3:
-				eventType = "投毒情报"
-			}
-			tags = append(tags, eventType)
-			info, err := t.parseSingeVuln(ctx, d.Mps)
-			if err != nil {
-				if !errors.Is(err, context.Canceled) {
-					t.log.Errorf("failed to parse %s, %s", d.Url, err)
-				}
-				continue
-			}
-			info.Tags = tags
-			result <- info
+	results := make([]*VulnInfo, 0, len(body.Data.Data))
+	for _, d := range body.Data.Data {
+		select {
+		case <-ctx.Done():
+			return results, nil
+		default:
 		}
-	}()
-	return result, nil
+
+		var tags []string
+		if d.IsPush == 1 {
+			tags = append(tags, "发布预警")
+		}
+		eventType := "公开漏洞"
+		switch d.IntelligenceType {
+		case 1:
+			eventType = "公开漏洞"
+		case 2:
+			eventType = "墨菲安全独家"
+		case 3:
+			eventType = "投毒情报"
+		}
+		tags = append(tags, eventType)
+		info, err := t.parseSingeVuln(ctx, d.Mps)
+		if err != nil {
+			if !errors.Is(err, context.Canceled) {
+				t.log.Errorf("failed to parse %s, %s", d.Url, err)
+			}
+			continue
+		}
+		info.Tags = tags
+		results = append(results, info)
+	}
+	return results, nil
 }
 
 func (t *OSCSCrawler) IsValuable(info *VulnInfo) bool {

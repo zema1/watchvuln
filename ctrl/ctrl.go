@@ -31,9 +31,9 @@ func init() {
 }
 
 const (
-	MaxPageBase       = 2
-	InitDataPageSize  = 10
-	GetUpdatePageSize = 10
+	// InitPageLimit must >= UpdatePageLimit !
+	InitPageLimit   = 3
+	UpdatePageLimit = 1
 )
 
 type WatchVulnApp struct {
@@ -75,7 +75,7 @@ func NewApp(config *WatchVulnAppConfig, textPusher push.TextPusher, rawPusher pu
 		case "avd":
 			grabs = append(grabs, grab.NewAVDCrawler())
 		case "nox", "ti":
-			grabs = append(grabs, grab.NewNoxCrawler())
+			grabs = append(grabs, grab.NewTiCrawler())
 		case "oscs":
 			grabs = append(grabs, grab.NewOSCSCrawler())
 		case "seebug":
@@ -105,21 +105,8 @@ func NewApp(config *WatchVulnAppConfig, textPusher push.TextPusher, rawPusher pu
 
 func (w *WatchVulnApp) Run(ctx context.Context) error {
 	w.log.Infof("initialize local database..")
-	// 抓取前3页作为基准漏洞数据
-	var eg errgroup.Group
-	eg.SetLimit(len(w.grabbers))
-	for _, grabber := range w.grabbers {
-		grabber := grabber
-		eg.Go(func() error {
-			if err := w.initData(ctx, grabber); err != nil {
-				return errors.Wrap(err, grabber.ProviderInfo().Name)
-			}
-			return nil
-		})
-	}
-	err := eg.Wait()
-	if err != nil {
-		return errors.Wrap(err, "init data")
+	if err := w.initData(ctx); err != nil {
+		return err
 	}
 	w.log.Infof("grabber finished successfully")
 
@@ -252,41 +239,30 @@ func (w *WatchVulnApp) Close() {
 	_ = w.db.Close()
 }
 
-func (w *WatchVulnApp) initData(ctx context.Context, grabber grab.Grabber) error {
-	source := grabber.ProviderInfo()
-	total, err := grabber.GetPageCount(ctx, InitDataPageSize)
-	if err != nil {
-		return err
-	}
-	if total == 0 {
-		return fmt.Errorf("%s got unexpected zero page", source.Name)
-	}
-	if total > MaxPageBase {
-		total = MaxPageBase
-	}
-	w.log.Infof("start to grab %s, total page: %d", source.Name, total)
-
+func (w *WatchVulnApp) initData(ctx context.Context) error {
 	eg, ctx := errgroup.WithContext(ctx)
-	eg.SetLimit(total)
-
-	for i := 1; i <= total; i++ {
-		i := i
+	eg.SetLimit(len(w.grabbers))
+	for _, grabber := range w.grabbers {
+		gb := grabber
 		eg.Go(func() error {
-			dataChan, err := grabber.ParsePage(ctx, i, InitDataPageSize)
+			source := gb.ProviderInfo()
+			w.log.Infof("start to init data from %s", source.Name)
+			initVulns, err := gb.GetUpdate(ctx, InitPageLimit)
 			if err != nil {
-				return errors.Wrap(err, grabber.ProviderInfo().Name)
+				return errors.Wrap(err, source.Name)
 			}
-			for data := range dataChan {
+
+			for _, data := range initVulns {
 				if _, err = w.createOrUpdate(ctx, source, data); err != nil {
-					return errors.Wrap(err, data.String())
+					return errors.Wrap(errors.Wrap(err, data.String()), source.Name)
 				}
 			}
 			return nil
 		})
 	}
-	err = eg.Wait()
+	err := eg.Wait()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "init data")
 	}
 	return nil
 }
@@ -299,41 +275,32 @@ func (w *WatchVulnApp) collectUpdate(ctx context.Context) ([]*grab.VulnInfo, err
 	var newVulns []*grab.VulnInfo
 
 	for _, grabber := range w.grabbers {
-		grabber := grabber
+		gb := grabber
 		eg.Go(func() error {
-			source := grabber.ProviderInfo()
-			pageCount, err := grabber.GetPageCount(ctx, GetUpdatePageSize)
+			source := gb.ProviderInfo()
+			dataChan, err := gb.GetUpdate(ctx, UpdatePageLimit)
 			if err != nil {
-				return errors.Wrap(err, grabber.ProviderInfo().Name)
+				return errors.Wrap(err, gb.ProviderInfo().Name)
 			}
-			if pageCount > MaxPageBase {
-				pageCount = MaxPageBase
-			}
-			for i := 1; i <= pageCount; i++ {
-				dataChan, err := grabber.ParsePage(ctx, i, GetUpdatePageSize)
+			hasNewVuln := false
+
+			for _, data := range dataChan {
+				isNewVuln, err := w.createOrUpdate(ctx, source, data)
 				if err != nil {
-					return errors.Wrap(err, grabber.ProviderInfo().Name)
+					return errors.Wrap(err, gb.ProviderInfo().Name)
 				}
-				hasNewVuln := false
+				if isNewVuln {
+					w.log.Infof("found new vuln: %s", data)
+					mu.Lock()
+					newVulns = append(newVulns, data)
+					mu.Unlock()
+					hasNewVuln = true
+				}
+			}
 
-				for data := range dataChan {
-					isNewVuln, err := w.createOrUpdate(ctx, source, data)
-					if err != nil {
-						return errors.Wrap(err, grabber.ProviderInfo().Name)
-					}
-					if isNewVuln {
-						w.log.Infof("found new vuln: %s", data)
-						mu.Lock()
-						newVulns = append(newVulns, data)
-						mu.Unlock()
-						hasNewVuln = true
-					}
-				}
-
-				// 如果一整页漏洞都是旧的，说明没有更新，不必再继续下一页了
-				if !hasNewVuln {
-					return nil
-				}
+			// 如果一整页漏洞都是旧的，说明没有更新，不必再继续下一页了
+			if !hasNewVuln {
+				return nil
 			}
 			return nil
 		})

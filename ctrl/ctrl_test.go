@@ -9,8 +9,8 @@ import (
 )
 
 func TestGithubSearch(t *testing.T) {
-	assert := require.New(t)
 	t.Skipf("local tests")
+	assert := require.New(t)
 
 	app, err := NewApp(&WatchVulnAppConfig{
 		DBConn:          "sqlite3://vuln_v3.sqlite3",
