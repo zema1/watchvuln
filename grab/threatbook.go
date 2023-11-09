@@ -28,6 +28,38 @@ func NewThreatBookCrawler() Grabber {
 	}
 }
 
+func (a *ThreatBookCrawler) getVulnInfoFromURL(ctx context.Context, vulnLink string) (*VulnInfo, error) {
+	resp, err := a.client.R().SetContext(ctx).Get(vulnLink)
+	if err != nil {
+		return nil, err
+	}
+
+	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(resp.Bytes()))
+	if err != nil {
+		return nil, err
+	}
+
+	title := doc.Find(`#activity-name`).Text()
+	description := doc.Find(`#js_content > section:nth-child(3) > section`).Text()
+	// 这个选择器会选择所有在包含“综合处置优先级”文本的<strong>标签后面紧跟着的<span>标签。eg: 高
+	level := doc.Find("strong:contains('综合处置优先级') + span").Text()
+
+	// trim
+	title = strings.TrimSpace(title)
+	description = strings.TrimSpace(description)
+	level = strings.TrimSpace(level)
+
+	//fixSteps := ""
+	//level := ""
+	//cveID := ""
+	//disclosure := ""
+	//avd := ""
+	//var refs []string
+	//var tags []string
+	//
+	return &VulnInfo{}, nil
+}
+
 func (t *ThreatBookCrawler) ProviderInfo() *Provider {
 	return &Provider{
 		Name:        "threatbook",
@@ -38,32 +70,34 @@ func (t *ThreatBookCrawler) ProviderInfo() *Provider {
 
 func (t *ThreatBookCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*VulnInfo, error) {
 	fp := gofeed.NewParser()
-	feed, err := fp.ParseURL("https://wechat2rss.xlab.app/feed/ac64c385ebcdb17fee8df733eb620a22b979928c.xml")
-	fmt.Println(feed.Title)
-	if err != nil {
-		//return 0, err
-		panic(err)
-	}
-	numOfVuln := 10
+	feed, _ := fp.ParseURL("https://wechat2rss.xlab.app/feed/ac64c385ebcdb17fee8df733eb620a22b979928c.xml")
+	AllVulns := getAllVulnItems(feed)
+	numOfVuln := len(AllVulns)
 	t.log.Infof("got %d vulns ", numOfVuln)
 
+	// 开始判断漏洞重要性，组装漏洞信息
 	var results []*VulnInfo
 
-	for i := 1; i <= numOfVuln; i++ {
-		select {
-		case <-ctx.Done():
-			return results, ctx.Err()
-		default:
-		}
-		if err != nil {
-			return results, err
-		}
-		t.log.Infof("parsing %d vulns ", i)
+	for _, v := range AllVulns {
+		t.log.Infof("Parsing %v at %v", v.Title, v.Link)
+		vuln, _ := t.getVulnInfoFromURL(ctx, v.Link)
+		t.log.Infof("\t%s %s", vuln.Title, v.Description)
 		//results = append(results, result...)
 	}
-	return results, nil
 
 	return results, nil
+}
+
+func getAllVulnItems(feed *gofeed.Feed) []*gofeed.Item {
+	// 微信推送文章的标题必须包含`漏洞通告`，才视为漏洞信息
+	vulnItems := []*gofeed.Item{}
+
+	for _, item := range feed.Items {
+		if strings.Contains(item.Title, "漏洞通告") {
+			vulnItems = append(vulnItems, item)
+		}
+	}
+	return vulnItems
 }
 
 func (t *ThreatBookCrawler) parsePage(ctx context.Context, page int) ([]*VulnInfo, error) {
