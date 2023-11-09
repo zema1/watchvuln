@@ -1,6 +1,6 @@
 module github.com/zema1/watchvuln
 
-go 1.19
+go 1.20
 
 require (
 	entgo.io/ent v0.12.4
