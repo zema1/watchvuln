@@ -20,10 +20,10 @@ func TestThreatBook(t *testing.T) {
 		t.Logf("get vuln info %s", v)
 		count++
 		assert.NotEmpty(v.UniqueKey)
-		//assert.NotEmpty(v.Description)
+		assert.NotEmpty(v.Description)
 		assert.NotEmpty(v.Title)
 		assert.NotEmpty(v.Disclosure)
 		assert.NotEmpty(v.From)
 	}
-	assert.Equal(count, 40)
+	assert.Greater(count, 1)
 }

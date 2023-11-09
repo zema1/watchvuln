@@ -9,6 +9,7 @@ import (
 	"github.com/kataras/golog"
 	"github.com/mmcdole/gofeed"
 	"net/http/cookiejar"
+	"regexp"
 	"strings"
 )
 
@@ -19,8 +20,8 @@ type ThreatBookCrawler struct {
 
 func NewThreatBookCrawler() Grabber {
 	client := wrapApiClient(NewHttpClient())
-	client.SetCommonHeader("Referer", "https://ti.qianxin.com/")
-	client.SetCommonHeader("Origin", "https://ti.qianxin.com")
+	client.SetCommonHeader("Referer", "https://mp.weixin.qq.com/")
+	client.SetCommonHeader("Origin", "https://mp.weixin.qq.com/")
 
 	return &ThreatBookCrawler{
 		log:    golog.Child("[ThreatBook-Vuln]"),
@@ -39,25 +40,52 @@ func (a *ThreatBookCrawler) getVulnInfoFromURL(ctx context.Context, vulnLink str
 		return nil, err
 	}
 
+	var vuln VulnInfo
+
 	title := doc.Find(`#activity-name`).Text()
 	description := doc.Find(`#js_content > section:nth-child(3) > section`).Text()
-	// 这个选择器会选择所有在包含“综合处置优先级”文本的<strong>标签后面紧跟着的<span>标签。eg: 高
-	level := doc.Find("strong:contains('综合处置优先级') + span").Text()
+	//description := doc.Find(`section:contains('漏洞概况') + section`).Text()
+	// 这个选择器会选择所有在包含“综合处置优先级”文本的<strong>标签后面紧跟着的<span>标签。
+	//	eg: 高
+	//level_1 := doc.Find("strong:contains('综合处置优先级') + span").Text()
+	//	eg: 高危
+	level := doc.Find("td:contains('危害评级') + td").Text()
 
 	// trim
-	title = strings.TrimSpace(title)
-	description = strings.TrimSpace(description)
-	level = strings.TrimSpace(level)
+	vuln.Title = strings.TrimSpace(title)
+	vuln.Description = strings.TrimSpace(description)
+	vuln.UniqueKey = doc.Find(`td:contains('微步编号') + td`).Text()
+	vuln.From = vulnLink
 
-	//fixSteps := ""
-	//level := ""
-	//cveID := ""
-	//disclosure := ""
-	//avd := ""
-	//var refs []string
-	//var tags []string
-	//
-	return &VulnInfo{}, nil
+	severity := Low
+	switch strings.TrimSpace(level) {
+	case "低危":
+		severity = Low
+	case "中危":
+		severity = Medium
+	case "高危":
+		severity = High
+	case "严重":
+		severity = Critical
+	}
+	vuln.Severity = severity
+
+	cveIDRegexpLoose := regexp.MustCompile(`CVE-\d+-\d+`)
+	cve := cveIDRegexpLoose.FindString(description)
+	a.log.Infof("cve id %q\n", cve)
+	vuln.CVE = cve
+
+	vuln.Solutions = doc.Find(`section:contains('修复方案') + section`).Text()
+	vuln.Disclosure = doc.Find(`td:contains('公开程度') + td`).Text()
+
+	vuln.Tags = []string{
+		doc.Find(`td:contains('漏洞类型') + td`).Text(),
+		doc.Find(`td:contains('利用条件') + td`).Text(),
+		doc.Find(`td:contains('交互要求') + td`).Text(),
+		doc.Find(`td:contains('威胁类型') + td`).Text(),
+	}
+	a.log.Infof("vuln: %v", vuln)
+	return &vuln, nil
 }
 
 func (t *ThreatBookCrawler) ProviderInfo() *Provider {
@@ -82,18 +110,20 @@ func (t *ThreatBookCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*Vu
 		t.log.Infof("Parsing %v at %v", v.Title, v.Link)
 		vuln, _ := t.getVulnInfoFromURL(ctx, v.Link)
 		t.log.Infof("\t%s %s", vuln.Title, v.Description)
-		//results = append(results, result...)
+		results = append(results, vuln)
 	}
 
 	return results, nil
 }
 
 func getAllVulnItems(feed *gofeed.Feed) []*gofeed.Item {
-	// 微信推送文章的标题必须包含`漏洞通告`，才视为漏洞信息
+	/*
+		微信推送文章的标题必须包含`漏洞通告`, `风险提示`，才视为漏洞信息
+	*/
 	vulnItems := []*gofeed.Item{}
 
 	for _, item := range feed.Items {
-		if strings.Contains(item.Title, "漏洞通告") {
+		if strings.Contains(item.Title, "漏洞通告") || strings.Contains(item.Title, "风险提示") {
 			vulnItems = append(vulnItems, item)
 		}
 	}
