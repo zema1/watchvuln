@@ -3,7 +3,6 @@ package grab
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/imroc/req/v3"
 	"github.com/kataras/golog"
@@ -12,6 +11,21 @@ import (
 	"regexp"
 	"strings"
 )
+
+/*ThreatBook 微步漏洞情报
+- 微信公众号	微步在线研究响应中心
+- 渠道		https://wechat2rss.xlab.app/feed/ac64c385ebcdb17fee8df733eb620a22b979928c.xml
+- Demo		https://mp.weixin.qq.com/s?__biz=Mzg5MTc3ODY4Mw==&mid=2247503309&idx=1&sn=df183f5929cfabfebbc6d5c506bb7838&chksm=cfcaaed9f8bd27cf5a74fbb92e7ce8ceb823026094ee0ba71759913cd10f582725c322becb69&scene=58&subscene=0#rd
+- 技术细节
+	- 通过 CSS 选择器解析微信公众号的文本，识别出漏洞等级等，主要是用的相对定位法，如选取【危害评级】元素的随后一个元素
+	- UniqueKey是用的是微步的编号，例如：XVE-2023-32221
+	- CVE 编号是在【漏洞概况】中，用正则抓取的
+	- Tag
+
+- 已知问题
+	- 有时候会被微信反爬，只获取得到 title
+
+*/
 
 type ThreatBookCrawler struct {
 	client *req.Client
@@ -29,8 +43,9 @@ func NewThreatBookCrawler() Grabber {
 	}
 }
 
-func (a *ThreatBookCrawler) getVulnInfoFromURL(ctx context.Context, vulnLink string) (*VulnInfo, error) {
-	resp, err := a.client.R().SetContext(ctx).Get(vulnLink)
+func (t *ThreatBookCrawler) getVulnInfoFromFeed(ctx context.Context, rss *gofeed.Item) (*VulnInfo, error) {
+	vulnLink := rss.Link
+	resp, err := t.client.R().SetContext(ctx).Get(vulnLink)
 	if err != nil {
 		return nil, err
 	}
@@ -42,9 +57,7 @@ func (a *ThreatBookCrawler) getVulnInfoFromURL(ctx context.Context, vulnLink str
 
 	var vuln VulnInfo
 
-	title := doc.Find(`#activity-name`).Text()
-	description := doc.Find(`#js_content > section:nth-child(3) > section`).Text()
-	//description := doc.Find(`section:contains('漏洞概况') + section`).Text()
+	description := doc.Find(`section:contains('漏洞概况') + section`).Text()
 	// 这个选择器会选择所有在包含“综合处置优先级”文本的<strong>标签后面紧跟着的<span>标签。
 	//	eg: 高
 	//level_1 := doc.Find("strong:contains('综合处置优先级') + span").Text()
@@ -52,9 +65,10 @@ func (a *ThreatBookCrawler) getVulnInfoFromURL(ctx context.Context, vulnLink str
 	level := doc.Find("td:contains('危害评级') + td").Text()
 
 	// trim
-	vuln.Title = strings.TrimSpace(title)
+	vuln.Title = getTitleWithoutType(rss.Title)
 	vuln.Description = strings.TrimSpace(description)
 	vuln.UniqueKey = doc.Find(`td:contains('微步编号') + td`).Text()
+	t.log.Infof("UniqueKey:\t%v", vuln.UniqueKey)
 	vuln.From = vulnLink
 
 	severity := Low
@@ -72,9 +86,10 @@ func (a *ThreatBookCrawler) getVulnInfoFromURL(ctx context.Context, vulnLink str
 
 	cveIDRegexpLoose := regexp.MustCompile(`CVE-\d+-\d+`)
 	cve := cveIDRegexpLoose.FindString(description)
-	a.log.Infof("cve id %q\n", cve)
-	vuln.CVE = cve
+	t.log.Infof("Desc:\t%v", vuln.Description)
+	t.log.Infof("CVE:\t%q", cve)
 
+	vuln.CVE = cve
 	vuln.Solutions = doc.Find(`section:contains('修复方案') + section`).Text()
 	vuln.Disclosure = doc.Find(`td:contains('公开程度') + td`).Text()
 
@@ -84,7 +99,10 @@ func (a *ThreatBookCrawler) getVulnInfoFromURL(ctx context.Context, vulnLink str
 		doc.Find(`td:contains('交互要求') + td`).Text(),
 		doc.Find(`td:contains('威胁类型') + td`).Text(),
 	}
-	a.log.Infof("vuln: %v", vuln)
+	t.log.Infof("Solutions:\t%v", vuln.Solutions)
+	t.log.Infof("Disclosure:\t%v", vuln.Disclosure)
+	t.log.Infof("tags:\t%v", vuln.Tags)
+	t.log.Infof("vuln: %v\n", vuln)
 	return &vuln, nil
 }
 
@@ -101,15 +119,14 @@ func (t *ThreatBookCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*Vu
 	feed, _ := fp.ParseURL("https://wechat2rss.xlab.app/feed/ac64c385ebcdb17fee8df733eb620a22b979928c.xml")
 	AllVulns := getAllVulnItems(feed)
 	numOfVuln := len(AllVulns)
-	t.log.Infof("got %d vulns ", numOfVuln)
+	t.log.Infof("===GET %d vulns===", numOfVuln)
 
 	// 开始判断漏洞重要性，组装漏洞信息
 	var results []*VulnInfo
 
 	for _, v := range AllVulns {
 		t.log.Infof("Parsing %v at %v", v.Title, v.Link)
-		vuln, _ := t.getVulnInfoFromURL(ctx, v.Link)
-		t.log.Infof("\t%s %s", vuln.Title, v.Description)
+		vuln, _ := t.getVulnInfoFromFeed(ctx, v)
 		results = append(results, vuln)
 	}
 
@@ -118,105 +135,32 @@ func (t *ThreatBookCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*Vu
 
 func getAllVulnItems(feed *gofeed.Feed) []*gofeed.Item {
 	/*
-		微信推送文章的标题必须包含`漏洞通告`, `风险提示`，才视为漏洞信息
+			1. 根据标题筛选公众号文章。微信推送文章的标题必须包含`漏洞通告`, `风险提示`，才视为漏洞信息
+			2. 修改推送文章的名字。删除"漏洞通告"这类的前缀
+		漏洞通告 | 金山终端安全... -> 金山终端安全...
 	*/
 	vulnItems := []*gofeed.Item{}
 
 	for _, item := range feed.Items {
-		if strings.Contains(item.Title, "漏洞通告") || strings.Contains(item.Title, "风险提示") {
+		title := item.Title
+		if strings.Contains(title, "漏洞通告") || strings.Contains(title, "风险提示") {
 			vulnItems = append(vulnItems, item)
 		}
 	}
 	return vulnItems
 }
 
-func (t *ThreatBookCrawler) parsePage(ctx context.Context, page int) ([]*VulnInfo, error) {
-	u := fmt.Sprintf("https://www.seebug.org/vuldb/vulnerabilities?page=%d", page)
-	resp, err := t.client.R().SetContext(ctx).Get(u)
-	if err != nil {
-		return nil, err
-	}
-	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(resp.Bytes()))
-	if err != nil {
-		return nil, err
-	}
-	sel := doc.Find(".sebug-table tbody tr")
-	count := sel.Length()
-	if count == 0 {
-		t.log.Errorf("invalid response\n%s", resp.Dump())
-		return nil, fmt.Errorf("goquery find zero vulns")
-	}
-
-	var vulnInfo []*VulnInfo
-	for i := 0; i < count; i++ {
-		tds := sel.Eq(i).Find("td")
-		if tds.Length() != 6 {
-			return nil, fmt.Errorf("tag count does not match")
-		}
-
-		idTag := tds.Eq(0).Find("a")
-		href, _ := idTag.Attr("href")
-		href = strings.TrimSpace(href)
-		if href != "" {
-			href = "https://www.seebug.org" + href
-		}
-		uniqueKey := idTag.Text()
-		uniqueKey = strings.TrimSpace(uniqueKey)
-
-		disclosure := tds.Eq(1).Text()
-		disclosure = strings.TrimSpace(disclosure)
-
-		severityTitle, _ := tds.Eq(2).Find("div").Attr("data-original-title")
-		severityTitle = strings.TrimSpace(severityTitle)
-		var severity SeverityLevel
-		severity = Low
-		switch severityTitle {
-		case "高危":
-			severity = High
-		case "中危":
-			severity = Medium
-		case "低危":
-			severity = Low
-		}
-
-		title := tds.Eq(3).Text()
-		title = strings.TrimSpace(title)
-
-		cveId, _ := tds.Eq(4).Find("i.fa-id-card").Attr("data-original-title")
-		cveId = strings.TrimSpace(cveId)
-		if strings.Contains(cveId, "、") {
-			cveId = strings.Split(cveId, "、")[0]
-		}
-		if !cveIDRegexp.MatchString(cveId) {
-			cveId = ""
-		}
-
-		var tags []string
-		tag, _ := tds.Eq(4).Find("i.fa-file-text-o").Attr("data-original-title")
-		tag = strings.TrimSpace(tag)
-		if tag == "有详情" {
-			tags = append(tags, "有详情")
-		}
-
-		vulnInfo = append(vulnInfo, &VulnInfo{
-			UniqueKey:   uniqueKey,
-			Title:       title,
-			Description: "",
-			Severity:    severity,
-			CVE:         cveId,
-			Disclosure:  disclosure,
-			References:  nil,
-			Tags:        tags,
-			Solutions:   "",
-			From:        href,
-			Creator:     t,
-		})
-	}
-	return vulnInfo, nil
-}
-
 func (t *ThreatBookCrawler) IsValuable(info *VulnInfo) bool {
 	return info.Severity == High || info.Severity == Critical
+}
+
+func getTitleWithoutType(title string) string {
+	title = strings.TrimLeft(title, "漏洞通告")
+	title = strings.TrimLeft(title, "风险提示")
+	title = strings.TrimSpace(title)
+	title = strings.TrimLeft(title, "|")
+	title = strings.TrimSpace(title)
+	return title
 }
 
 func (t *ThreatBookCrawler) newClient() *req.Client {
