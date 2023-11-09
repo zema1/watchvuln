@@ -27,7 +27,7 @@ func (vid *VulnInformationDelete) Where(ps ...predicate.VulnInformation) *VulnIn
 
 // Exec executes the deletion query and returns how many vertices were deleted.
 func (vid *VulnInformationDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks[int, VulnInformationMutation](ctx, vid.sqlExec, vid.mutation, vid.hooks)
+	return withHooks(ctx, vid.sqlExec, vid.mutation, vid.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.

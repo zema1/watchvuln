@@ -215,7 +215,7 @@ func (viu *VulnInformationUpdate) Mutation() *VulnInformationMutation {
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (viu *VulnInformationUpdate) Save(ctx context.Context) (int, error) {
 	viu.defaults()
-	return withHooks[int, VulnInformationMutation](ctx, viu.sqlSave, viu.mutation, viu.hooks)
+	return withHooks(ctx, viu.sqlSave, viu.mutation, viu.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -539,7 +539,7 @@ func (viuo *VulnInformationUpdateOne) Select(field string, fields ...string) *Vu
 // Save executes the query and returns the updated VulnInformation entity.
 func (viuo *VulnInformationUpdateOne) Save(ctx context.Context) (*VulnInformation, error) {
 	viuo.defaults()
-	return withHooks[*VulnInformation, VulnInformationMutation](ctx, viuo.sqlSave, viuo.mutation, viuo.hooks)
+	return withHooks(ctx, viuo.sqlSave, viuo.mutation, viuo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.

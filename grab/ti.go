@@ -45,7 +45,7 @@ func (t *TiCrawler) GetUpdate(ctx context.Context, _ int) ([]*VulnInfo, error) {
 		return nil, err
 	}
 	var results []*VulnInfo
-	for _, d := range append(body.Data.KeyVulnAdd, body.Data.PocExpAdd...) {
+	for _, d := range body.Data.KeyVulnAdd {
 		tags := make([]string, 0, len(d.Tag))
 		for _, tag := range d.Tag {
 			tags = append(tags, strings.TrimSpace(tag.Name))

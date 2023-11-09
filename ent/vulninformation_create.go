@@ -194,7 +194,7 @@ func (vic *VulnInformationCreate) Mutation() *VulnInformationMutation {
 // Save creates the VulnInformation in the database.
 func (vic *VulnInformationCreate) Save(ctx context.Context) (*VulnInformation, error) {
 	vic.defaults()
-	return withHooks[*VulnInformation, VulnInformationMutation](ctx, vic.sqlSave, vic.mutation, vic.hooks)
+	return withHooks(ctx, vic.sqlSave, vic.mutation, vic.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -891,12 +891,16 @@ func (u *VulnInformationUpsertOne) IDX(ctx context.Context) int {
 // VulnInformationCreateBulk is the builder for creating many VulnInformation entities in bulk.
 type VulnInformationCreateBulk struct {
 	config
+	err      error
 	builders []*VulnInformationCreate
 	conflict []sql.ConflictOption
 }
 
 // Save creates the VulnInformation entities in the database.
 func (vicb *VulnInformationCreateBulk) Save(ctx context.Context) ([]*VulnInformation, error) {
+	if vicb.err != nil {
+		return nil, vicb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(vicb.builders))
 	nodes := make([]*VulnInformation, len(vicb.builders))
 	mutators := make([]Mutator, len(vicb.builders))
@@ -1267,6 +1271,9 @@ func (u *VulnInformationUpsertBulk) UpdateUpdateTime() *VulnInformationUpsertBul
 
 // Exec executes the query.
 func (u *VulnInformationUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
 	for i, b := range u.create.builders {
 		if len(b.conflict) != 0 {
 			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the VulnInformationCreateBulk instead", i)

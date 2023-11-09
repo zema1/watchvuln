@@ -18,7 +18,7 @@ import (
 type VulnInformationQuery struct {
 	config
 	ctx        *QueryContext
-	order      []vulninformation.Order
+	order      []vulninformation.OrderOption
 	inters     []Interceptor
 	predicates []predicate.VulnInformation
 	// intermediate query (i.e. traversal path).
@@ -52,7 +52,7 @@ func (viq *VulnInformationQuery) Unique(unique bool) *VulnInformationQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (viq *VulnInformationQuery) Order(o ...vulninformation.Order) *VulnInformationQuery {
+func (viq *VulnInformationQuery) Order(o ...vulninformation.OrderOption) *VulnInformationQuery {
 	viq.order = append(viq.order, o...)
 	return viq
 }
@@ -246,7 +246,7 @@ func (viq *VulnInformationQuery) Clone() *VulnInformationQuery {
 	return &VulnInformationQuery{
 		config:     viq.config,
 		ctx:        viq.ctx.Clone(),
-		order:      append([]vulninformation.Order{}, viq.order...),
+		order:      append([]vulninformation.OrderOption{}, viq.order...),
 		inters:     append([]Interceptor{}, viq.inters...),
 		predicates: append([]predicate.VulnInformation{}, viq.predicates...),
 		// clone intermediate query.
