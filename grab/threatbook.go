@@ -10,6 +10,7 @@ import (
 	"net/http/cookiejar"
 	"regexp"
 	"strings"
+	"time"
 )
 
 /*ThreatBook 微步漏洞情报
@@ -26,6 +27,8 @@ import (
 	- 有时候会被微信反爬，只获取得到 title
 
 */
+
+const ThreatbookUrl = "https://wechat2rss.xlab.app/feed/ac64c385ebcdb17fee8df733eb620a22b979928c.xml"
 
 type ThreatBookCrawler struct {
 	client *req.Client
@@ -116,16 +119,22 @@ func (t *ThreatBookCrawler) ProviderInfo() *Provider {
 }
 
 func (t *ThreatBookCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*VulnInfo, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second) // 增加超时
+	defer cancel()
 	fp := gofeed.NewParser()
-	feed, _ := fp.ParseURL("https://wechat2rss.xlab.app/feed/ac64c385ebcdb17fee8df733eb620a22b979928c.xml")
-	AllVulns := getAllVulnItems(feed)
-	numOfVuln := len(AllVulns)
+	feed, err := fp.ParseURLWithContext(ThreatbookUrl, ctx)
+	if err != nil {
+		t.log.Errorf("Error in Parsing URL: %v, please check it", ThreatbookUrl)
+		return nil, err
+	}
+	allVulns := getAllVulnItems(feed)
+	numOfVuln := len(allVulns)
 	t.log.Debugf("===GET %d vulns===", numOfVuln)
 
 	// 开始判断漏洞重要性，组装漏洞信息
 	var results []*VulnInfo
 
-	for _, v := range AllVulns {
+	for _, v := range allVulns {
 		t.log.Debugf("Parsing %v at %v", v.Title, v.Link)
 		vuln, _ := t.getVulnInfoFromFeed(ctx, v)
 		results = append(results, vuln)
@@ -168,6 +177,6 @@ func (t *ThreatBookCrawler) newClient() *req.Client {
 	jar, _ := cookiejar.New(nil)
 	client := NewHttpClient().
 		SetCookieJar(jar).
-		SetCommonHeader("Referer", "https://wechat2rss.xlab.app/feed/ac64c385ebcdb17fee8df733eb620a22b979928c.xml")
+		SetCommonHeader("Referer", ThreatbookUrl)
 	return client
 }
