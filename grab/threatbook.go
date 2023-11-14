@@ -14,6 +14,8 @@ import (
 )
 
 /*ThreatBook 微步漏洞情报
+- 推送策略	漏洞等级为高危或严重
+
 - 微信公众号	微步在线研究响应中心
 - 渠道		https://wechat2rss.xlab.app/feed/ac64c385ebcdb17fee8df733eb620a22b979928c.xml
 - Demo		https://mp.weixin.qq.com/s?__biz=Mzg5MTc3ODY4Mw==&mid=2247503309&idx=1&sn=df183f5929cfabfebbc6d5c506bb7838&chksm=cfcaaed9f8bd27cf5a74fbb92e7ce8ceb823026094ee0ba71759913cd10f582725c322becb69&scene=58&subscene=0#rd
