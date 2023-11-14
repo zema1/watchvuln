@@ -68,7 +68,7 @@ func (t *ThreatBookCrawler) getVulnInfoFromFeed(ctx context.Context, rss *gofeed
 	vuln.Title = getTitleWithoutType(rss.Title)
 	vuln.Description = strings.TrimSpace(description)
 	vuln.UniqueKey = doc.Find(`td:contains('微步编号') + td`).Text()
-	t.log.Infof("UniqueKey:\t%v", vuln.UniqueKey)
+	t.log.Debugf("UniqueKey:\t%v", vuln.UniqueKey)
 	vuln.From = vulnLink
 
 	severity := Low
@@ -86,8 +86,8 @@ func (t *ThreatBookCrawler) getVulnInfoFromFeed(ctx context.Context, rss *gofeed
 
 	cveIDRegexpLoose := regexp.MustCompile(`CVE-\d+-\d+`)
 	cve := cveIDRegexpLoose.FindString(description)
-	t.log.Infof("Desc:\t%v", vuln.Description)
-	t.log.Infof("CVE:\t%q", cve)
+	t.log.Debugf("Desc:\t%v", vuln.Description)
+	t.log.Debugf("CVE:\t%q", cve)
 
 	vuln.CVE = cve
 	vuln.Solutions = doc.Find(`section:contains('修复方案') + section`).Text()
@@ -99,10 +99,10 @@ func (t *ThreatBookCrawler) getVulnInfoFromFeed(ctx context.Context, rss *gofeed
 		doc.Find(`td:contains('交互要求') + td`).Text(),
 		doc.Find(`td:contains('威胁类型') + td`).Text(),
 	}
-	t.log.Infof("Solutions:\t%v", vuln.Solutions)
-	t.log.Infof("Disclosure:\t%v", vuln.Disclosure)
-	t.log.Infof("tags:\t%v", vuln.Tags)
-	t.log.Infof("vuln: %v\n", vuln)
+	t.log.Debugf("Solutions:\t%v", vuln.Solutions)
+	t.log.Debugf("Disclosure:\t%v", vuln.Disclosure)
+	t.log.Debugf("tags:\t%v", vuln.Tags)
+	t.log.Debugf("vuln: %v\n", vuln)
 	return &vuln, nil
 }
 
@@ -119,13 +119,13 @@ func (t *ThreatBookCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*Vu
 	feed, _ := fp.ParseURL("https://wechat2rss.xlab.app/feed/ac64c385ebcdb17fee8df733eb620a22b979928c.xml")
 	AllVulns := getAllVulnItems(feed)
 	numOfVuln := len(AllVulns)
-	t.log.Infof("===GET %d vulns===", numOfVuln)
+	t.log.Debugf("===GET %d vulns===", numOfVuln)
 
 	// 开始判断漏洞重要性，组装漏洞信息
 	var results []*VulnInfo
 
 	for _, v := range AllVulns {
-		t.log.Infof("Parsing %v at %v", v.Title, v.Link)
+		t.log.Debugf("Parsing %v at %v", v.Title, v.Link)
 		vuln, _ := t.getVulnInfoFromFeed(ctx, v)
 		results = append(results, vuln)
 	}
