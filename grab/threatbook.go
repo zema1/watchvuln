@@ -33,9 +33,10 @@ type ThreatBookCrawler struct {
 }
 
 func NewThreatBookCrawler() Grabber {
-	client := wrapApiClient(NewHttpClient())
+	client := NewHttpClient()
 	client.SetCommonHeader("Referer", "https://mp.weixin.qq.com/")
 	client.SetCommonHeader("Origin", "https://mp.weixin.qq.com/")
+	client.SetCommonHeader("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6")
 
 	return &ThreatBookCrawler{
 		log:    golog.Child("[ThreatBook-Vuln]"),
