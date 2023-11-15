@@ -80,6 +80,8 @@ func NewApp(config *WatchVulnAppConfig, textPusher push.TextPusher, rawPusher pu
 			grabs = append(grabs, grab.NewOSCSCrawler())
 		case "seebug":
 			grabs = append(grabs, grab.NewSeebugCrawler())
+		case "threatbook":
+			grabs = append(grabs, grab.NewThreatBookCrawler())
 		default:
 			return nil, fmt.Errorf("invalid grab source %s", part)
 		}
