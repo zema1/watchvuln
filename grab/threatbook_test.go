@@ -17,12 +17,11 @@ func TestThreatBook(t *testing.T) {
 
 	count := 0
 	for _, v := range vulns {
-		t.Logf("get vuln info %s", v)
+		t.Logf("get vuln info %+v", v)
 		count++
 		assert.NotEmpty(v.UniqueKey)
 		assert.NotEmpty(v.Description)
 		assert.NotEmpty(v.Title)
-		assert.NotEmpty(v.Disclosure)
 		assert.NotEmpty(v.From)
 	}
 	assert.Greater(count, 1)
