@@ -74,7 +74,6 @@ func (t *ThreatBookCrawler) getVulnInfoFromFeed(ctx context.Context, rss *gofeed
 	vuln.Title = getTitleWithoutType(rss.Title)
 	vuln.Description = strings.TrimSpace(description)
 	vuln.UniqueKey = doc.Find(`td:contains('微步编号') + td`).Text()
-	t.log.Debugf("UniqueKey:\t%v", vuln.UniqueKey)
 	vuln.From = vulnLink
 
 	severity := Low
@@ -92,23 +91,21 @@ func (t *ThreatBookCrawler) getVulnInfoFromFeed(ctx context.Context, rss *gofeed
 
 	cveIDRegexpLoose := regexp.MustCompile(`CVE-\d+-\d+`)
 	cve := cveIDRegexpLoose.FindString(description)
-	t.log.Debugf("Desc:\t%v", vuln.Description)
-	t.log.Debugf("CVE:\t%q", cve)
 
 	vuln.CVE = cve
-	vuln.Solutions = doc.Find(`section:contains('修复方案') + section`).Text()
+	// 获取的不太对，先不要了
+	//vuln.Solutions = doc.Find(`section:contains('修复方案') + section`).Text()
 	vuln.Disclosure = doc.Find(`td:contains('公开程度') + td`).Text()
 
 	vuln.Tags = []string{
+		doc.Find(`td:contains('公开程度') + td`).Text(),
 		doc.Find(`td:contains('漏洞类型') + td`).Text(),
 		doc.Find(`td:contains('利用条件') + td`).Text(),
 		doc.Find(`td:contains('交互要求') + td`).Text(),
 		doc.Find(`td:contains('威胁类型') + td`).Text(),
 	}
-	t.log.Debugf("Solutions:\t%v", vuln.Solutions)
-	t.log.Debugf("Disclosure:\t%v", vuln.Disclosure)
-	t.log.Debugf("tags:\t%v", vuln.Tags)
-	t.log.Debugf("vuln: %v\n", vuln)
+	t.log.Debugf("%+v", vuln)
+	vuln.Creator = t
 	return &vuln, nil
 }
 
