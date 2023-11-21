@@ -44,7 +44,7 @@ func NewThreatBookCrawler() Grabber {
 	client.SetCommonHeader("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6")
 
 	return &ThreatBookCrawler{
-		log:    golog.Child("[ThreatBook-Vuln]"),
+		log:    golog.Child("[threatbook]"),
 		client: client,
 	}
 }
@@ -104,7 +104,6 @@ func (t *ThreatBookCrawler) getVulnInfoFromFeed(ctx context.Context, rss *gofeed
 		doc.Find(`td:contains('交互要求') + td`).Text(),
 		doc.Find(`td:contains('威胁类型') + td`).Text(),
 	}
-	t.log.Debugf("%+v", vuln)
 	vuln.Creator = t
 	return &vuln, nil
 }
@@ -118,24 +117,25 @@ func (t *ThreatBookCrawler) ProviderInfo() *Provider {
 }
 
 func (t *ThreatBookCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*VulnInfo, error) {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second) // 增加超时
+	ctx, cancel := context.WithTimeout(ctx, 60*time.Second) // 增加超时
 	defer cancel()
 	fp := gofeed.NewParser()
 	feed, err := fp.ParseURLWithContext(ThreatbookUrl, ctx)
 	if err != nil {
-		t.log.Errorf("Error in Parsing URL: %v, please check it", ThreatbookUrl)
+		t.log.Errorf("error parsing %v", ThreatbookUrl)
 		return nil, err
 	}
 	allVulns := getAllVulnItems(feed)
-	numOfVuln := len(allVulns)
-	t.log.Debugf("===GET %d vulns===", numOfVuln)
-
 	// 开始判断漏洞重要性，组装漏洞信息
 	var results []*VulnInfo
 
 	for _, v := range allVulns {
-		t.log.Debugf("Parsing %v at %v", v.Title, v.Link)
-		vuln, _ := t.getVulnInfoFromFeed(ctx, v)
+		t.log.Debugf("parsing %v at %v", v.Title, v.Link)
+		vuln, err := t.getVulnInfoFromFeed(ctx, v)
+		if err != nil {
+			t.log.Error(err)
+			continue
+		}
 		results = append(results, vuln)
 	}
 
