@@ -35,7 +35,8 @@ webhook 的数据统一使用 json 格式发送，最外层的定义为:
         "display_name": "OSCS开源安全情报预警",
         "link": "https://www.oscs1024.com/cm"
       }
-    ]
+    ],
+    "failed_provider": []
   }
 }
 ```

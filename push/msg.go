@@ -38,11 +38,14 @@ const vulnInfoMsg = `
 
 const initialMsg = `
 数据初始化完成，当前版本 {{ .Version }}， 本地漏洞数量: {{ .VulnCount }}, 检查周期: {{ .Interval }} 
-启用的数据源:
 
-{{ range .Provider }}
-- [{{ .DisplayName }}]({{ .Link -}})
-{{- end }}
+启用的数据源:
+{{ range .Provider }}- [{{ .DisplayName }}]({{ .Link -}})
+{{ end }}
+
+失败的数据源:
+{{ range .Provider }}- [{{ .DisplayName }}]({{ .Link }})
+{{ end -}}
 `
 
 var (
@@ -74,10 +77,11 @@ func RenderInitialMsg(v *InitialMessage) string {
 }
 
 type InitialMessage struct {
-	Version   string           `json:"version"`
-	VulnCount int              `json:"vuln_count"`
-	Interval  string           `json:"interval"`
-	Provider  []*grab.Provider `json:"provider"`
+	Version        string           `json:"version"`
+	VulnCount      int              `json:"vuln_count"`
+	Interval       string           `json:"interval"`
+	Provider       []*grab.Provider `json:"provider"`
+	FailedProvider []*grab.Provider `json:"failed_provider"`
 }
 
 type TextMessage struct {

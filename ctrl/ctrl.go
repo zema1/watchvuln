@@ -107,26 +107,28 @@ func NewApp(config *WatchVulnAppConfig, textPusher push.TextPusher, rawPusher pu
 
 func (w *WatchVulnApp) Run(ctx context.Context) error {
 	w.log.Infof("initialize local database..")
-	if err := w.initData(ctx); err != nil {
-		return err
-	}
-	w.log.Infof("grabber finished successfully")
-
+	success, fail := w.initData(ctx)
+	w.grabbers = success
 	localCount, err := w.db.VulnInformation.Query().Count(ctx)
 	if err != nil {
 		return err
 	}
 	w.log.Infof("system init finished, local database has %d vulns", localCount)
 	if !w.config.NoStartMessage {
-		providers := make([]*grab.Provider, 0, 3)
+		providers := make([]*grab.Provider, 0, 10)
+		failed := make([]*grab.Provider, 0, 10)
 		for _, p := range w.grabbers {
 			providers = append(providers, p.ProviderInfo())
 		}
+		for _, p := range fail {
+			failed = append(failed, p.ProviderInfo())
+		}
 		msg := &push.InitialMessage{
-			Version:   w.config.Version,
-			VulnCount: localCount,
-			Interval:  w.config.Interval.String(),
-			Provider:  providers,
+			Version:        w.config.Version,
+			VulnCount:      localCount,
+			Interval:       w.config.Interval.String(),
+			Provider:       providers,
+			FailedProvider: failed,
 		}
 		if err := w.textPusher.PushMarkdown("WatchVuln 初始化完成", push.RenderInitialMsg(msg)); err != nil {
 			return err
@@ -241,9 +243,11 @@ func (w *WatchVulnApp) Close() {
 	_ = w.db.Close()
 }
 
-func (w *WatchVulnApp) initData(ctx context.Context) error {
-	eg, ctx := errgroup.WithContext(ctx)
+func (w *WatchVulnApp) initData(ctx context.Context) ([]grab.Grabber, []grab.Grabber) {
+	var eg errgroup.Group
 	eg.SetLimit(len(w.grabbers))
+	var success []grab.Grabber
+	var fail []grab.Grabber
 	for _, grabber := range w.grabbers {
 		gb := grabber
 		eg.Go(func() error {
@@ -251,22 +255,25 @@ func (w *WatchVulnApp) initData(ctx context.Context) error {
 			w.log.Infof("start to init data from %s", source.Name)
 			initVulns, err := gb.GetUpdate(ctx, InitPageLimit)
 			if err != nil {
+				fail = append(fail, gb)
 				return errors.Wrap(err, source.Name)
 			}
 
 			for _, data := range initVulns {
 				if _, err = w.createOrUpdate(ctx, source, data); err != nil {
+					fail = append(fail, gb)
 					return errors.Wrap(errors.Wrap(err, data.String()), source.Name)
 				}
 			}
+			success = append(success, gb)
 			return nil
 		})
 	}
 	err := eg.Wait()
 	if err != nil {
-		return errors.Wrap(err, "init data")
+		w.log.Error(errors.Wrap(err, "init data"))
 	}
-	return nil
+	return success, fail
 }
 
 func (w *WatchVulnApp) collectUpdate(ctx context.Context) ([]*grab.VulnInfo, error) {
