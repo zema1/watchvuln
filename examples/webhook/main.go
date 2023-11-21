@@ -55,7 +55,7 @@ func handleWebhookData(writer http.ResponseWriter, request *http.Request) {
 			return
 		}
 		fmt.Printf("msg: %s\n", string(wd.Content))
-		//fmt.Printf("unmarshal: %+v\n", msg)
+		fmt.Printf("unmarshal: %+v\n", msg)
 	case push.RawMessageTypeText:
 		fmt.Println("recv text data:")
 		var msg push.TextMessage
