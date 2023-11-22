@@ -39,13 +39,13 @@ const vulnInfoMsg = `
 const initialMsg = `
 数据初始化完成，当前版本 {{ .Version }}， 本地漏洞数量: {{ .VulnCount }}, 检查周期: {{ .Interval }} 
 
-启用的数据源:
+成功的数据源:
 {{ range .Provider }}- [{{ .DisplayName }}]({{ .Link -}})
 {{ end }}
 
 失败的数据源:
-{{ range .Provider }}- [{{ .DisplayName }}]({{ .Link }})
-{{ end -}}
+{{ if .FailedProvider }}{{ range .FailedProvider }}- [{{ .DisplayName }}]({{ .Link }})
+{{ end -}}{{ else}}无{{ end -}}
 `
 
 var (
