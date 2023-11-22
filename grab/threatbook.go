@@ -95,7 +95,7 @@ func (t *ThreatBookCrawler) getVulnInfoFromFeed(ctx context.Context, rss *gofeed
 	vuln.CVE = cve
 	// 获取的不太对，先不要了
 	//vuln.Solutions = doc.Find(`section:contains('修复方案') + section`).Text()
-	vuln.Disclosure = doc.Find(`td:contains('公开程度') + td`).Text()
+	//vuln.Disclosure = doc.Find(`td:contains('公开程度') + td`).Text()
 
 	vuln.Tags = []string{
 		doc.Find(`td:contains('公开程度') + td`).Text(),
