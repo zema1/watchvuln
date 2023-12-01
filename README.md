@@ -56,6 +56,7 @@ Docker 方式推荐使用环境变量来配置服务参数
 | `ENABLE_CVE_FILTER`     | 启用 CVE 过滤，开启后多个数据源的统一 CVE 将只推送一次                              | `true`                      |
 | `NO_FILTER`             | 禁用上述推送过滤策略，所有新发现的漏洞都会被推送                                      | `false`                     |
 | `NO_START_MESSAGE`      | 禁用服务启动的提示信息                                                   | `false`                     |
+| `HTTPS_PROXY`           | 给所有请求配置代理, 支持 `socks5://xxxx` 或者 `http(s)://xxkx`             |                             |
 
 比如使用钉钉机器人
 
@@ -181,7 +182,8 @@ GLOBAL OPTIONS:
    --no-filter, --nf            ignore the valuable filter and push all discovered vulns (default: false)
    --no-github-search, --ng     don't search github repos and pull requests for every cve vuln (default: false)
    --no-start-message, --nm     disable the hello message when server starts (default: false)
-   --sources value, -s value    set vuln sources (default: "avd,nox,oscs")
+   --proxy value, -x value      set request proxy, support socks5://xxx or http(s)://
+   --sources value, -s value    set vuln sources (default: "avd,nox,oscs,threatbook,seebug")
 
    [Other Options]
 
@@ -261,6 +263,15 @@ $ ./watchvuln --dt DINGDING_ACCESS_TOKEN --ds DINGDING_SECRET --wk WECHATWORK_KE
 - `postgres://user:pass@host:port/dbname`
 
 注意：该项目不做数据向后兼容保证，版本升级可能存在数据不兼容的情况，如果报错需要删库重来。
+
+## 配置代理
+
+watchvuln 支持配置上游代理来绕过网络限制，支持两种方式:
+
+- 环境变量 `HTTPS_PROXY`
+- 命令行参数 `--proxy`/`-x`
+
+支持 `socks5://xxxx` 或者 `http(s)://xxkx` 两种代理形式。
 
 ## 常见问题
 

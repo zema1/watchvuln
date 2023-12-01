@@ -108,6 +108,12 @@ func main() {
 			Value:    "30m",
 			Category: "[Launch Options]",
 		},
+		&cli.StringFlag{
+			Name:     "proxy",
+			Aliases:  []string{"x"},
+			Usage:    "set request proxy, support socks5://xxx or http(s)://",
+			Category: "[Launch Options]",
+		},
 		&cli.BoolFlag{
 			Name:     "enable-cve-filter",
 			Usage:    "enable a filter that vulns from multiple sources with same cve id will be sent only once",
@@ -180,6 +186,7 @@ func Action(c *cli.Context) error {
 	debug := c.Bool("debug")
 	iv := c.String("interval")
 	db := c.String("db")
+	proxy := c.String("proxy")
 
 	if os.Getenv("INTERVAL") != "" {
 		iv = os.Getenv("INTERVAL")
@@ -198,6 +205,13 @@ func Action(c *cli.Context) error {
 	}
 	if os.Getenv("DB_CONN") != "" {
 		db = os.Getenv("DB_CONN")
+	}
+	if proxy != "" {
+		must(os.Setenv("HTTP_PROXY", proxy))
+		must(os.Setenv("HTTPS_PROXY", proxy))
+	}
+	if os.Getenv("HTTPS_PROXY") != "" {
+		must(os.Setenv("HTTP_PROXY", os.Getenv("HTTPS_PROXY")))
 	}
 
 	log.Infof("config: INTERVAL=%s, NO_FILTER=%v, NO_START_MESSAGE=%v, NO_GITHUB_SEARCH=%v, ENABLE_CVE_FILTER=%v",
@@ -309,4 +323,10 @@ func signalCtx() (context.Context, func()) {
 		cancel()
 	}()
 	return ctx, cancel
+}
+
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
 }
