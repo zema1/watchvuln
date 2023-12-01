@@ -10,26 +10,26 @@ import (
 	"time"
 )
 
-const ConfluenceUrl = "https://cwiki.apache.org/confluence/display/WW/Security+Bulletins"
+const Struts2Url = "https://cwiki.apache.org/confluence/display/WW/Security+Bulletins"
 
-type ConfluenceCrawler struct {
+type Struts2Crawler struct {
 	client *req.Client
 	log    *golog.Logger
 }
 
-func NewConfluenceCrawler() Grabber {
+func NewStruts2Crawler() Grabber {
 	client := NewHttpClient()
 	client.SetCommonHeader("Referer", "https://cwiki.apache.org/")
 	client.SetCommonHeader("Origin", "https://cwiki.apache.org/")
 	client.SetCommonHeader("Accept-Language", "en-US,en;q=0.9")
 
-	return &ConfluenceCrawler{
-		log:    golog.Child("[Confluence-Security]"),
+	return &Struts2Crawler{
+		log:    golog.Child("[Struts2-Security]"),
 		client: client,
 	}
 }
 
-func (c *ConfluenceCrawler) getVulnInfoFromURL(ctx context.Context, url string) (*VulnInfo, error) {
+func (c *Struts2Crawler) getVulnInfoFromURL(ctx context.Context, url string) (*VulnInfo, error) {
 	resp, err := c.client.R().SetContext(ctx).Get(url)
 	if err != nil {
 		return nil, err
@@ -79,11 +79,11 @@ func getSeverityFromString(severityText string) SeverityLevel {
 	}
 }
 
-func (c *ConfluenceCrawler) GetUpdate(ctx context.Context, vulnLimit int) ([]*VulnInfo, error) {
+func (c *Struts2Crawler) GetUpdate(ctx context.Context, vulnLimit int) ([]*VulnInfo, error) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-	resp, err := c.client.R().SetContext(ctx).Get(ConfluenceUrl)
+	resp, err := c.client.R().SetContext(ctx).Get(Struts2Url)
 	if err != nil {
 		return nil, err
 	}
@@ -130,14 +130,14 @@ func (c *ConfluenceCrawler) GetUpdate(ctx context.Context, vulnLimit int) ([]*Vu
 	return vulnInfos, nil
 }
 
-func (c *ConfluenceCrawler) ProviderInfo() *Provider {
+func (c *Struts2Crawler) ProviderInfo() *Provider {
 	return &Provider{
-		Name:        "confluence",
-		DisplayName: "Apache Confluence Security Bulletins",
-		Link:        ConfluenceUrl,
+		Name:        "Struts2",
+		DisplayName: "Apache Struts2 Security Bulletins",
+		Link:        Struts2Url,
 	}
 }
 
-func (c *ConfluenceCrawler) IsValuable(info *VulnInfo) bool {
+func (c *Struts2Crawler) IsValuable(info *VulnInfo) bool {
 	return info.Severity == High || info.Severity == Critical
 }

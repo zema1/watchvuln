@@ -7,11 +7,11 @@ import (
 	"time"
 )
 
-func TestConfluence(t *testing.T) {
+func TestStruts2(t *testing.T) {
 	assert := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*300)
 	defer cancel()
-	grab := NewConfluenceCrawler()
+	grab := NewStruts2Crawler()
 	// 默认要拉去的数量
 	vulns, err := grab.GetUpdate(ctx, 5)
 	assert.Nil(err)
