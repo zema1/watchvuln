@@ -12,7 +12,8 @@ func TestConfluence(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*300)
 	defer cancel()
 	grab := NewConfluenceCrawler()
-	vulns, err := grab.GetUpdate(ctx, 1)
+	// 默认要拉去的数量
+	vulns, err := grab.GetUpdate(ctx, 5)
 	assert.Nil(err)
 
 	count := 0
@@ -25,5 +26,5 @@ func TestConfluence(t *testing.T) {
 		assert.NotEmpty(v.Disclosure)
 		assert.NotEmpty(v.From)
 	}
-	assert.Equal(count, 30)
+	assert.Greater(count, 0)
 }

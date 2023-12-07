@@ -42,9 +42,6 @@ func (c *ConfluenceCrawler) getVulnInfoFromURL(ctx context.Context, url string) 
 
 	var vuln VulnInfo
 
-	// 提取漏洞描述
-	vuln.Description = doc.Find("#S2049-Problem").Next().Text()
-
 	// 提取漏洞严重性
 	severityText := doc.Find("th:contains('Maximum security rating') + td").Text()
 	vuln.Severity = getSeverityFromString(severityText)
@@ -52,10 +49,15 @@ func (c *ConfluenceCrawler) getVulnInfoFromURL(ctx context.Context, url string) 
 	// 提取 CVE 编号
 	vuln.CVE = doc.Find("th:contains('CVE Identifier') + td").Text()
 
-	// 提取其他信息
-	vuln.Title = doc.Find("h2").First().Text()
-	vuln.Solutions = doc.Find("#S2049-Solution").Next().Text()
-	vuln.Disclosure = doc.Find("th:contains('Disclosure') + td").Text()
+	// 提取描述
+	vuln.Description = doc.Find(`h2[id$='-Problem'] + p`).Contents().Text()
+
+	vuln.Solutions = doc.Find("h2[id$='-Solution'] + p").Contents().Text()
+	vuln.Tags = []string{
+		doc.Find("th:contains('Impact of vulnerability') + td").Contents().Text(),
+	}
+
+	vuln.Disclosure = "Official Public"
 
 	vuln.From = url
 
@@ -77,7 +79,7 @@ func getSeverityFromString(severityText string) SeverityLevel {
 	}
 }
 
-func (c *ConfluenceCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*VulnInfo, error) {
+func (c *ConfluenceCrawler) GetUpdate(ctx context.Context, vulnLimit int) ([]*VulnInfo, error) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
@@ -96,7 +98,7 @@ func (c *ConfluenceCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*Vu
 	totalNum := totalItems.Length()
 	totalItems.Each(func(i int, s *goquery.Selection) {
 		// 只处理最后的 pageLimit 条数据----从S2-060开始看....
-		if i >= totalNum-pageLimit {
+		if i >= totalNum-vulnLimit {
 			/*
 				From:
 				<li><a href="/confluence/display/WW/S2-001">S2-001</a> — <span class="smalltext">Remote code exploit on form validation error</span></li>
@@ -116,8 +118,11 @@ func (c *ConfluenceCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*Vu
 			fullLink := "https://cwiki.apache.org" + link
 
 			vuln, _ := c.getVulnInfoFromURL(ctx, fullLink)
+			vuln.Title = title
 			vuln.UniqueKey = title
-			vuln.Disclosure = "Official Public"
+			// 提取漏洞描述
+			vuln.Description = doc.Find("span.smalltext").Text()
+
 			vulnInfos = append(vulnInfos, vuln)
 		}
 	})
