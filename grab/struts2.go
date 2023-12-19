@@ -3,11 +3,13 @@ package grab
 import (
 	"bytes"
 	"context"
+	"regexp"
+	"strings"
+	"time"
+
 	"github.com/PuerkitoBio/goquery"
 	"github.com/imroc/req/v3"
 	"github.com/kataras/golog"
-	"strings"
-	"time"
 )
 
 const Struts2Url = "https://cwiki.apache.org/confluence/display/WW/Security+Bulletins"
@@ -57,8 +59,6 @@ func (c *Struts2Crawler) getVulnInfoFromURL(ctx context.Context, url string) (*V
 		doc.Find("th:contains('Impact of vulnerability') + td").Contents().Text(),
 	}
 
-	vuln.Disclosure = "Official Public"
-
 	vuln.From = url
 
 	return &vuln, nil
@@ -78,6 +78,8 @@ func getSeverityFromString(severityText string) SeverityLevel {
 		return Low // 默认为低危
 	}
 }
+
+var s2Id = regexp.MustCompile(`S2-\d{3}`)
 
 func (c *Struts2Crawler) GetUpdate(ctx context.Context, vulnLimit int) ([]*VulnInfo, error) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
@@ -107,11 +109,10 @@ func (c *Struts2Crawler) GetUpdate(ctx context.Context, vulnLimit int) ([]*VulnI
 					title: S2-001 — Remote code exploit on form validation error
 					Link:	https://cwiki.apache.org/confluence/display/WW/S2-001
 			*/
-
 			// 提取链接和描述
 			linkTag := s.Find("a")
-			description := s.Find("span.smalltext").Text()
-			title := linkTag.Text() + " — " + description
+			//description := s.Find("span.smalltext").Text()
+			title := linkTag.Text()
 			link, _ := linkTag.Attr("href")
 
 			// 构建完整的链接
@@ -119,13 +120,16 @@ func (c *Struts2Crawler) GetUpdate(ctx context.Context, vulnLimit int) ([]*VulnI
 
 			vuln, _ := c.getVulnInfoFromURL(ctx, fullLink)
 			vuln.Title = title
-			vuln.UniqueKey = title
-			// 提取漏洞描述
-			vuln.Description = doc.Find("span.smalltext").Text()
-
+			vuln.UniqueKey = s2Id.FindString(title)
+			if vuln.UniqueKey == "" {
+				c.log.Warnf("can not find unique key from %s", title)
+				return
+			}
+			vuln.Creator = c
 			vulnInfos = append(vulnInfos, vuln)
 		}
 	})
+	c.log.Infof("got %d vulns", len(vulnInfos))
 
 	return vulnInfos, nil
 }

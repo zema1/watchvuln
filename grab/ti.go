@@ -2,10 +2,11 @@ package grab
 
 import (
 	"context"
-	"github.com/imroc/req/v3"
-	"github.com/kataras/golog"
 	"strconv"
 	"strings"
+
+	"github.com/imroc/req/v3"
+	"github.com/kataras/golog"
 )
 
 type TiCrawler struct {
@@ -36,7 +37,7 @@ func (t *TiCrawler) ProviderInfo() *Provider {
 func (t *TiCrawler) GetUpdate(ctx context.Context, _ int) ([]*VulnInfo, error) {
 	resp, err := t.client.R().
 		SetContext(ctx).
-		Post("https://ti.qianxin.com/alpha-api/v2/nox/api/web/portal/vuln/one_day")
+		Post("https://ti.qianxin.com/alpha-api/v2/vuln/one-day")
 	if err != nil {
 		return nil, err
 	}

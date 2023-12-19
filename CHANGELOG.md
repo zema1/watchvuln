@@ -1,11 +1,23 @@
+## v1.5.0 (2023.12.19)
+
+## 新增
+
+- 增加 [Struts2](https://cwiki.apache.org/confluence/display/WW/Security+Bulletins)
+  漏洞数据源抓取，感谢 [@hi-unc1e](https://github.com/hi-unc1e) 贡献
+
+## 修复
+
+- 修复奇安信接口失效问题
+
 ## v1.4.0 (2023.11.21)
 
 ## 变更
 
 - 默认启用全部数据源, `seebug` 也默认启用了
 - 某个数据源初始化失败不会再推出，而是成功几个用几个并给出提示信息
- 
+
 ## 修复
+
 - 修复 `threatbook` 数据源异常结束的问题 [#57](https://github.com/zema1/watchvuln/issues/57)
 
 ## v1.3.0 (2023.11.20)

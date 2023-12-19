@@ -3,8 +3,14 @@ package ctrl
 import (
 	"context"
 	"database/sql"
-	entSql "entgo.io/ent/dialect/sql"
 	"fmt"
+	"net/http"
+	"regexp"
+	"strings"
+	"sync"
+	"time"
+
+	entSql "entgo.io/ent/dialect/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/go-github/v53/github"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -18,11 +24,6 @@ import (
 	"github.com/zema1/watchvuln/push"
 	"golang.org/x/sync/errgroup"
 	"modernc.org/sqlite"
-	"net/http"
-	"regexp"
-	"strings"
-	"sync"
-	"time"
 )
 
 func init() {
@@ -82,6 +83,8 @@ func NewApp(config *WatchVulnAppConfig, textPusher push.TextPusher, rawPusher pu
 			grabs = append(grabs, grab.NewSeebugCrawler())
 		case "threatbook":
 			grabs = append(grabs, grab.NewThreatBookCrawler())
+		case "structs":
+			grabs = append(grabs, grab.NewStruts2Crawler())
 		default:
 			return nil, fmt.Errorf("invalid grab source %s", part)
 		}

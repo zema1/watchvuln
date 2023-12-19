@@ -2,9 +2,10 @@ package grab
 
 import (
 	"context"
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestStruts2(t *testing.T) {
@@ -23,7 +24,6 @@ func TestStruts2(t *testing.T) {
 		assert.NotEmpty(v.UniqueKey)
 		assert.NotEmpty(v.Description)
 		assert.NotEmpty(v.Title)
-		assert.NotEmpty(v.Disclosure)
 		assert.NotEmpty(v.From)
 	}
 	assert.Greater(count, 0)
