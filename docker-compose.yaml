@@ -8,6 +8,8 @@ services:
       DINGDING_SECRET: YOUR_SECRET_HERE
       DB_CONN: postgres://watchvuln:watchvuln@postgres:5432/watchvuln
       INTERVAL: 30m
+    depends_on:
+      - postgres
 
   postgres:
     restart: always
