@@ -52,7 +52,7 @@ Docker 方式推荐使用环境变量来配置服务参数
 | `SERVERCHAN_KEY `       | Server酱的 `SCKEY`                                                        |                                         |
 | `WEBHOOK_URL`           | 自定义 webhook 服务的完整 url                                                   |                                         |
 | `BARK_URL`              | Bark 服务的完整 url, 路径需要包含 DeviceKey                                        |                                         |
-| `SOURCES`               | 启用哪些漏洞信息源，逗号分隔, 可选 `avd`, `ti`, `oscs`, `seebug`,`threatbook`,`structs` | `avd,ti,oscs,threatbook,seebug,structs` |
+| `SOURCES`               | 启用哪些漏洞信息源，逗号分隔, 可选 `avd`, `ti`, `oscs`, `seebug`,`threatbook`,`struts2` | `avd,ti,oscs,threatbook,seebug,struts2` |
 | `INTERVAL`              | 检查周期，支持秒 `60s`, 分钟 `10m`, 小时 `1h`, 最低 `1m`                              | `30m`                                   |
 | `ENABLE_CVE_FILTER`     | 启用 CVE 过滤，开启后多个数据源的统一 CVE 将只推送一次                                        | `true`                                  |
 | `NO_FILTER`             | 禁用上述推送过滤策略，所有新发现的漏洞都会被推送                                                | `false`                                 |
