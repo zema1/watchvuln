@@ -6,13 +6,14 @@
 
 当前抓取了这几个站点的数据:
 
-| 名称              | 地址                                          | 推送策略                                             |
-|-----------------|---------------------------------------------|--------------------------------------------------|
-| 阿里云漏洞库          | https://avd.aliyun.com/high-risk/list       | 等级为高危或严重                                         |
-| OSCS开源安全情报预警    | https://www.oscs1024.com/cm                 | 等级为高危或严重**并且**包含 `预警` 标签                         |
-| 奇安信威胁情报中心       | https://ti.qianxin.com/                     | 等级为高危严重**并且**包含 `奇安信CERT验证` `POC公开` `技术细节公布`标签之一 |
-| 微步在线研究响应中心(公众号) | https://x.threatbook.com/v5/vulIntelligence | 等级为高危或严重                                         |
-| 知道创宇Seebug漏洞库   | https://www.seebug.org/                     | 存在 WAF，默认不启用，若通过 `SOURCES`/`-s` 手动启用，则推送等级为高危或严重 |
+| 名称                         | 地址                                                                                              | 推送策略                                             |
+|----------------------------|-------------------------------------------------------------------------------------------------|--------------------------------------------------|
+| 阿里云漏洞库                     | https://avd.aliyun.com/high-risk/list                                                           | 等级为高危或严重                                         |
+| OSCS开源安全情报预警               | https://www.oscs1024.com/cm                                                                     | 等级为高危或严重**并且**包含 `预警` 标签                         |
+| 奇安信威胁情报中心                  | https://ti.qianxin.com/                                                                         | 等级为高危严重**并且**包含 `奇安信CERT验证` `POC公开` `技术细节公布`标签之一 |
+| 微步在线研究响应中心(公众号)            | https://x.threatbook.com/v5/vulIntelligence                                                     | 等级为高危或严重                                         |
+| 知道创宇Seebug漏洞库              | https://www.seebug.org/                                                                         | 等级为高危或严重                                         |
+| Struts2 Security Bulletins | [Struts2 Security Bulletins](https://cwiki.apache.org/confluence/display/WW/Security+Bulletins) | 等级为高危或严重                                         |
 
 > 所有信息来自网站公开页面, 如果有侵权，请提交 issue, 我会删除相关源。
 >
