@@ -183,7 +183,7 @@ GLOBAL OPTIONS:
    --no-github-search, --ng     don't search github repos and pull requests for every cve vuln (default: false)
    --no-start-message, --nm     disable the hello message when server starts (default: false)
    --proxy value, -x value      set request proxy, support socks5://xxx or http(s)://
-   --sources value, -s value    set vuln sources (default: "avd,nox,oscs,threatbook,seebug")
+   --sources value, -s value    set vuln sources (default: "avd,nox,oscs,threatbook,seebug,struts2")
 
    [Other Options]
 
