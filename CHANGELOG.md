@@ -2,10 +2,11 @@
 
 ## 新增
 
-- 增加 [Struts2](https://cwiki.apache.org/confluence/display/WW/Security+Bulletins)
-  漏洞数据源抓取，感谢 [@hi-unc1e](https://github.com/hi-unc1e) 贡献
+- 增加 [Struts2](https://cwiki.apache.org/confluence/display/WW/Security+Bulletins) 漏洞数据源抓取，感谢 [@hi-unc1e](https://github.com/hi-unc1e) 贡献
 - 支持配置代理，通过命令行 `-x` 或者环境变量 `HTTPS_PROXY` 指定 [#59](https://github.com/zema1/watchvuln/issues/59)
-
+    - `-x socks5://user:pass@127.0.0.1111`
+    - `-x http(s)://127.0.0.1111`
+  
 ## 修复
 
 - 修复奇安信接口失效问题
