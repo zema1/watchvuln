@@ -3,13 +3,14 @@ package grab
 import (
 	"bytes"
 	"context"
+	"regexp"
+	"strings"
+	"time"
+
 	"github.com/PuerkitoBio/goquery"
 	"github.com/imroc/req/v3"
 	"github.com/kataras/golog"
 	"github.com/mmcdole/gofeed"
-	"regexp"
-	"strings"
-	"time"
 )
 
 /*ThreatBook 微步漏洞情报
@@ -137,6 +138,7 @@ func (t *ThreatBookCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*Vu
 		}
 		results = append(results, vuln)
 	}
+	t.log.Infof("got %d vulns", len(results))
 
 	return results, nil
 }

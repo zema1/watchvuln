@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/zema1/watchvuln/ctrl"
 	"os"
 	"os/signal"
 	"strings"
 	"time"
+
+	"github.com/zema1/watchvuln/ctrl"
 
 	"github.com/kataras/golog"
 	"github.com/pkg/errors"
@@ -16,7 +17,7 @@ import (
 )
 
 var log = golog.Child("[main]")
-var Version = "v1.4.2"
+var Version = "v1.5.0"
 
 func main() {
 	golog.Default.SetLevel("info")
@@ -98,7 +99,7 @@ func main() {
 			Name:     "sources",
 			Aliases:  []string{"s"},
 			Usage:    "set vuln sources",
-			Value:    "avd,nox,oscs,threatbook,seebug",
+			Value:    "avd,nox,oscs,threatbook,seebug,struts2",
 			Category: "[Launch Options]",
 		},
 		&cli.StringFlag{
