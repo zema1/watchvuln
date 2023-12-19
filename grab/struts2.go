@@ -118,7 +118,11 @@ func (c *Struts2Crawler) GetUpdate(ctx context.Context, vulnLimit int) ([]*VulnI
 			// 构建完整的链接
 			fullLink := "https://cwiki.apache.org" + link
 
-			vuln, _ := c.getVulnInfoFromURL(ctx, fullLink)
+			vuln, err := c.getVulnInfoFromURL(ctx, fullLink)
+			if err != nil {
+				c.log.Error(err)
+				return
+			}
 			vuln.Title = title
 			vuln.UniqueKey = s2Id.FindString(title)
 			if vuln.UniqueKey == "" {
