@@ -61,7 +61,7 @@ func main() {
 		&cli.StringFlag{
 			Name:     "lark-access-token",
 			Aliases:  []string{"lt"},
-			Usage:    "webhook access token of lark",
+			Usage:    "webhook access token/url of lark",
 			Category: "[\x00Push Options]",
 		},
 		&cli.StringFlag{
