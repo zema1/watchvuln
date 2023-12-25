@@ -3,10 +3,11 @@ package push
 import (
 	"context"
 	"fmt"
-	"github.com/kataras/golog"
-	lark "github.com/larksuite/oapi-sdk-go/v2"
 	"strings"
 	"time"
+
+	"github.com/kataras/golog"
+	lark "github.com/larksuite/oapi-sdk-go/v2"
 )
 
 var _ = TextPusher(&Lark{})
@@ -18,7 +19,7 @@ type Lark struct {
 }
 
 func NewLark(botKey, sign string) TextPusher {
-	if !strings.HasPrefix(botKey, "https://open.feishu.cn") {
+	if !strings.HasPrefix(botKey, "http") {
 		botKey = "https://open.feishu.cn/open-apis/bot/v2/hook/" + botKey
 	}
 	bot := lark.NewCustomerBot(botKey, sign)
