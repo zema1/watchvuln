@@ -46,7 +46,7 @@ Docker 方式推荐使用环境变量来配置服务参数
 | `DB_CONN`               | 数据库链接字符串，详情见 [数据库连接](#数据库连接)                                            | `sqlite3://vuln_v3.sqlite3`             |
 | `DINGDING_ACCESS_TOKEN` | 钉钉机器人 url 的 `access_token` 部分                                           |                                         |
 | `DINGDING_SECRET`       | 钉钉机器人的加签值 （仅支持加签方式）                                                     |                                         |
-| `LARK_ACCESS_TOKEN`     | 飞书机器人 url 的 `/open-apis/bot/v2/hook/` 后的部分                              |                                         |
+| `LARK_ACCESS_TOKEN`     | 飞书机器人 url 的 `/open-apis/bot/v2/hook/` 后的部分, 也支持直接指定完整的 url 来访问私有部署的飞书   |                                         |
 | `LARK_SECRET`           | 飞书机器人的加签值 （仅支持加签方式）                                                     |                                         |
 | `WECHATWORK_KEY `       | 微信机器人 url 的 `key` 部分                                                    |                                         |
 | `SERVERCHAN_KEY `       | Server酱的 `SCKEY`                                                        |                                         |
