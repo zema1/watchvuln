@@ -244,12 +244,10 @@ func (w *WatchVulnApp) pushVuln(vul *grab.VulnInfo) error {
 	var pushErr *multierror.Error
 
 	if err := w.textPusher.PushMarkdown(vul.Title, push.RenderVulnInfo(vul)); err != nil {
-		w.log.Errorf("text-pusher send markdown msg error, %s", err)
 		pushErr = multierror.Append(pushErr, err)
 	}
 
 	if err := w.rawPusher.PushRaw(push.NewRawVulnInfoMessage(vul)); err != nil {
-		w.log.Errorf("raw-pusher send markdown msg error, %s", err)
 		pushErr = multierror.Append(pushErr, err)
 	}
 
