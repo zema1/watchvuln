@@ -13,17 +13,19 @@ import (
 	entSql "entgo.io/ent/dialect/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/go-github/v53/github"
+	"github.com/hashicorp/go-multierror"
 	"github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/kataras/golog"
 	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
+	"modernc.org/sqlite"
+
 	"github.com/zema1/watchvuln/ent"
 	"github.com/zema1/watchvuln/ent/migrate"
 	"github.com/zema1/watchvuln/ent/vulninformation"
 	"github.com/zema1/watchvuln/grab"
 	"github.com/zema1/watchvuln/push"
-	"golang.org/x/sync/errgroup"
-	"modernc.org/sqlite"
 )
 
 func init() {
@@ -204,11 +206,6 @@ func (w *WatchVulnApp) Run(ctx context.Context) error {
 							continue
 						}
 					}
-					_, err = dbVuln.Update().SetPushed(true).Save(ctx)
-					if err != nil {
-						w.log.Errorf("failed to save pushed %s status, %s", v.UniqueKey, err)
-						continue
-					}
 
 					// find cve pr in nuclei repo
 					if v.CVE != "" && !w.config.NoGithubSearch {
@@ -226,13 +223,14 @@ func (w *WatchVulnApp) Run(ctx context.Context) error {
 						}
 					}
 					w.log.Infof("Pushing %s", v)
-					err = w.textPusher.PushMarkdown(v.Title, push.RenderVulnInfo(v))
-					if err != nil {
-						w.log.Errorf("text-pusher send dingding msg error, %s", err)
-					}
-					err = w.rawPusher.PushRaw(push.NewRawVulnInfoMessage(v))
-					if err != nil {
-						w.log.Errorf("raw-pusher send dingding msg error, %s", err)
+					if err := w.pushVuln(v); err == nil {
+						// 如果两种推送都成功，才标记为已推送
+						_, err = dbVuln.Update().SetPushed(true).Save(ctx)
+						if err != nil {
+							w.log.Errorf("failed to save pushed %s status, %s", v.UniqueKey, err)
+						}
+					} else {
+						w.log.Errorf("failed to push %s, %s", v.UniqueKey, err)
 					}
 				} else {
 					w.log.Infof("skipped %s as not valuable", v)
@@ -240,6 +238,20 @@ func (w *WatchVulnApp) Run(ctx context.Context) error {
 			}
 		}
 	}
+}
+
+func (w *WatchVulnApp) pushVuln(vul *grab.VulnInfo) error {
+	var pushErr *multierror.Error
+
+	if err := w.textPusher.PushMarkdown(vul.Title, push.RenderVulnInfo(vul)); err != nil {
+		pushErr = multierror.Append(pushErr, err)
+	}
+
+	if err := w.rawPusher.PushRaw(push.NewRawVulnInfoMessage(vul)); err != nil {
+		pushErr = multierror.Append(pushErr, err)
+	}
+
+	return pushErr.ErrorOrNil()
 }
 
 func (w *WatchVulnApp) Close() {
