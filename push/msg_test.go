@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/zema1/watchvuln/grab"
 )
 
@@ -42,37 +44,28 @@ func TestRenderVulnInfo(t *testing.T) {
 	fmt.Println(RenderVulnInfo(v))
 }
 
-func TestRenderVulnInfo2(t *testing.T) {
-	v := &grab.VulnInfo{
-		Title:        "Pipreqs 代码执行漏洞",
-		CVE:          "CVE-2023-31543",
-		Severity:     "高危",
-		Tags:         []string{"POC公开", "技术细节公开"},
-		Disclosure:   "2023-06-30",
-		From:         "https://ti.qianxin.com/vulnerability",
-		Reason:       []string{"created"},
-		Description:  "I Doc View在线文档预览系统是一套用于在Web环境中展示和预览各种文档类型的系统，如文本文档、电子表格、演示文稿、PDF文件等。2023年11月，官方发布13.10.1_20231115版本，修复相关漏洞。攻击者可利用该漏洞使服务器下载恶意文件，执行任意代码。",
-		GithubSearch: []string{"https://github.com/pipreqs/pipreqs/issues/1"},
-		References:   []string{"https://ti.qianxin.com/blog/articles/pipreqs-code-execution-vulnerability/"},
-		Solutions:    "1. 升级到最新版本\n2. 更新",
+func TestEscapeMarkdown(t *testing.T) {
+	testCases := []struct {
+		name             string
+		inputDescription string
+		expected         string
+	}{
+		{
+			name:             "escape underscores",
+			inputDescription: "I Doc View。2023年11月，官方发布13.10.1_20231115版本，修复相关漏洞。",
+			expected:         "I Doc View。2023年11月，官方发布13.10.1\\_20231115版本，修复相关漏洞。",
+		},
+		{
+			name:             "escape asterisks",
+			inputDescription: "This is not a *bold text",
+			expected:         "This is not a \\*bold text",
+		},
 	}
-	fmt.Println(RenderVulnInfo(v))
-	fmt.Println("============================")
-	v.GithubSearch = nil
-	fmt.Println(RenderVulnInfo(v))
-	fmt.Println("============================")
-	v.CVE = ""
-	fmt.Println(RenderVulnInfo(v))
 
-	fmt.Println("============================")
-	v.References = nil
-	fmt.Println(RenderVulnInfo(v))
-
-	fmt.Println("============================")
-	v.CVE = "CVE-2023-31543"
-	fmt.Println(RenderVulnInfo(v))
-
-	fmt.Println("============================")
-	v.Solutions = ""
-	fmt.Println(RenderVulnInfo(v))
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := escapeMarkdown(tc.inputDescription)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
 }
