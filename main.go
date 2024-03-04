@@ -92,13 +92,13 @@ func main() {
 		&cli.StringFlag{
 			Name:     "telegram-bot-token",
 			Aliases:  []string{"tgtk"},
-			Usage:    "your telegram bot token, ex: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11",
+			Usage:    "telegram bot token, ex: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11",
 			Category: "[\x00Push Options]",
 		},
 		&cli.StringFlag{
 			Name:     "telegram-chat-ids",
 			Aliases:  []string{"tgids"},
-			Usage:    "your chat ids want to send on telegram, ex: 123456,4312341,123123",
+			Usage:    "chat ids want to send on telegram, ex: 123456,4312341,123123",
 			Category: "[\x00Push Options]",
 		},
 		&cli.StringFlag{
