@@ -2,8 +2,11 @@ package push
 
 import (
 	"fmt"
-	"github.com/zema1/watchvuln/grab"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/zema1/watchvuln/grab"
 )
 
 func TestRenderVulnInfo(t *testing.T) {
@@ -39,4 +42,30 @@ func TestRenderVulnInfo(t *testing.T) {
 	fmt.Println("============================")
 	v.Solutions = ""
 	fmt.Println(RenderVulnInfo(v))
+}
+
+func TestEscapeMarkdown(t *testing.T) {
+	testCases := []struct {
+		name             string
+		inputDescription string
+		expected         string
+	}{
+		{
+			name:             "escape underscores",
+			inputDescription: "I Doc View。2023年11月，官方发布13.10.1_20231115版本，修复相关漏洞。",
+			expected:         "I Doc View。2023年11月，官方发布13.10.1\\_20231115版本，修复相关漏洞。",
+		},
+		{
+			name:             "escape asterisks",
+			inputDescription: "This is not a *bold text",
+			expected:         "This is not a \\*bold text",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := escapeMarkdown(tc.inputDescription)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
 }

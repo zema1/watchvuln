@@ -1,9 +1,10 @@
 package push
 
 import (
-	"github.com/zema1/watchvuln/grab"
 	"strings"
 	"text/template"
+
+	"github.com/zema1/watchvuln/grab"
 )
 
 const vulnInfoMsg = `
@@ -60,8 +61,21 @@ var (
 	initialMsgTpl  = template.Must(template.New("markdown").Funcs(funcMap).Parse(initialMsg))
 )
 
+const (
+	maxDescriptionLength    = 500
+	maxReferenceIndexLength = 8
+)
+
 func RenderVulnInfo(v *grab.VulnInfo) string {
 	var builder strings.Builder
+	runeDescription := []rune(v.Description)
+	if len(runeDescription) > maxDescriptionLength {
+		v.Description = string(runeDescription[:maxDescriptionLength]) + "..."
+	}
+	if len(v.References) > maxReferenceIndexLength {
+		v.References = v.References[:maxReferenceIndexLength]
+	}
+	v.Description = escapeMarkdown(v.Description)
 	if err := vulnInfoMsgTpl.Execute(&builder, v); err != nil {
 		return err.Error()
 	}
@@ -118,4 +132,30 @@ func NewRawVulnInfoMessage(m *grab.VulnInfo) *RawMessage {
 		Content: m,
 		Type:    RawMessageTypeVulnInfo,
 	}
+}
+
+// escapeMarkdown escapes the special characters in the markdown text.
+// Pushing unclosed markdown tags on some IM platforms may result in formatting errors.
+// Telegram push will directly report an send request error.
+func escapeMarkdown(text string) string {
+	replacer := strings.NewReplacer(
+		"_", "\\_",
+		"*", "\\*",
+		"[", "\\[",
+		"]", "\\]",
+		"(", "\\(",
+		")", "\\)",
+		"~", "\\~",
+		"`", "\\`",
+		">", "\\>",
+		"#", "\\#",
+		"+", "\\+",
+		"-", "\\-",
+		"=", "\\=",
+		"|", "\\|",
+		"{", "\\{",
+		"}", "\\}",
+		"!", "\\!",
+	)
+	return replacer.Replace(text)
 }
