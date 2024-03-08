@@ -52,6 +52,8 @@ Docker 方式推荐使用环境变量来配置服务参数
 | `SERVERCHAN_KEY `       | Server酱的 `SCKEY`                                                        |                                         |
 | `WEBHOOK_URL`           | 自定义 webhook 服务的完整 url                                                   |                                         |
 | `BARK_URL`              | Bark 服务的完整 url, 路径需要包含 DeviceKey                                        |                                         |
+| `TELEGRAM_BOT_TOKEN`    | Telegram Bot Token                                                      |                                         |
+| `TELEGRAM_CHAT_IDS`     | Telegram Bot 需要发送给的 chat 列表，使用 `,` 分割                                   |                                         |
 | `SOURCES`               | 启用哪些漏洞信息源，逗号分隔, 可选 `avd`, `ti`, `oscs`, `seebug`,`threatbook`,`struts2` | `avd,ti,oscs,threatbook,seebug,struts2` |
 | `INTERVAL`              | 检查周期，支持秒 `60s`, 分钟 `10m`, 小时 `1h`, 最低 `1m`                              | `30m`                                   |
 | `ENABLE_CVE_FILTER`     | 启用 CVE 过滤，开启后多个数据源的统一 CVE 将只推送一次                                        | `true`                                  |
@@ -172,6 +174,8 @@ GLOBAL OPTIONS:
    --lark-access-token value, --lt value      webhook access token of lark
    --lark-sign-secret value, --ls value       sign secret of lark
    --serverchan-key value, --sk value         send key for server chan
+   --telegram-bot-token value, --tgtk value   telegram bot token, ex: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
+   --telegram-chat-ids value, --tgids value   chat ids want to send on telegram, ex: 123456,4312341,123123
    --webhook-url value, --webhook value       your webhook server url, ex: http://127.0.0.1:1111/webhook
    --wechatwork-key value, --wk value         webhook key of wechat work
 

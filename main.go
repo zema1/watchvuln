@@ -13,6 +13,7 @@ import (
 	"github.com/kataras/golog"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
+
 	"github.com/zema1/watchvuln/push"
 )
 
@@ -86,6 +87,18 @@ func main() {
 			Name:     "bark-url",
 			Aliases:  []string{"bark"},
 			Usage:    "your bark server url, ex: http://127.0.0.1:1111/DeviceKey",
+			Category: "[\x00Push Options]",
+		},
+		&cli.StringFlag{
+			Name:     "telegram-bot-token",
+			Aliases:  []string{"tgtk"},
+			Usage:    "telegram bot token, ex: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11",
+			Category: "[\x00Push Options]",
+		},
+		&cli.StringFlag{
+			Name:     "telegram-chat-ids",
+			Aliases:  []string{"tgids"},
+			Usage:    "chat ids want to send on telegram, ex: 123456,4312341,123123",
 			Category: "[\x00Push Options]",
 		},
 		&cli.StringFlag{
@@ -256,6 +269,8 @@ func initPusher(c *cli.Context) (push.TextPusher, push.RawPusher, error) {
 	larkToken := c.String("lark-access-token")
 	larkSecret := c.String("lark-sign-secret")
 	serverChanKey := c.String("serverchan-key")
+	telegramBotTokey := c.String("telegram-bot-token")
+	telegramChatIDs := c.String("telegram-chat-ids")
 
 	if os.Getenv("DINGDING_ACCESS_TOKEN") != "" {
 		dingToken = os.Getenv("DINGDING_ACCESS_TOKEN")
@@ -281,6 +296,13 @@ func initPusher(c *cli.Context) (push.TextPusher, push.RawPusher, error) {
 	if os.Getenv("SERVERCHAN_KEY") != "" {
 		serverChanKey = os.Getenv("SERVERCHAN_KEY")
 	}
+	if os.Getenv("TELEGRAM_BOT_TOKEN") != "" {
+		telegramBotTokey = os.Getenv("TELEGRAM_BOT_TOKEN")
+	}
+	if os.Getenv("TELEGRAM_CHAT_IDS") != "" {
+		telegramChatIDs = os.Getenv("TELEGRAM_CHAT_IDS")
+	}
+
 	var textPusher []push.TextPusher
 	var rawPusher []push.RawPusher
 	if dingToken != "" && dingSecret != "" {
@@ -303,6 +325,13 @@ func initPusher(c *cli.Context) (push.TextPusher, push.RawPusher, error) {
 	}
 	if serverChanKey != "" {
 		textPusher = append(textPusher, push.NewServerChan(serverChanKey))
+	}
+	if telegramBotTokey != "" && telegramChatIDs != "" {
+		tgPusher, err := push.NewTelegram(telegramBotTokey, telegramChatIDs)
+		if err != nil {
+			return nil, nil, fmt.Errorf("init telegram error %w", err)
+		}
+		textPusher = append(textPusher, tgPusher)
 	}
 	if len(textPusher) == 0 && len(rawPusher) == 0 {
 		msg := `
