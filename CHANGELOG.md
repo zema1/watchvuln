@@ -1,14 +1,26 @@
+## v1.6.0 (2024.03.08)
+
+### 新增
+
+- 增加 TG 机器人推送支持，详见文档说明，感谢 [@moonD4rk](https://github.com/moonD4rk) 贡献
+- 修正私有化部署的飞书推送支持，感谢 [@lzskyline](https://github.com/lzskyline) 贡献
+
+### 变更
+
+- 修正一个 Markdown 转义问题，感谢 [@moonD4rk](https://github.com/moonD4rk) 贡献
+- 推送失败时消息不会标记为已推送，便于后续重试，感谢 [@moonD4rk](https://github.com/moonD4rk) 贡献
+
 ## v1.5.4 (2023.12.25)
 
-## 变更
+### 变更
 
 - 允许通过指定 url 的方式发送到私有部署的飞书服务
 
-## 新增
+### 新增
 
 ## v1.5.3 (2023.12.19)
 
-## 新增
+### 新增
 
 - 增加 [Struts2](https://cwiki.apache.org/confluence/display/WW/Security+Bulletins)
   漏洞数据源抓取，感谢 [@hi-unc1e](https://github.com/hi-unc1e) 贡献
@@ -22,12 +34,12 @@
 
 ## v1.4.0 (2023.11.21)
 
-## 变更
+### 变更
 
 - 默认启用全部数据源, `seebug` 也默认启用了
 - 某个数据源初始化失败不会再推出，而是成功几个用几个并给出提示信息
 
-## 修复
+### 修复
 
 - 修复 `threatbook` 数据源异常结束的问题 [#57](https://github.com/zema1/watchvuln/issues/57)
 

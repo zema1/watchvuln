@@ -33,6 +33,7 @@
 - [钉钉群组机器人](https://open.dingtalk.com/document/robots/custom-robot-access)
 - [微信企业版群组机器人](https://open.work.weixin.qq.com/help2/pc/14931)
 - [飞书群组机器人](https://open.feishu.cn/document/ukTMukTMukTM/ucTM5YjL3ETO24yNxkjN)
+- [Telegram Bot](https://core.telegram.org/bots/tutorial)
 - [Server 酱](https://sct.ftqq.com/)
 - [自定义 Bark 服务](https://github.com/Finb/Bark)
 - [自定义 Webhook 服务](./examples/webhook)
@@ -97,6 +98,18 @@ docker run --restart always -d \
 ```bash
 docker run --restart always -d \
   -e WECHATWORK_KEY=xxxx \
+  -e INTERVAL=30m \
+  zemal/watchvuln:latest
+```
+
+</details>
+
+<details><summary>使用Telegram 机器人</summary>
+
+```bash
+docker run --restart always -d \
+  -e TELEGRAM_BOT_TOKEN=xxx \
+  -e TELEGRAM_CHAT_IDS=1111,2222 \
   -e INTERVAL=30m \
   zemal/watchvuln:latest
 ```
@@ -224,6 +237,14 @@ $ ./watchvuln --wk WECHATWORK_KEY -i 30m
 
 ```
 $ ./watchvuln --sk xxxx -i 30m
+```
+
+</details>
+
+<details><summary>使用Telegram 机器人</summary>
+
+```
+$ ./watchvuln --tgtk xxxx --tgids 1111,2222 -i 30m
 ```
 
 </details>
