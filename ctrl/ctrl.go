@@ -87,6 +87,8 @@ func NewApp(config *WatchVulnAppConfig, textPusher push.TextPusher, rawPusher pu
 			grabs = append(grabs, grab.NewThreatBookCrawler())
 		case "struts2", "structs2":
 			grabs = append(grabs, grab.NewStruts2Crawler())
+		case "kev":
+			grabs = append(grabs, grab.NewKEVCrawler())
 		default:
 			return nil, fmt.Errorf("invalid grab source %s", part)
 		}
