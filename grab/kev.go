@@ -9,7 +9,8 @@ import (
 )
 
 const KEVUrl = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
-const CVEUrl = "https://cveawg.mitre.org/api/cve/"
+
+// const CVEUrl = "https://cveawg.mitre.org/api/cve/"  查询原始评级预留url
 const PageSize = 5 //KEV每次都是返回全量数据，所以这里自己定义一下pagesize匹配原来的爬取逻辑
 
 type KEVCrawler struct {
@@ -64,6 +65,7 @@ func (c *KEVCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*VulnInfo,
 		vulnInfo.UniqueKey = vuln.CveID + "_KEV"
 		vulnInfo.Title = vuln.VulnerabilityName
 		vulnInfo.Description = vuln.ShortDescription
+		vulnInfo.Severity = Critical //数据源本身无该字段，因为有在野利用直接提成Critical了，后续考虑要不要去CVE查询原始评级？
 		vulnInfo.CVE = vuln.CveID
 		vulnInfo.Solutions = vuln.RequiredAction
 		vulnInfo.Disclosure = vuln.DateAdded
