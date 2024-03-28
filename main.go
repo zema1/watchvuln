@@ -18,7 +18,7 @@ import (
 )
 
 var log = golog.Child("[main]")
-var Version = "v1.6.0"
+var Version = "v1.7.0"
 
 func main() {
 	golog.Default.SetLevel("info")
@@ -357,7 +357,7 @@ func initPusher(c *cli.Context) (push.TextPusher, push.RawPusher, error) {
 	if webhook != "" {
 		rawPusher = append(rawPusher, push.NewWebhook(webhook))
 	}
-	if lanxinDomain != "" &&  lanxinToken != "" && lanxinSecret != "" {
+	if lanxinDomain != "" && lanxinToken != "" && lanxinSecret != "" {
 		textPusher = append(textPusher, push.NewLanxin(lanxinDomain, lanxinToken, lanxinSecret))
 	}
 	if bark != "" {

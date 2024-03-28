@@ -1,3 +1,10 @@
+## v1.7.0 (2024.03.28)
+
+### 新增
+
+- 新增 `CISA-KEV` 数据源抓取，更新后默认启用，感谢 [@Center-Sun](https://github.com/Center-Sun) 贡献
+- 新增 `蓝信` 和 `pushplus` 推送支持，感谢 [@fengwenhua](https://github.com/fengwenhua) 贡献
+
 ## v1.6.0 (2024.03.08)
 
 ### 新增
