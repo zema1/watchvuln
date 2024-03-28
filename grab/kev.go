@@ -2,16 +2,18 @@ package grab
 
 import (
 	"context"
+	"sort"
+	"time"
+
 	"github.com/imroc/req/v3"
 	"github.com/kataras/golog"
 	"github.com/pkg/errors"
-	"time"
 )
 
 const KEVUrl = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
 
 // const CVEUrl = "https://cveawg.mitre.org/api/cve/"  查询原始评级预留url
-const PageSize = 5 //KEV每次都是返回全量数据，所以这里自己定义一下pagesize匹配原来的爬取逻辑
+const KEYPageSize = 10 // KEV每次都是返回全量数据，所以这里自己定义一下pagesize匹配原来的爬取逻辑
 
 type KEVCrawler struct {
 	client *req.Client
@@ -54,23 +56,27 @@ func (c *KEVCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*VulnInfo,
 	var vulnInfos []*VulnInfo
 	var itemLimit = 0
 	var maxCount = len(result.Vulnerabilities)
-	if pageLimit*PageSize > maxCount {
+	if pageLimit*KEYPageSize > maxCount {
 		itemLimit = maxCount
 	} else {
-		itemLimit = pageLimit * PageSize
+		itemLimit = pageLimit * KEYPageSize
 	}
+	sort.Slice(result.Vulnerabilities, func(i, j int) bool {
+		return result.Vulnerabilities[i].DateAdded > result.Vulnerabilities[j].DateAdded
+	})
 	for i := 1; i <= itemLimit; i++ {
 		var vulnInfo VulnInfo
 		vuln := result.Vulnerabilities[maxCount-i]
 		vulnInfo.UniqueKey = vuln.CveID + "_KEV"
 		vulnInfo.Title = vuln.VulnerabilityName
 		vulnInfo.Description = vuln.ShortDescription
-		vulnInfo.Severity = Critical //数据源本身无该字段，因为有在野利用直接提成Critical了，后续考虑要不要去CVE查询原始评级？
+		vulnInfo.Severity = Critical // 数据源本身无该字段，因为有在野利用直接提成Critical了，后续考虑要不要去CVE查询原始评级？
 		vulnInfo.CVE = vuln.CveID
 		vulnInfo.Solutions = vuln.RequiredAction
 		vulnInfo.Disclosure = vuln.DateAdded
-		vulnInfo.From = vuln.Notes
+		vulnInfo.From = "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
 		vulnInfo.Tags = []string{vuln.VendorProject, vuln.Product, "在野利用"}
+		vulnInfo.Creator = c
 		vulnInfos = append(vulnInfos, &vulnInfo)
 	}
 
