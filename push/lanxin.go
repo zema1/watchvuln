@@ -7,12 +7,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/kataras/golog"
-	"github.com/pkg/errors"
 	"io"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/kataras/golog"
+	"github.com/pkg/errors"
 )
 
 var _ = TextPusher(&LanXin{})
@@ -56,12 +57,8 @@ type LanXinResponse struct {
 
 func GenSign(secret string, timestamp int64) string {
 	stringToSign := fmt.Sprintf("%v", timestamp) + "@" + secret
-	fmt.Println(stringToSign)
-
 	h := hmac.New(sha256.New, []byte(stringToSign))
 	signature := base64.StdEncoding.EncodeToString(h.Sum(nil))
-
-	fmt.Println(signature)
 	return signature
 }
 
@@ -129,20 +126,22 @@ func (m *LanXin) Send(content string) (response *LanXinResponse, error error) {
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(payload))
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
-	resp, _ := client.Do(req)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, errors.Wrap(err, "read body")
 	}
-	defer resp.Body.Close()
 	err = json.Unmarshal(data, res)
 	if err != nil {
 		return res, errors.New("json格式好数据失败")
 	}
-	if res.ErrCode == 0 {
-		return res, nil
+	if res.ErrCode != 0 {
+		return res, errors.New(res.ErrMsg)
 	}
-	return res, errors.New(res.ErrMsg)
+	return res, nil
 }

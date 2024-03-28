@@ -3,6 +3,7 @@ package push
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/go-resty/resty/v2"
 	"github.com/kataras/golog"
 	"github.com/pkg/errors"
@@ -20,8 +21,6 @@ type PushPlusResponse struct {
 	Msg  string `json:"msg"`
 	Data string `json:"data"`
 }
-
-const URI = "https://www.pushplus.plus/send"
 
 var _ = TextPusher(&PushPlus{})
 
@@ -45,7 +44,7 @@ func (r *PushPlus) Send(message PushPlusMessage) (response *PushPlusResponse, er
 		return res, errors.New("invalid token")
 	}
 
-	result, err := resty.New().R().SetBody(message).SetHeader("Content-Type", "application/json").Post(URI)
+	result, err := resty.New().R().SetBody(message).SetHeader("Content-Type", "application/json").Post("https://www.pushplus.plus/send")
 
 	if err != nil {
 		return res, errors.New(fmt.Sprintf("请求失败：%s", err.Error()))
@@ -54,12 +53,10 @@ func (r *PushPlus) Send(message PushPlusMessage) (response *PushPlusResponse, er
 	if err != nil {
 		return res, errors.New("json 格式化数据失败")
 	}
-
-	if res.Code == 200 {
-		return res, nil
+	if res.Code != 200 {
+		return res, errors.New(res.Msg)
 	}
-
-	return res, errors.New(res.Msg)
+	return res, nil
 }
 
 func (d *PushPlus) PushText(s string) error {

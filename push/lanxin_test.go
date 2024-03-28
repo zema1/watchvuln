@@ -14,13 +14,14 @@ func newLanxin() *LanXin {
 	return &LanXin{
 		// 下面要填入能用的domain、token和secret
 		domain: "",
-		token: "",
+		token:  "",
 		secret: "",
-		log:   golog.Child("[pusher-lanxin]"),
+		log:    golog.Child("[pusher-lanxin]"),
 	}
 }
 
 func TestLanxinSendText(t *testing.T) {
+	t.Skip("local test lanxin")
 	result, err := lanxin.Send("6666")
 	fmt.Println(result)
 	assert.Nil(t, err)
