@@ -225,14 +225,20 @@ func (w *WatchVulnApp) Run(ctx context.Context) error {
 						}
 					}
 					w.log.Infof("Pushing %s", v)
-					if err := w.pushVuln(v); err == nil {
-						// 如果两种推送都成功，才标记为已推送
-						_, err = dbVuln.Update().SetPushed(true).Save(ctx)
-						if err != nil {
-							w.log.Errorf("failed to save pushed %s status, %s", v.UniqueKey, err)
+					// retry 3 times
+					for i := 0; i < 3; i++ {
+						if err := w.pushVuln(v); err == nil {
+							// 如果两种推送都成功，才标记为已推送
+							_, err = dbVuln.Update().SetPushed(true).Save(ctx)
+							if err != nil {
+								w.log.Errorf("failed to save pushed %s status, %s", v.UniqueKey, err)
+							}
+							break
+						} else {
+							w.log.Errorf("failed to push %s, %s", v.UniqueKey, err)
 						}
-					} else {
-						w.log.Errorf("failed to push %s, %s", v.UniqueKey, err)
+						w.log.Infof("retry to push %s after 30s", v.UniqueKey)
+						time.Sleep(time.Second * 30)
 					}
 				} else {
 					w.log.Infof("skipped %s as not valuable", v)
