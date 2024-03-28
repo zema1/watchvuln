@@ -78,9 +78,33 @@ func main() {
 			Category: "[\x00Push Options]",
 		},
 		&cli.StringFlag{
+			Name:     "pushplus-key",
+			Aliases:  []string{"pk"},
+			Usage:    "send key for push plus",
+			Category: "[\x00Push Options]",
+		},
+		&cli.StringFlag{
 			Name:     "webhook-url",
 			Aliases:  []string{"webhook"},
 			Usage:    "your webhook server url, ex: http://127.0.0.1:1111/webhook",
+			Category: "[\x00Push Options]",
+		},
+		&cli.StringFlag{
+			Name:     "lanxin-domain",
+			Aliases:  []string{"lxd"},
+			Usage:    "your lanxin server url, ex: https://apigw-example.domain",
+			Category: "[\x00Push Options]",
+		},
+		&cli.StringFlag{
+			Name:     "lanxin-hook-token",
+			Aliases:  []string{"lxt"},
+			Usage:    "lanxin hook token",
+			Category: "[\x00Push Options]",
+		},
+		&cli.StringFlag{
+			Name:     "lanxin-sign-secret",
+			Aliases:  []string{"lxs"},
+			Usage:    "sign secret of lanxin",
 			Category: "[\x00Push Options]",
 		},
 		&cli.StringFlag{
@@ -265,10 +289,14 @@ func initPusher(c *cli.Context) (push.TextPusher, push.RawPusher, error) {
 	dingSecret := c.String("dingding-sign-secret")
 	wxWorkKey := c.String("wechatwork-key")
 	webhook := c.String("webhook-url")
+	lanxinDomain := c.String("lanxin-domain")
+	lanxinToken := c.String("lanxin-hook-token")
+	lanxinSecret := c.String("lanxin-sign-secret")
 	bark := c.String("bark-url")
 	larkToken := c.String("lark-access-token")
 	larkSecret := c.String("lark-sign-secret")
 	serverChanKey := c.String("serverchan-key")
+	pushPlusKey := c.String("pushplus-key")
 	telegramBotTokey := c.String("telegram-bot-token")
 	telegramChatIDs := c.String("telegram-chat-ids")
 
@@ -284,6 +312,15 @@ func initPusher(c *cli.Context) (push.TextPusher, push.RawPusher, error) {
 	if os.Getenv("WEBHOOK_URL") != "" {
 		webhook = os.Getenv("WEBHOOK_URL")
 	}
+	if os.Getenv("LANXIN_DOMAIN") != "" {
+		lanxinDomain = os.Getenv("LANXIN_DOMAIN")
+	}
+	if os.Getenv("LANXIN_TOKEN") != "" {
+		lanxinToken = os.Getenv("LANXIN_TOKEN")
+	}
+	if os.Getenv("LANXIN_SECRET") != "" {
+		lanxinSecret = os.Getenv("LANXIN_SECRET")
+	}
 	if os.Getenv("BARK_URL") != "" {
 		bark = os.Getenv("BARK_URL")
 	}
@@ -295,6 +332,9 @@ func initPusher(c *cli.Context) (push.TextPusher, push.RawPusher, error) {
 	}
 	if os.Getenv("SERVERCHAN_KEY") != "" {
 		serverChanKey = os.Getenv("SERVERCHAN_KEY")
+	}
+	if os.Getenv("PUSHPLUS_KEY") != "" {
+		pushPlusKey = os.Getenv("PUSHPLUS_KEY")
 	}
 	if os.Getenv("TELEGRAM_BOT_TOKEN") != "" {
 		telegramBotTokey = os.Getenv("TELEGRAM_BOT_TOKEN")
@@ -317,6 +357,9 @@ func initPusher(c *cli.Context) (push.TextPusher, push.RawPusher, error) {
 	if webhook != "" {
 		rawPusher = append(rawPusher, push.NewWebhook(webhook))
 	}
+	if lanxinDomain != "" &&  lanxinToken != "" && lanxinSecret != "" {
+		textPusher = append(textPusher, push.NewLanxin(lanxinDomain, lanxinToken, lanxinSecret))
+	}
 	if bark != "" {
 		deviceKeys := strings.Split(bark, "/")
 		deviceKey := deviceKeys[len(deviceKeys)-1]
@@ -325,6 +368,9 @@ func initPusher(c *cli.Context) (push.TextPusher, push.RawPusher, error) {
 	}
 	if serverChanKey != "" {
 		textPusher = append(textPusher, push.NewServerChan(serverChanKey))
+	}
+	if pushPlusKey != "" {
+		textPusher = append(textPusher, push.NewPushPlus(pushPlusKey))
 	}
 	if telegramBotTokey != "" && telegramChatIDs != "" {
 		tgPusher, err := push.NewTelegram(telegramBotTokey, telegramChatIDs)
