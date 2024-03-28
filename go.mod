@@ -8,12 +8,13 @@ require (
 	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/dop251/goja v0.0.0-20231027120936-b396bb4c349d
 	github.com/dop251/goja_nodejs v0.0.0-20231122114759-e84d9a924c5c
+	github.com/go-resty/resty/v2 v2.12.0
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/go-telegram-bot-api/telegram-bot-api v4.6.4+incompatible
 	github.com/google/go-github/v53 v53.2.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/imroc/req/v3 v3.42.2
-	github.com/jackc/pgx/v5 v5.5.1
+	github.com/jackc/pgx/v5 v5.5.5
 	github.com/kataras/golog v0.1.8
 	github.com/larksuite/oapi-sdk-go/v2 v2.0.11
 	github.com/mmcdole/gofeed v1.2.1
@@ -40,7 +41,6 @@ require (
 	github.com/dlclark/regexp2 v1.10.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-openapi/inflect v0.19.0 // indirect
-	github.com/go-resty/resty/v2 v2.12.0 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect

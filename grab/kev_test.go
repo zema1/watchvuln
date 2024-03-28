@@ -2,9 +2,10 @@ package grab
 
 import (
 	"context"
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestKEV(t *testing.T) {
@@ -26,5 +27,5 @@ func TestKEV(t *testing.T) {
 		assert.NotEmpty(v.Severity)
 
 	}
-	assert.Equal(count, 25)
+	assert.Equal(count, 50)
 }

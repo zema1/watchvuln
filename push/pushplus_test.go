@@ -17,6 +17,7 @@ func newPushPlus() *PushPlus {
 }
 
 func TestPushPlusSendTxt(t *testing.T) {
+	t.Skip("local test plusplus")
 	message := PushPlusMessage{
 		Title:    "test1",
 		Content:  `<h1>纯文本内容</h1>`,
@@ -29,6 +30,7 @@ func TestPushPlusSendTxt(t *testing.T) {
 }
 
 func TestPushPlusSendMarkdown(t *testing.T) {
+	t.Skip("local test plusplus")
 	message := PushPlusMessage{
 		Title:    "test",
 		Content:  "# 内容",
