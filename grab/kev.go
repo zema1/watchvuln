@@ -64,9 +64,9 @@ func (c *KEVCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*VulnInfo,
 	sort.Slice(result.Vulnerabilities, func(i, j int) bool {
 		return result.Vulnerabilities[i].DateAdded > result.Vulnerabilities[j].DateAdded
 	})
-	for i := 1; i <= itemLimit; i++ {
+	for i := 0; i < itemLimit; i++ {
 		var vulnInfo VulnInfo
-		vuln := result.Vulnerabilities[maxCount-i]
+		vuln := result.Vulnerabilities[i] //排序后正向取漏洞
 		vulnInfo.UniqueKey = vuln.CveID + "_KEV"
 		vulnInfo.Title = vuln.VulnerabilityName
 		vulnInfo.Description = vuln.ShortDescription
