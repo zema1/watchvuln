@@ -25,6 +25,7 @@ func TestKEV(t *testing.T) {
 		assert.NotEmpty(v.Title)
 		assert.NotEmpty(v.Disclosure)
 		assert.NotEmpty(v.Severity)
+		assert.NotEmpty(v.References)
 
 	}
 	assert.Equal(count, 50)
