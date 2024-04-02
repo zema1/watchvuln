@@ -66,7 +66,7 @@ func (c *KEVCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*VulnInfo,
 	})
 	for i := 0; i < itemLimit; i++ {
 		var vulnInfo VulnInfo
-		vuln := result.Vulnerabilities[i] //排序后正向取漏洞
+		vuln := result.Vulnerabilities[i] // 排序后正向取漏洞
 		vulnInfo.UniqueKey = vuln.CveID + "_KEV"
 		vulnInfo.Title = vuln.VulnerabilityName
 		vulnInfo.Description = vuln.ShortDescription
@@ -75,7 +75,9 @@ func (c *KEVCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*VulnInfo,
 		vulnInfo.Solutions = vuln.RequiredAction
 		vulnInfo.Disclosure = vuln.DateAdded
 		vulnInfo.From = "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
-		vulnInfo.References = append(vulnInfo.References, vuln.Notes)
+		if vuln.Notes != "" {
+			vulnInfo.References = append(vulnInfo.References, vuln.Notes)
+		}
 		vulnInfo.Tags = []string{vuln.VendorProject, vuln.Product, "在野利用"}
 		vulnInfo.Creator = c
 		vulnInfos = append(vulnInfos, &vulnInfo)
