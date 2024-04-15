@@ -2,9 +2,10 @@ package grab
 
 import (
 	"context"
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestThreatBook(t *testing.T) {
@@ -20,7 +21,7 @@ func TestThreatBook(t *testing.T) {
 		t.Logf("get vuln info %+v", v)
 		count++
 		assert.NotEmpty(v.UniqueKey)
-		assert.NotEmpty(v.Description)
+		assert.NotEmpty(v.Tags)
 		assert.NotEmpty(v.Title)
 		assert.NotEmpty(v.From)
 	}
