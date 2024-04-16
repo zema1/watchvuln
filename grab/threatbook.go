@@ -86,7 +86,12 @@ func (t *ThreatBookCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*Vu
 }
 
 func (t *ThreatBookCrawler) IsValuable(info *VulnInfo) bool {
-	return info.Severity == High || info.Severity == Critical
+	for _, tag := range info.Tags {
+		if tag == "0day" || tag == "有Poc" || tag == "有漏洞分析" {
+			return true
+		}
+	}
+	return false
 }
 
 type threatBookHomepage struct {

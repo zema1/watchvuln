@@ -18,7 +18,7 @@ import (
 )
 
 var log = golog.Child("[main]")
-var Version = "v1.8.0"
+var Version = "v1.8.1"
 
 func main() {
 	golog.Default.SetLevel("info")
