@@ -6,6 +6,7 @@ import (
 
 	"github.com/imroc/req/v3"
 	"github.com/kataras/golog"
+	"github.com/pkg/errors"
 )
 
 type ThreatBookCrawler struct {
@@ -86,12 +87,34 @@ func (t *ThreatBookCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*Vu
 }
 
 func (t *ThreatBookCrawler) IsValuable(info *VulnInfo) bool {
+	// 漏洞太多了，规则严格一些
+	var hasPoc, hasAnalysis bool
 	for _, tag := range info.Tags {
-		if tag == "0day" || tag == "有Poc" || tag == "有漏洞分析" {
-			return true
+		if tag == "有Poc" {
+			hasPoc = true
+		}
+		if tag == "有漏洞分析" {
+			hasAnalysis = true
 		}
 	}
-	return false
+	if !hasPoc || !hasAnalysis {
+		return false
+	}
+	if info.Disclosure == "" {
+		return false
+	}
+	// 2024-04-29 format
+	dis, err := time.Parse("2006-01-02", info.Disclosure)
+	if err != nil {
+		t.log.Error(errors.Wrap(err, "parse disclosure time"))
+		return false
+	}
+	// 只看两周内的，古董漏洞就别推了
+	if time.Since(dis) > 14*24*time.Hour {
+		return false
+	}
+
+	return true
 }
 
 type threatBookHomepage struct {
