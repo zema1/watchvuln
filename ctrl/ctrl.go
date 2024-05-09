@@ -113,6 +113,13 @@ func NewApp(config *WatchVulnAppConfig, textPusher push.TextPusher, rawPusher pu
 }
 
 func (w *WatchVulnApp) Run(ctx context.Context) error {
+	if w.config.DiffMode {
+		w.log.Info("running in diff mode, skip init vuln database")
+		w.collectAndPush(ctx)
+		w.log.Info("diff finished")
+		return nil
+	}
+
 	w.log.Infof("initialize local database..")
 	success, fail := w.initData(ctx)
 	w.grabbers = success
@@ -174,76 +181,79 @@ func (w *WatchVulnApp) Run(ctx context.Context) error {
 				w.log.Infof("sleeping..")
 				continue
 			}
+			w.collectAndPush(ctx)
+		}
+	}
+}
 
-			vulns, err := w.collectUpdate(ctx)
+func (w *WatchVulnApp) collectAndPush(ctx context.Context) {
+	vulns, err := w.collectUpdate(ctx)
+	if err != nil {
+		w.log.Errorf("failed to get updates, %s", err)
+	}
+	w.log.Infof("found %d new vulns in this ticking", len(vulns))
+	for _, v := range vulns {
+		if w.config.NoFilter || v.Creator.IsValuable(v) {
+			dbVuln, err := w.db.VulnInformation.Query().Where(vulninformation.Key(v.UniqueKey)).First(ctx)
 			if err != nil {
-				w.log.Errorf("failed to get updates, %s", err)
+				w.log.Errorf("failed to query %s from db %s", v.UniqueKey, err)
+				continue
 			}
-			w.log.Infof("found %d new vulns in this ticking", len(vulns))
-			for _, v := range vulns {
-				if w.config.NoFilter || v.Creator.IsValuable(v) {
-					dbVuln, err := w.db.VulnInformation.Query().Where(vulninformation.Key(v.UniqueKey)).First(ctx)
-					if err != nil {
-						w.log.Errorf("failed to query %s from db %s", v.UniqueKey, err)
-						continue
+			if dbVuln.Pushed {
+				w.log.Infof("%s has been pushed, skipped", v)
+				continue
+			}
+			if v.CVE != "" && w.config.EnableCVEFilter {
+				// 同一个 cve 已经有其它源推送过了
+				others, err := w.db.VulnInformation.Query().
+					Where(vulninformation.And(vulninformation.Cve(v.CVE), vulninformation.Pushed(true))).All(ctx)
+				if err != nil {
+					w.log.Errorf("failed to query %s from db %s", v.UniqueKey, err)
+					continue
+				}
+				if len(others) != 0 {
+					ids := make([]string, 0, len(others))
+					for _, o := range others {
+						ids = append(ids, o.Key)
 					}
-					if dbVuln.Pushed {
-						w.log.Infof("%s has been pushed, skipped", v)
-						continue
-					}
-					if v.CVE != "" && w.config.EnableCVEFilter {
-						// 同一个 cve 已经有其它源推送过了
-						others, err := w.db.VulnInformation.Query().
-							Where(vulninformation.And(vulninformation.Cve(v.CVE), vulninformation.Pushed(true))).All(ctx)
-						if err != nil {
-							w.log.Errorf("failed to query %s from db %s", v.UniqueKey, err)
-							continue
-						}
-						if len(others) != 0 {
-							ids := make([]string, 0, len(others))
-							for _, o := range others {
-								ids = append(ids, o.Key)
-							}
-							w.log.Infof("found new cve but other source has already pushed, others: %v", ids)
-							continue
-						}
-					}
-
-					// find cve pr in nuclei repo
-					if v.CVE != "" && !w.config.NoGithubSearch {
-						links, err := w.FindGithubPoc(ctx, v.CVE)
-						if err != nil {
-							w.log.Warn(err)
-						}
-						w.log.Infof("%s found %d links from github, %v", v.CVE, len(links), links)
-						if len(links) != 0 {
-							v.GithubSearch = grab.MergeUniqueString(v.GithubSearch, links)
-							_, err = dbVuln.Update().SetGithubSearch(v.GithubSearch).Save(ctx)
-							if err != nil {
-								w.log.Warnf("failed to save %s references,  %s", v.UniqueKey, err)
-							}
-						}
-					}
-					w.log.Infof("Pushing %s", v)
-					// retry 3 times
-					for i := 0; i < 3; i++ {
-						if err := w.pushVuln(v); err == nil {
-							// 如果两种推送都成功，才标记为已推送
-							_, err = dbVuln.Update().SetPushed(true).Save(ctx)
-							if err != nil {
-								w.log.Errorf("failed to save pushed %s status, %s", v.UniqueKey, err)
-							}
-							break
-						} else {
-							w.log.Errorf("failed to push %s, %s", v.UniqueKey, err)
-						}
-						w.log.Infof("retry to push %s after 30s", v.UniqueKey)
-						time.Sleep(time.Second * 30)
-					}
-				} else {
-					w.log.Infof("skipped %s as not valuable", v)
+					w.log.Infof("found new cve but other source has already pushed, others: %v", ids)
+					continue
 				}
 			}
+
+			// find cve pr in nuclei repo
+			if v.CVE != "" && !w.config.NoGithubSearch {
+				links, err := w.FindGithubPoc(ctx, v.CVE)
+				if err != nil {
+					w.log.Warn(err)
+				}
+				w.log.Infof("%s found %d links from github, %v", v.CVE, len(links), links)
+				if len(links) != 0 {
+					v.GithubSearch = grab.MergeUniqueString(v.GithubSearch, links)
+					_, err = dbVuln.Update().SetGithubSearch(v.GithubSearch).Save(ctx)
+					if err != nil {
+						w.log.Warnf("failed to save %s references,  %s", v.UniqueKey, err)
+					}
+				}
+			}
+			w.log.Infof("Pushing %s", v)
+			// retry 3 times
+			for i := 0; i < 3; i++ {
+				if err := w.pushVuln(v); err == nil {
+					// 如果两种推送都成功，才标记为已推送
+					_, err = dbVuln.Update().SetPushed(true).Save(ctx)
+					if err != nil {
+						w.log.Errorf("failed to save pushed %s status, %s", v.UniqueKey, err)
+					}
+					break
+				} else {
+					w.log.Errorf("failed to push %s, %s", v.UniqueKey, err)
+				}
+				w.log.Infof("retry to push %s after 30s", v.UniqueKey)
+				time.Sleep(time.Second * 30)
+			}
+		} else {
+			w.log.Infof("skipped %s as not valuable", v)
 		}
 	}
 }

@@ -67,6 +67,7 @@ Docker 方式推荐使用环境变量来配置服务参数
 | `ENABLE_CVE_FILTER`     | 启用 CVE 过滤，开启后多个数据源的统一 CVE 将只推送一次                                        | `true`                                  |
 | `NO_FILTER`             | 禁用上述推送过滤策略，所有新发现的漏洞都会被推送                                                | `false`                                 |
 | `NO_START_MESSAGE`      | 禁用服务启动的提示信息                                                             | `false`                                 |
+| `DIFF`                  | 跳过初始化阶段，转而直接检查漏洞更新并推送                                                   |                                         |
 | `HTTPS_PROXY`           | 给所有请求配置代理, 支持 `socks5://xxxx` 或者 `http(s)://xxkx`                       |                                         |
 
 比如使用钉钉机器人

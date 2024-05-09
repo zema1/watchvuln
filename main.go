@@ -18,7 +18,7 @@ import (
 )
 
 var log = golog.Child("[main]")
-var Version = "v1.8.2"
+var Version = "v1.8.3"
 
 func main() {
 	golog.Default.SetLevel("info")
@@ -177,6 +177,11 @@ func main() {
 			Category: "[Launch Options]",
 		},
 		&cli.BoolFlag{
+			Name:     "diff",
+			Usage:    "skip init vuln db, push new vulns then exit",
+			Category: "[Launch Options]",
+		},
+		&cli.BoolFlag{
 			Name:     "debug",
 			Aliases:  []string{"d"},
 			Usage:    "set log level to debug, print more details",
@@ -225,6 +230,7 @@ func Action(c *cli.Context) error {
 	iv := c.String("interval")
 	db := c.String("db")
 	proxy := c.String("proxy")
+	diff := c.Bool("diff")
 
 	if os.Getenv("INTERVAL") != "" {
 		iv = os.Getenv("INTERVAL")
@@ -240,6 +246,9 @@ func Action(c *cli.Context) error {
 	}
 	if os.Getenv("ENABLE_CVE_FILTER") == "false" {
 		cveFilter = false
+	}
+	if os.Getenv("DIFF") != "" {
+		diff = true
 	}
 	if os.Getenv("DB_CONN") != "" {
 		db = os.Getenv("DB_CONN")
@@ -270,6 +279,7 @@ func Action(c *cli.Context) error {
 		NoStartMessage:  noStartMessage,
 		NoGithubSearch:  noGithubSearch,
 		NoFilter:        noFilter,
+		DiffMode:        diff,
 		Version:         Version,
 	}
 
