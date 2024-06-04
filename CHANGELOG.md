@@ -1,8 +1,17 @@
+## v1.9.0 (2025.06.04)
+
+### 新增
+
+- 支持白名单关键词过滤, 用于只推送包含白名单关键词的漏洞, 通过 `-wf` 或者环境变量 `WHITELIST_FILE`
+  指定 [#84](https://github.com/zema1/watchvuln/issues/84)
+- 支持黑名单关键词过滤, 用于过滤包含黑名单关键词的漏洞, 通过 `-bf` 或者环境变量 `BLACKLIST_FILE` 指定
+
 ## v1.8.3 (2024.05.09)
 
 ### 新增
 
-- 新增 diff 模式，跳过初始化，直接检查漏洞更新并推送，通过 `--diff` 或者环境变量 `DIFF` 指定 [#81](https://github.com/zema1/watchvuln/issues/81)
+- 新增 diff 模式，跳过初始化，直接检查漏洞更新并推送，通过 `--diff` 或者环境变量 `DIFF`
+  指定 [#81](https://github.com/zema1/watchvuln/issues/81)
 
 ## v1.8.2 (2024.04.29)
 
