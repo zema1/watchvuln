@@ -126,6 +126,12 @@ func main() {
 			Category: "[\x00Push Options]",
 		},
 		&cli.StringFlag{
+			Name:     "filter-product",
+			Aliases:  []string{"fp"},
+			Usage:    "specify a file which contains product names, vulns with these products will be pushed",
+			Category: "[\x00Push Options]",
+		},
+		&cli.StringFlag{
 			Name:     "db-conn",
 			Aliases:  []string{"db"},
 			Usage:    "database connection string",
@@ -231,6 +237,7 @@ func Action(c *cli.Context) error {
 	db := c.String("db")
 	proxy := c.String("proxy")
 	diff := c.Bool("diff")
+	filterProduct := c.String("filter-product")
 
 	if os.Getenv("INTERVAL") != "" {
 		iv = os.Getenv("INTERVAL")
@@ -271,6 +278,23 @@ func Action(c *cli.Context) error {
 	if interval.Minutes() < 1 && !debug {
 		return fmt.Errorf("interval is too small, at least 1m")
 	}
+
+	// 产品过滤列表
+	var products []string
+	if filterProduct != "" {
+		data, err := os.ReadFile(filterProduct)
+		if err != nil {
+			return fmt.Errorf("read filter product file error: %w", err)
+		}
+		for _, p := range strings.Split(string(data), "\n") {
+			p = strings.TrimSpace(p)
+			if p != "" {
+				products = append(products, p)
+			}
+		}
+		log.Infof("filter product: %v", products)
+	}
+
 	config := &ctrl.WatchVulnAppConfig{
 		DBConn:          db,
 		Sources:         sourcesParts,
@@ -281,6 +305,7 @@ func Action(c *cli.Context) error {
 		NoFilter:        noFilter,
 		DiffMode:        diff,
 		Version:         Version,
+		FilterProduct:   products,
 	}
 
 	app, err := ctrl.NewApp(config, textPusher, rawPusher)

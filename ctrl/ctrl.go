@@ -221,6 +221,25 @@ func (w *WatchVulnApp) collectAndPush(ctx context.Context) {
 				}
 			}
 
+			// 如果配置了软件列表，过滤一下当前 vuln 是否在列表内
+			if len(w.config.FilterProduct) != 0 {
+				found := false
+				for _, p := range w.config.FilterProduct {
+					if strings.Contains(strings.ToLower(v.Title), strings.ToLower(p)) {
+						found = true
+						break
+					}
+					if strings.Contains(strings.ToLower(v.Description), strings.ToLower(p)) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					w.log.Infof("skipped %s as not in product filter list", v)
+					continue
+				}
+			}
+
 			// find cve pr in nuclei repo
 			if v.CVE != "" && !w.config.NoGithubSearch {
 				links, err := w.FindGithubPoc(ctx, v.CVE)

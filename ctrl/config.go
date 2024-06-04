@@ -16,8 +16,9 @@ type WatchVulnAppConfig struct {
 	NoGithubSearch  bool          `yaml:"no_github_search" json:"no_github_search"`
 	NoStartMessage  bool          `yaml:"no_start_message" json:"no_start_message"`
 	NoFilter        bool          `yaml:"no_filter" json:"no_filter"`
-	DiffMode        bool          `yaml:"diff_mode" json:"diff_mode`
+	DiffMode        bool          `yaml:"diff_mode" json:"diff_mode"`
 	Version         string        `yaml:"version" json:"version"`
+	FilterProduct   []string      `yaml:"filter_product" json:"filter_product"`
 }
 
 const dbExample = `
