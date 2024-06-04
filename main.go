@@ -18,7 +18,7 @@ import (
 )
 
 var log = golog.Child("[main]")
-var Version = "v1.8.3"
+var Version = "v1.9.0"
 
 func main() {
 	golog.Default.SetLevel("info")
@@ -126,9 +126,15 @@ func main() {
 			Category: "[\x00Push Options]",
 		},
 		&cli.StringFlag{
-			Name:     "filter-product",
-			Aliases:  []string{"fp"},
-			Usage:    "specify a file which contains product names, vulns with these products will be pushed",
+			Name:     "whitelist-file",
+			Aliases:  []string{"wf"},
+			Usage:    "specify a file that contains some keywords, vulns with these keywords will be pushed",
+			Category: "[\x00Push Options]",
+		},
+		&cli.StringFlag{
+			Name:     "blacklist-file",
+			Aliases:  []string{"bf"},
+			Usage:    "specify a file that contains some keywords, vulns with these products will NOT be pushed",
 			Category: "[\x00Push Options]",
 		},
 		&cli.StringFlag{
@@ -237,7 +243,8 @@ func Action(c *cli.Context) error {
 	db := c.String("db")
 	proxy := c.String("proxy")
 	diff := c.Bool("diff")
-	filterProduct := c.String("filter-product")
+	whitelistFile := c.String("whitelist-file")
+	blacklistFile := c.String("blacklist-file")
 
 	if os.Getenv("INTERVAL") != "" {
 		iv = os.Getenv("INTERVAL")
@@ -279,20 +286,28 @@ func Action(c *cli.Context) error {
 		return fmt.Errorf("interval is too small, at least 1m")
 	}
 
-	// 产品过滤列表
-	var products []string
-	if filterProduct != "" {
-		data, err := os.ReadFile(filterProduct)
-		if err != nil {
-			return fmt.Errorf("read filter product file error: %w", err)
-		}
-		for _, p := range strings.Split(string(data), "\n") {
-			p = strings.TrimSpace(p)
-			if p != "" {
-				products = append(products, p)
-			}
-		}
-		log.Infof("filter product: %v", products)
+	// 白名单关键字
+	if os.Getenv("WHITELIST_FILE") != "" {
+		whitelistFile = os.Getenv("WHITELIST_FILE")
+	}
+	whiteKeywords, err := splitLines(whitelistFile)
+	if err != nil {
+		return err
+	}
+	if len(whiteKeywords) != 0 {
+		log.Infof("using whitelist keywords: %v", whiteKeywords)
+	}
+
+	// 黑名单关键字
+	if os.Getenv("BLACKLIST_FILE") != "" {
+		blacklistFile = os.Getenv("BLACKLIST_FILE")
+	}
+	blackKeywords, err := splitLines(blacklistFile)
+	if err != nil {
+		return err
+	}
+	if len(blackKeywords) != 0 {
+		log.Infof("using blacklist keywords: %v", blackKeywords)
 	}
 
 	config := &ctrl.WatchVulnAppConfig{
@@ -305,7 +320,8 @@ func Action(c *cli.Context) error {
 		NoFilter:        noFilter,
 		DiffMode:        diff,
 		Version:         Version,
-		FilterProduct:   products,
+		WhiteKeywords:   whiteKeywords,
+		BlackKeywords:   blackKeywords,
 	}
 
 	app, err := ctrl.NewApp(config, textPusher, rawPusher)
@@ -440,4 +456,21 @@ func must(err error) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func splitLines(path string) ([]string, error) {
+	var products []string
+	if path != "" {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return nil, err
+		}
+		for _, p := range strings.Split(string(data), "\n") {
+			p = strings.TrimSpace(p)
+			if p != "" {
+				products = append(products, p)
+			}
+		}
+	}
+	return products, nil
 }

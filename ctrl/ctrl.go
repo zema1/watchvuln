@@ -221,10 +221,25 @@ func (w *WatchVulnApp) collectAndPush(ctx context.Context) {
 				}
 			}
 
-			// 如果配置了软件列表，过滤一下当前 vuln 是否在列表内
-			if len(w.config.FilterProduct) != 0 {
+			// 如果配置了软件列表黑名单，不推送在黑名单内的漏洞
+			if len(w.config.BlackKeywords) != 0 {
+				for _, p := range w.config.BlackKeywords {
+					if strings.Contains(strings.ToLower(v.Title), strings.ToLower(p)) {
+						w.log.Infof("skipped %s as in product filter list", v)
+						continue
+					}
+					// 黑名单就不检查 description 里的内容了, 容易漏推送
+					// if strings.Contains(strings.ToLower(v.Description), strings.ToLower(p)) {
+					// 	w.log.Infof("skipped %s as in product filter list", v)
+					// 	continue
+					// }
+				}
+			}
+
+			// 如果配置了软件列表白名单，仅推送在白名单内的漏洞
+			if len(w.config.WhiteKeywords) != 0 {
 				found := false
-				for _, p := range w.config.FilterProduct {
+				for _, p := range w.config.WhiteKeywords {
 					if strings.Contains(strings.ToLower(v.Title), strings.ToLower(p)) {
 						found = true
 						break
