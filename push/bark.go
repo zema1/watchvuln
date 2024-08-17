@@ -4,9 +4,17 @@ import (
 	"github.com/imroc/req/v3"
 	"github.com/kataras/golog"
 	"github.com/zema1/watchvuln/util"
+	"strings"
 )
 
 var _ = TextPusher(&Bark{})
+
+const TypeBark = "bark"
+
+type BarkConfig struct {
+	Type string `json:"type" yaml:"type"`
+	URL  string `yaml:"url" json:"url"`
+}
 
 type Bark struct {
 	url       string
@@ -26,9 +34,13 @@ type BarkData struct {
 	Url       string `json:"url"`
 }
 
-func NewBark(url string, deviceKey string) TextPusher {
+func NewBark(config *BarkConfig) TextPusher {
+	deviceKeys := strings.Split(config.URL, "/")
+	deviceKey := deviceKeys[len(deviceKeys)-1]
+	u := strings.Replace(config.URL, deviceKey, "push", -1)
+
 	return &Bark{
-		url:       url,
+		url:       u,
 		deviceKey: deviceKey,
 		log:       golog.Child("[bark]"),
 		client:    util.NewHttpClient(),

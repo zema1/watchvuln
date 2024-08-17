@@ -51,8 +51,12 @@ type WatchVulnApp struct {
 	prs          []*github.PullRequest
 }
 
-func NewApp(config *WatchVulnAppConfig, textPusher push.TextPusher, rawPusher push.RawPusher) (*WatchVulnApp, error) {
+func NewApp(config *WatchVulnAppConfig) (*WatchVulnApp, error) {
 	drvName, connStr, err := config.DBConnForEnt()
+	if err != nil {
+		return nil, err
+	}
+	textPusher, rawPusher, err := config.GetPusher()
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +144,7 @@ func (w *WatchVulnApp) Run(ctx context.Context) error {
 		msg := &push.InitialMessage{
 			Version:        w.config.Version,
 			VulnCount:      localCount,
-			Interval:       w.config.Interval.String(),
+			Interval:       w.config.IntervalParsed.String(),
 			Provider:       providers,
 			FailedProvider: failed,
 		}
@@ -165,11 +169,11 @@ func (w *WatchVulnApp) Run(ctx context.Context) error {
 		time.Sleep(time.Second)
 	}()
 
-	ticker := time.NewTicker(w.config.Interval)
+	ticker := time.NewTicker(w.config.IntervalParsed)
 	defer ticker.Stop()
 	for {
 		w.prs = nil
-		w.log.Infof("next checking at %s\n", time.Now().Add(w.config.Interval).Format("2006-01-02 15:04:05"))
+		w.log.Infof("next checking at %s\n", time.Now().Add(w.config.IntervalParsed).Format("2006-01-02 15:04:05"))
 
 		select {
 		case <-ctx.Done():

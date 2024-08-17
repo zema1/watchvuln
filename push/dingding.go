@@ -9,14 +9,22 @@ import (
 
 var _ = TextPusher(&DingDing{})
 
+const TypeDingDing = "dingding"
+
+type DingDingConfig struct {
+	Type        string `json:"type" yaml:"type"`
+	AccessToken string `yaml:"access_token" json:"access_token"`
+	SignSecret  string `yaml:"sign_secret" json:"sign_secret"`
+}
+
 type DingDing struct {
 	client *dingtalk.Client
 	log    *golog.Logger
 }
 
-func NewDingDing(accessToken, secret string) TextPusher {
+func NewDingDing(config *DingDingConfig) TextPusher {
 	return &DingDing{
-		client: dingtalk.NewClient(accessToken, secret),
+		client: dingtalk.NewClient(config.AccessToken, config.SignSecret),
 		log:    golog.Child("[pusher-dingding]"),
 	}
 }

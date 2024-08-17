@@ -9,15 +9,22 @@ import (
 
 var _ = RawPusher(&Webhook{})
 
+const TypeWebhook = "webhook"
+
+type WebhookConfig struct {
+	Type string `json:"type" yaml:"type"`
+	URL  string `yaml:"url" json:"url"`
+}
+
 type Webhook struct {
 	url    string
 	log    *golog.Logger
 	client *req.Client
 }
 
-func NewWebhook(url string) RawPusher {
+func NewWebhook(config *WebhookConfig) RawPusher {
 	return &Webhook{
-		url:    url,
+		url:    config.URL,
 		log:    golog.Child("[webhook]"),
 		client: util.NewHttpClient(),
 	}

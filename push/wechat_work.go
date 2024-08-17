@@ -8,14 +8,21 @@ import (
 
 var _ = TextPusher(&WechatWork{})
 
+const TypeWechatWork = "wechatwork"
+
+type WechatWorkConfig struct {
+	Type string `json:"type" yaml:"type"`
+	Key  string `yaml:"key" json:"key"`
+}
+
 type WechatWork struct {
 	client *wxworkbot.WxWorkBot
 	log    *golog.Logger
 }
 
-func NewWechatWork(botKey string) TextPusher {
+func NewWechatWork(config *WechatWorkConfig) TextPusher {
 	return &WechatWork{
-		client: wxworkbot.New(botKey),
+		client: wxworkbot.New(config.Key),
 		log:    golog.Child("[pusher-wechat-work]"),
 	}
 }

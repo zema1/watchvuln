@@ -11,6 +11,15 @@ import (
 
 var _ = TextPusher(&Telegram{})
 
+const TypeTelegram = "telegram"
+
+type TelegramConfig struct {
+	Type     string `json:"type" yaml:"type"`
+	BotToken string `yaml:"bot_token" json:"bot_token"`
+	// separated by comma. eg "123456,4312341,123123"
+	ChatIDs string `yaml:"chat_ids" json:"chat_ids"`
+}
+
 type Telegram struct {
 	APIToken string
 	log      *golog.Logger
@@ -18,19 +27,18 @@ type Telegram struct {
 	chatIDs  []int64
 }
 
-// NewTelegram creates a new Telegram pusher, it requires a token and a list of chatIDs
-// separated by comma. eg "123456,4312341,123123"
-func NewTelegram(token string, chatIDs string) (*Telegram, error) {
-	bot, err := tgbotapi.NewBotAPI(token)
+// NewTelegram creates a new Telegram pusher
+func NewTelegram(config *TelegramConfig) (*Telegram, error) {
+	bot, err := tgbotapi.NewBotAPI(config.BotToken)
 	if err != nil {
 		return nil, fmt.Errorf("NewTelegram NewBotAPI failed: %w", err)
 	}
-	ids, err := convertChatIDs(chatIDs)
+	ids, err := convertChatIDs(config.ChatIDs)
 	if err != nil {
 		return nil, fmt.Errorf("NewTelegram convertChatIDs failed: %w", err)
 	}
 	return &Telegram{
-		APIToken: token,
+		APIToken: config.BotToken,
 		log:      golog.Child("[telegram]"),
 		client:   bot,
 		chatIDs:  ids,

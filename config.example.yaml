@@ -1,0 +1,43 @@
+db_conn: sqlite3://vuln_v3.sqlite3
+sources: [ "avd","nox","oscs","threatbook","seebug","struts2","kev" ]
+interval: 30m
+enable_cve_filter: true
+no_github_search: false
+no_start_message: false
+diff_mode: false
+white_keywords: [ ]
+black_keywords: [ ]
+
+pusher:
+  - type: dingding
+    access_token: ""
+    sign_secret: ""
+
+  - type: lark
+    access_token: ""
+    sign_secret: ""
+
+  - type: wechatwork
+    key: ""
+
+  - type: lanxin
+    domain: ""
+    access_token: ""
+    sign_secret: ""
+
+  - type: bark
+    url: ""
+
+  - type: serverchan
+    key: ""
+
+  - type: pushplus
+    token: ""
+
+  - type: telegram
+    bot_token: ""
+    chat_ids: ""
+
+  - type: webhook
+    url: ""
+
