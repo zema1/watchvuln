@@ -1,28 +1,32 @@
 package push
 
 import (
+	"fmt"
+	"github.com/imroc/req/v3"
 	"github.com/kataras/golog"
 	"github.com/pkg/errors"
-	serverchan "github.com/rayepeng/serverchan"
+	"github.com/zema1/watchvuln/util"
 )
 
 var _ = TextPusher(&ServerChan{})
 
 type ServerChan struct {
-	client *serverchan.ServerChan
-	log    *golog.Logger
+	pushUrl string
+	log     *golog.Logger
+	client  *req.Client
 }
 
 func NewServerChan(botKey string) TextPusher {
 	return &ServerChan{
-		client: serverchan.NewServerChan(botKey),
-		log:    golog.Child("[pusher-server-chan]"),
+		pushUrl: fmt.Sprintf("https://sctapi.ftqq.com/%s.send", botKey),
+		log:     golog.Child("[pusher-server-chan]"),
+		client:  util.NewHttpClient(),
 	}
 }
 
 func (d *ServerChan) PushText(s string) error {
 	d.log.Infof("sending text %s", s)
-	_, err := d.client.Send("", s)
+	err := d.send("", s)
 	if err != nil {
 		return errors.Wrap(err, "server-chan")
 	}
@@ -31,9 +35,18 @@ func (d *ServerChan) PushText(s string) error {
 
 func (d *ServerChan) PushMarkdown(title, content string) error {
 	d.log.Infof("sending markdown %s", title)
-	_, err := d.client.Send(title, content)
+	err := d.send(title, content)
 	if err != nil {
 		return errors.Wrap(err, "server-chan")
 	}
 	return nil
+}
+
+func (d *ServerChan) send(text string, desp string) error {
+	body := map[string]string{
+		"text": text,
+		"desp": desp,
+	}
+	_, err := d.client.R().SetBodyJsonMarshal(body).Post(d.pushUrl)
+	return err
 }

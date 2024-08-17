@@ -2,6 +2,7 @@ package grab
 
 import (
 	"context"
+	"github.com/zema1/watchvuln/util"
 	"sort"
 	"time"
 
@@ -21,7 +22,7 @@ type KEVCrawler struct {
 }
 
 func NewKEVCrawler() Grabber {
-	client := NewHttpClient()
+	client := util.NewHttpClient()
 	client.SetCommonHeader("Referer", "Referer: https://www.cisa.gov/known-exploited-vulnerabilities-catalog")
 
 	return &KEVCrawler{

@@ -2,6 +2,7 @@ package grab
 
 import (
 	"context"
+	"github.com/zema1/watchvuln/util"
 	"strconv"
 	"strings"
 
@@ -15,7 +16,7 @@ type TiCrawler struct {
 }
 
 func NewTiCrawler() Grabber {
-	client := wrapApiClient(NewHttpClient())
+	client := util.WrapApiClient(util.NewHttpClient())
 	client.SetCommonHeader("Referer", "https: //ti.qianxin.com/")
 	client.SetCommonHeader("Origin", "https: //ti.qianxin.com")
 
