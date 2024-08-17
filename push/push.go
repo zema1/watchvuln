@@ -1,5 +1,7 @@
 package push
 
+import "github.com/hashicorp/go-multierror"
+
 // TextPusher is a type that can push text and markdown messages.
 type TextPusher interface {
 	PushText(s string) error
@@ -27,21 +29,23 @@ func MultiRawPusher(pushers ...RawPusher) RawPusher {
 }
 
 func (m *multiPusher) PushText(s string) error {
+	var pushErr *multierror.Error
 	for _, push := range m.textPusher {
 		if err := push.PushText(s); err != nil {
-			return err
+			pushErr = multierror.Append(pushErr, err)
 		}
 	}
-	return nil
+	return pushErr.ErrorOrNil()
 }
 
 func (m *multiPusher) PushMarkdown(title, content string) error {
+	var pushErr *multierror.Error
 	for _, push := range m.textPusher {
 		if err := push.PushMarkdown(title, content); err != nil {
-			return err
+			pushErr = multierror.Append(pushErr, err)
 		}
 	}
-	return nil
+	return pushErr.ErrorOrNil()
 }
 
 func (m *multiPusher) PushRaw(r *RawMessage) error {
