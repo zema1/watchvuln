@@ -8,6 +8,7 @@ import (
 	"github.com/imroc/req/v3"
 	"github.com/kataras/golog"
 	"github.com/pkg/errors"
+	"github.com/zema1/watchvuln/util"
 	"golang.org/x/net/html"
 	"net/url"
 	"regexp"
@@ -27,7 +28,7 @@ type AVDCrawler struct {
 }
 
 func NewAVDCrawler() Grabber {
-	client := NewHttpClient().AddCommonRetryCondition(func(resp *req.Response, err error) bool {
+	client := util.NewHttpClient().AddCommonRetryCondition(func(resp *req.Response, err error) bool {
 		if err != nil {
 			return !errors.Is(err, context.Canceled)
 		}

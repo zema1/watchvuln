@@ -10,6 +10,7 @@ import (
 	"github.com/imroc/req/v3"
 	"github.com/kataras/golog"
 	"github.com/pkg/errors"
+	"github.com/zema1/watchvuln/util"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -211,7 +212,7 @@ func (t *SeebugCrawler) IsValuable(info *VulnInfo) bool {
 
 func (t *SeebugCrawler) newClient() *req.Client {
 	jar, _ := cookiejar.New(nil)
-	client := NewHttpClient().
+	client := util.NewHttpClient().
 		SetCookieJar(jar).
 		SetCommonHeader("Referer", "https://www.seebug.org/")
 	return client

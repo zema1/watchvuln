@@ -1,14 +1,9 @@
 package push
 
 import (
-	"bytes"
-	"encoding/json"
-	"io"
-	"net/http"
-
-	"github.com/pkg/errors"
-
+	"github.com/imroc/req/v3"
 	"github.com/kataras/golog"
+	"github.com/zema1/watchvuln/util"
 )
 
 var _ = TextPusher(&Bark{})
@@ -17,7 +12,7 @@ type Bark struct {
 	url       string
 	deviceKey string
 	log       *golog.Logger
-	client    *http.Client
+	client    *req.Client
 }
 
 type BarkData struct {
@@ -36,7 +31,7 @@ func NewBark(url string, deviceKey string) TextPusher {
 		url:       url,
 		deviceKey: deviceKey,
 		log:       golog.Child("[bark]"),
-		client:    &http.Client{},
+		client:    util.NewHttpClient(),
 	}
 }
 
@@ -78,27 +73,9 @@ func (m *Bark) PushMarkdown(title, content string) error {
 }
 
 func (m *Bark) postJSON(url string, params *BarkData) ([]byte, error) {
-	postBody, _ := json.Marshal(params)
-	return m.doPostRequest(url, "application/json", postBody)
-}
-
-func (m *Bark) doPostRequest(url string, contentType string, body []byte) ([]byte, error) {
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
+	resp, err := m.client.R().SetBodyJsonMarshal(params).Post(url)
 	if err != nil {
-		return nil, errors.Wrap(err, "create request")
+		return nil, err
 	}
-
-	req.Header.Set("Content-Type", contentType)
-
-	resp, err := m.client.Do(req)
-	if err != nil {
-		return nil, errors.Wrap(err, "send request")
-	}
-	defer resp.Body.Close()
-
-	respBody, err := io.ReadAll(resp.Body) // 使用 io.ReadAll 替代 ioutil.ReadAll。
-	if err != nil {
-		return nil, errors.Wrap(err, "read body")
-	}
-	return respBody, nil
+	return resp.ToBytes()
 }

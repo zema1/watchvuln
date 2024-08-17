@@ -3,6 +3,7 @@ package grab
 import (
 	"bytes"
 	"context"
+	"github.com/zema1/watchvuln/util"
 	"regexp"
 	"strings"
 	"time"
@@ -20,7 +21,7 @@ type Struts2Crawler struct {
 }
 
 func NewStruts2Crawler() Grabber {
-	client := NewHttpClient()
+	client := util.NewHttpClient()
 	client.SetCommonHeader("Referer", "https://cwiki.apache.org/")
 	client.SetCommonHeader("Origin", "https://cwiki.apache.org/")
 	client.SetCommonHeader("Accept-Language", "en-US,en;q=0.9")

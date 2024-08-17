@@ -7,6 +7,7 @@ import (
 	"github.com/imroc/req/v3"
 	"github.com/kataras/golog"
 	"github.com/pkg/errors"
+	"github.com/zema1/watchvuln/util"
 	"strings"
 	"time"
 )
@@ -19,7 +20,7 @@ type OSCSCrawler struct {
 }
 
 func NewOSCSCrawler() Grabber {
-	client := wrapApiClient(NewHttpClient())
+	client := util.WrapApiClient(util.NewHttpClient())
 	client.SetCommonHeader("Referer", "https://www.oscs1024.com/cm")
 	client.SetCommonHeader("Origin", "https://www.oscs1024.com")
 	c := &OSCSCrawler{

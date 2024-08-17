@@ -2,6 +2,7 @@ package grab
 
 import (
 	"context"
+	"github.com/zema1/watchvuln/util"
 	"time"
 
 	"github.com/imroc/req/v3"
@@ -15,7 +16,7 @@ type ThreatBookCrawler struct {
 }
 
 func NewThreatBookCrawler() Grabber {
-	client := NewHttpClient()
+	client := util.NewHttpClient()
 	client.SetCommonHeader("Referer", "https://x.threatbook.com/v5/vulIntelligence")
 	client.SetCommonHeader("Origin", "https://mp.weixin.qq.com/")
 	client.SetCommonHeader("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6")
