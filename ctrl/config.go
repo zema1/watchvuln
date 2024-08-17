@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"entgo.io/ent/dialect"
 	"fmt"
+	"github.com/kataras/golog"
 	"github.com/zema1/watchvuln/push"
 	"net/url"
 	"os"
@@ -14,10 +15,10 @@ type WatchVulnAppConfig struct {
 	DBConn          string              `yaml:"db_conn" json:"db_conn"`
 	Sources         []string            `yaml:"sources" json:"sources"`
 	Interval        string              `yaml:"interval" json:"interval"`
-	EnableCVEFilter bool                `yaml:"enable_cve_filter" json:"enable_cve_filter"`
-	NoGithubSearch  bool                `yaml:"no_github_search" json:"no_github_search"`
-	NoStartMessage  bool                `yaml:"no_start_message" json:"no_start_message"`
-	DiffMode        bool                `yaml:"diff_mode" json:"diff_mode"`
+	EnableCVEFilter *bool               `yaml:"enable_cve_filter" json:"enable_cve_filter"`
+	NoGithubSearch  *bool               `yaml:"no_github_search" json:"no_github_search"`
+	NoStartMessage  *bool               `yaml:"no_start_message" json:"no_start_message"`
+	DiffMode        *bool               `yaml:"diff_mode" json:"diff_mode"`
 	WhiteKeywords   []string            `yaml:"white_keywords" json:"white_keywords"`
 	BlackKeywords   []string            `yaml:"black_keywords" json:"black_keywords"`
 	Pusher          []map[string]string `yaml:"pusher" json:"pusher"`
@@ -32,6 +33,25 @@ sqlite3://vuln_v3.sqlite3
 mysql://user:pass@host:port/dbname
 postgres://user:pass@host:port/dbname
 `
+
+func (c *WatchVulnAppConfig) Init() {
+	if c.EnableCVEFilter == nil {
+		t := true
+		c.EnableCVEFilter = &t
+	}
+	if c.NoGithubSearch == nil {
+		c.NoGithubSearch = new(bool)
+	}
+	if c.NoStartMessage == nil {
+		c.NoStartMessage = new(bool)
+	}
+	if c.DiffMode == nil {
+		c.DiffMode = new(bool)
+	}
+	if c.Interval == "" {
+		c.Interval = "1h"
+	}
+}
 
 func (c *WatchVulnAppConfig) DBConnForEnt() (string, string, error) {
 	u, err := url.Parse(c.DBConn)
@@ -139,6 +159,7 @@ func (c *WatchVulnAppConfig) GetPusher() (push.TextPusher, push.RawPusher, error
 		default:
 			return nil, nil, fmt.Errorf("unsupported push type: %s", pushType)
 		}
+		golog.Infof("add pusher: %s", pushType)
 	}
 	if len(textPusher) == 0 && len(rawPusher) == 0 {
 		msg := `

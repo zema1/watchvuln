@@ -40,7 +40,7 @@ func (t *ThreatBookCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*Vu
 	defer cancel()
 	var results []*VulnInfo
 
-	resp, err := t.client.R().Get("https://x.threatbook.com/v5/node/vul_module/homePage")
+	resp, err := t.client.R().SetContext(ctx).Get("https://x.threatbook.com/v5/node/vul_module/homePage")
 	if err != nil {
 		return nil, err
 	}
