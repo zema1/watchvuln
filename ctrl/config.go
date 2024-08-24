@@ -51,6 +51,9 @@ func (c *WatchVulnAppConfig) Init() {
 	if c.Interval == "" {
 		c.Interval = "1h"
 	}
+	if len(c.Sources) == 0 {
+		c.Sources = []string{"avd", "nox", "oscs", "threatbook", "seebug", "struts2", "kev"}
+	}
 }
 
 func (c *WatchVulnAppConfig) DBConnForEnt() (string, string, error) {
