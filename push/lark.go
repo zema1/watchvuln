@@ -12,21 +12,29 @@ import (
 
 var _ = TextPusher(&Lark{})
 
-type Lark struct {
-	log  *golog.Logger
-	bot  *lark.CustomerBot
-	sign string
+const TypeLark = "lark"
+
+type LarkConfig struct {
+	Type        string `json:"type" yaml:"type"`
+	AccessToken string `yaml:"access_token" json:"access_token"`
+	SignSecret  string `yaml:"sign_secret" json:"sign_secret"`
 }
 
-func NewLark(botKey, sign string) TextPusher {
-	if !strings.HasPrefix(botKey, "http") {
-		botKey = "https://open.feishu.cn/open-apis/bot/v2/hook/" + botKey
+type Lark struct {
+	log *golog.Logger
+	bot *lark.CustomerBot
+}
+
+func NewLark(config *LarkConfig) TextPusher {
+	// todo: split endpoint
+	endpoint := config.AccessToken
+	if !strings.HasPrefix(config.AccessToken, "http") {
+		endpoint = "https://open.feishu.cn/open-apis/bot/v2/hook/" + config.AccessToken
 	}
-	bot := lark.NewCustomerBot(botKey, sign)
+	bot := lark.NewCustomerBot(endpoint, config.SignSecret)
 	return &Lark{
-		bot:  bot,
-		sign: sign,
-		log:  golog.Child("[pusher-lark]"),
+		bot: bot,
+		log: golog.Child("[pusher-lark]"),
 	}
 }
 

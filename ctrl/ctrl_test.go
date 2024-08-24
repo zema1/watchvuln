@@ -13,15 +13,11 @@ func TestGithubSearch(t *testing.T) {
 	assert := require.New(t)
 
 	app, err := NewApp(&WatchVulnAppConfig{
-		DBConn:          "sqlite3://vuln_v3.sqlite3",
-		Sources:         nil,
-		Interval:        30,
-		EnableCVEFilter: false,
-		NoGithubSearch:  false,
-		NoStartMessage:  false,
-		NoFilter:        false,
-		Version:         "",
-	}, nil, nil)
+		DBConn:   "sqlite3://vuln_v3.sqlite3",
+		Sources:  nil,
+		Interval: "30h",
+		Version:  "",
+	})
 	assert.Nil(err)
 	links, err := app.FindGithubPoc(context.Background(), "CVE-2023-37582")
 	assert.Nil(err)

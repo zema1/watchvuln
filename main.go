@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/zema1/watchvuln/push"
+	"gopkg.in/yaml.v3"
 	"os"
 	"os/signal"
 	"strings"
@@ -13,12 +16,10 @@ import (
 	"github.com/kataras/golog"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
-
-	"github.com/zema1/watchvuln/push"
 )
 
 var log = golog.Child("[main]")
-var Version = "v1.9.0"
+var Version = "v2.0.0"
 
 func main() {
 	golog.Default.SetLevel("info")
@@ -41,6 +42,11 @@ func main() {
 	app.Version = Version
 
 	app.Flags = []cli.Flag{
+		&cli.StringFlag{
+			Name:    "config",
+			Aliases: []string{"c"},
+			Usage:   "config file path, support json or yaml",
+		},
 		&cli.StringFlag{
 			Name:     "dingding-access-token",
 			Aliases:  []string{"dt"},
@@ -223,9 +229,61 @@ func Action(c *cli.Context) error {
 	ctx, cancel := signalCtx()
 	defer cancel()
 
-	textPusher, rawPusher, err := initPusher(c)
+	var config *ctrl.WatchVulnAppConfig
+	var err error
+	if c.String("config") != "" {
+		config, err = initConfigFromFile(c)
+	} else {
+		config, err = initConfigFromCli(c)
+	}
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to init config")
+	}
+
+	app, err := ctrl.NewApp(config)
+	if err != nil {
+		return errors.Wrap(err, "failed to create app")
+	}
+	defer app.Close()
+	if err = app.Run(ctx); err != nil {
+		return errors.Wrap(err, "failed to run app")
+	}
+	return nil
+}
+
+func initConfigFromFile(c *cli.Context) (*ctrl.WatchVulnAppConfig, error) {
+	configFile := c.String("config")
+	if configFile == "" {
+		return nil, fmt.Errorf("config file is required")
+	}
+	data, err := os.ReadFile(configFile)
+	if err != nil {
+		return nil, err
+	}
+	var config ctrl.WatchVulnAppConfig
+	if strings.HasSuffix(configFile, ".json") {
+		err = json.Unmarshal(data, &config)
+	}
+	if strings.HasSuffix(configFile, ".yaml") || strings.HasSuffix(configFile, ".yml") {
+		err = yaml.Unmarshal(data, &config)
+	}
+	if err != nil {
+		return nil, err
+	}
+	config.IntervalParsed, err = time.ParseDuration(config.Interval)
+	if err != nil {
+		return nil, err
+	}
+	if config.IntervalParsed.Minutes() < 1 && !c.Bool("debug") {
+		return nil, fmt.Errorf("interval is too small, at least 1m")
+	}
+	return &config, nil
+}
+
+func initConfigFromCli(c *cli.Context) (*ctrl.WatchVulnAppConfig, error) {
+	pusher, err := initPusher(c)
+	if err != nil {
+		return nil, err
 	}
 
 	sources := c.String("sources")
@@ -280,10 +338,10 @@ func Action(c *cli.Context) error {
 
 	interval, err := time.ParseDuration(iv)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if interval.Minutes() < 1 && !debug {
-		return fmt.Errorf("interval is too small, at least 1m")
+		return nil, fmt.Errorf("interval is too small, at least 1m")
 	}
 
 	// 白名单关键字
@@ -292,7 +350,7 @@ func Action(c *cli.Context) error {
 	}
 	whiteKeywords, err := splitLines(whitelistFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(whiteKeywords) != 0 {
 		log.Infof("using whitelist keywords: %v", whiteKeywords)
@@ -304,7 +362,7 @@ func Action(c *cli.Context) error {
 	}
 	blackKeywords, err := splitLines(blacklistFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(blackKeywords) != 0 {
 		log.Infof("using blacklist keywords: %v", blackKeywords)
@@ -313,29 +371,22 @@ func Action(c *cli.Context) error {
 	config := &ctrl.WatchVulnAppConfig{
 		DBConn:          db,
 		Sources:         sourcesParts,
-		Interval:        interval,
-		EnableCVEFilter: cveFilter,
-		NoStartMessage:  noStartMessage,
-		NoGithubSearch:  noGithubSearch,
+		Interval:        iv,
+		IntervalParsed:  interval,
+		EnableCVEFilter: &cveFilter,
+		NoStartMessage:  &noStartMessage,
+		NoGithubSearch:  &noGithubSearch,
 		NoFilter:        noFilter,
-		DiffMode:        diff,
+		DiffMode:        &diff,
 		Version:         Version,
 		WhiteKeywords:   whiteKeywords,
 		BlackKeywords:   blackKeywords,
+		Pusher:          pusher,
 	}
-
-	app, err := ctrl.NewApp(config, textPusher, rawPusher)
-	if err != nil {
-		return errors.Wrap(err, "failed to create app")
-	}
-	defer app.Close()
-	if err = app.Run(ctx); err != nil {
-		return errors.Wrap(err, "failed to run app")
-	}
-	return nil
+	return config, nil
 }
 
-func initPusher(c *cli.Context) (push.TextPusher, push.RawPusher, error) {
+func initPusher(c *cli.Context) ([]map[string]string, error) {
 	dingToken := c.String("dingding-access-token")
 	dingSecret := c.String("dingding-sign-secret")
 	wxWorkKey := c.String("wechatwork-key")
@@ -394,51 +445,76 @@ func initPusher(c *cli.Context) (push.TextPusher, push.RawPusher, error) {
 		telegramChatIDs = os.Getenv("TELEGRAM_CHAT_IDS")
 	}
 
-	var textPusher []push.TextPusher
-	var rawPusher []push.RawPusher
+	var pusherConfig []any
 	if dingToken != "" && dingSecret != "" {
-		textPusher = append(textPusher, push.NewDingDing(dingToken, dingSecret))
-	}
-	if larkToken != "" && larkSecret != "" {
-		textPusher = append(textPusher, push.NewLark(larkToken, larkSecret))
+		pusherConfig = append(pusherConfig, &push.DingDingConfig{
+			Type:        push.TypeDingDing,
+			AccessToken: dingToken,
+			SignSecret:  dingSecret,
+		})
 	}
 	if wxWorkKey != "" {
-		textPusher = append(textPusher, push.NewWechatWork(wxWorkKey))
+		pusherConfig = append(pusherConfig, &push.WechatWorkConfig{
+			Type: push.TypeWechatWork,
+			Key:  wxWorkKey,
+		})
 	}
 	if webhook != "" {
-		rawPusher = append(rawPusher, push.NewWebhook(webhook))
+		pusherConfig = append(pusherConfig, &push.WebhookConfig{
+			Type: push.TypeWebhook,
+			URL:  webhook,
+		})
 	}
 	if lanxinDomain != "" && lanxinToken != "" && lanxinSecret != "" {
-		textPusher = append(textPusher, push.NewLanxin(lanxinDomain, lanxinToken, lanxinSecret))
+		pusherConfig = append(pusherConfig, &push.LanxinConfig{
+			Type:        push.TypeLanxin,
+			Domain:      lanxinDomain,
+			AccessToken: lanxinToken,
+			SignSecret:  lanxinSecret,
+		})
 	}
 	if bark != "" {
-		deviceKeys := strings.Split(bark, "/")
-		deviceKey := deviceKeys[len(deviceKeys)-1]
-		url := strings.Replace(bark, deviceKey, "push", -1)
-		textPusher = append(textPusher, push.NewBark(url, deviceKey))
+		pusherConfig = append(pusherConfig, &push.BarkConfig{
+			Type: push.TypeBark,
+			URL:  bark,
+		})
+	}
+	if larkToken != "" && larkSecret != "" {
+		pusherConfig = append(pusherConfig, &push.LarkConfig{
+			Type:        push.TypeLark,
+			AccessToken: larkToken,
+			SignSecret:  larkSecret,
+		})
 	}
 	if serverChanKey != "" {
-		textPusher = append(textPusher, push.NewServerChan(serverChanKey))
+		pusherConfig = append(pusherConfig, &push.ServerChanConfig{
+			Type: push.TypeServerChan,
+			Key:  serverChanKey,
+		})
 	}
 	if pushPlusKey != "" {
-		textPusher = append(textPusher, push.NewPushPlus(pushPlusKey))
+		pusherConfig = append(pusherConfig, &push.PushPlusConfig{
+			Type:  push.TypePushPlus,
+			Token: pushPlusKey,
+		})
 	}
 	if telegramBotTokey != "" && telegramChatIDs != "" {
-		tgPusher, err := push.NewTelegram(telegramBotTokey, telegramChatIDs)
-		if err != nil {
-			return nil, nil, fmt.Errorf("init telegram error %w", err)
-		}
-		textPusher = append(textPusher, tgPusher)
+		pusherConfig = append(pusherConfig, &push.TelegramConfig{
+			Type:     push.TypeTelegram,
+			BotToken: telegramBotTokey,
+			ChatIDs:  telegramChatIDs,
+		})
 	}
-	if len(textPusher) == 0 && len(rawPusher) == 0 {
-		msg := `
-you must setup a pusher, eg: 
-use dingding: %s --dt DINGDING_ACCESS_TOKEN --ds DINGDING_SECRET
-use wechat:   %s --wk WECHATWORK_KEY
-use API:   %s --webhook WEBHOOK_URL`
-		return nil, nil, fmt.Errorf(msg, os.Args[0], os.Args[0], os.Args[0])
+	data, err := json.Marshal(pusherConfig)
+	if err != nil {
+		return nil, err
 	}
-	return push.MultiTextPusher(textPusher...), push.MultiRawPusher(rawPusher...), nil
+	var pusher []map[string]string
+	err = json.Unmarshal(data, &pusher)
+	if err != nil {
+		return nil, err
+	}
+	return pusher, nil
 }
 
 func signalCtx() (context.Context, func()) {

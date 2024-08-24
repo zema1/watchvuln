@@ -9,6 +9,15 @@ import (
 	"github.com/pkg/errors"
 )
 
+var _ = TextPusher(&PushPlus{})
+
+const TypePushPlus = "pushplus"
+
+type PushPlusConfig struct {
+	Type  string `json:"type" yaml:"type"`
+	Token string `yaml:"token" json:"token"`
+}
+
 type PushPlusMessage struct {
 	Token    string `json:"token"`
 	Title    string `json:"title" describe:"消息标题"`
@@ -22,16 +31,14 @@ type PushPlusResponse struct {
 	Data string `json:"data"`
 }
 
-var _ = TextPusher(&PushPlus{})
-
 type PushPlus struct {
 	token string
 	log   *golog.Logger
 }
 
-func NewPushPlus(token string) TextPusher {
+func NewPushPlus(config *PushPlusConfig) TextPusher {
 	return &PushPlus{
-		token: token,
+		token: config.Token,
 		log:   golog.Child("[pusher-push-plus]"),
 	}
 }

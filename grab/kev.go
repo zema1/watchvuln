@@ -55,12 +55,10 @@ func (c *KEVCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*VulnInfo,
 	}
 
 	var vulnInfos []*VulnInfo
-	var itemLimit = 0
+	itemLimit := pageLimit * KEYPageSize
 	var maxCount = len(result.Vulnerabilities)
 	if pageLimit*KEYPageSize > maxCount {
 		itemLimit = maxCount
-	} else {
-		itemLimit = pageLimit * KEYPageSize
 	}
 	sort.Slice(result.Vulnerabilities, func(i, j int) bool {
 		return result.Vulnerabilities[i].DateAdded > result.Vulnerabilities[j].DateAdded

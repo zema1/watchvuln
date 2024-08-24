@@ -332,6 +332,10 @@ $ ./watchvuln --dt DINGDING_ACCESS_TOKEN --ds DINGDING_SECRET --wk WECHATWORK_KE
 
 </details>
 
+## 配置文件
+
+进入查看详情 [使用配置文件](CONFIG.md)
+
 ## 数据库连接
 
 默认使用 sqlite3 作为数据库，数据库文件为 `vuln_v3.sqlite3`，如果需要使用其他数据库，可以通过 `--db`

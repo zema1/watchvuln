@@ -51,8 +51,13 @@ type WatchVulnApp struct {
 	prs          []*github.PullRequest
 }
 
-func NewApp(config *WatchVulnAppConfig, textPusher push.TextPusher, rawPusher push.RawPusher) (*WatchVulnApp, error) {
+func NewApp(config *WatchVulnAppConfig) (*WatchVulnApp, error) {
+	config.Init()
 	drvName, connStr, err := config.DBConnForEnt()
+	if err != nil {
+		return nil, err
+	}
+	textPusher, rawPusher, err := config.GetPusher()
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +118,7 @@ func NewApp(config *WatchVulnAppConfig, textPusher push.TextPusher, rawPusher pu
 }
 
 func (w *WatchVulnApp) Run(ctx context.Context) error {
-	if w.config.DiffMode {
+	if *w.config.DiffMode {
 		w.log.Info("running in diff mode, skip init vuln database")
 		w.collectAndPush(ctx)
 		w.log.Info("diff finished")
@@ -128,7 +133,7 @@ func (w *WatchVulnApp) Run(ctx context.Context) error {
 		return err
 	}
 	w.log.Infof("system init finished, local database has %d vulns", localCount)
-	if !w.config.NoStartMessage {
+	if !*w.config.NoStartMessage {
 		providers := make([]*grab.Provider, 0, 10)
 		failed := make([]*grab.Provider, 0, 10)
 		for _, p := range w.grabbers {
@@ -140,7 +145,7 @@ func (w *WatchVulnApp) Run(ctx context.Context) error {
 		msg := &push.InitialMessage{
 			Version:        w.config.Version,
 			VulnCount:      localCount,
-			Interval:       w.config.Interval.String(),
+			Interval:       w.config.IntervalParsed.String(),
 			Provider:       providers,
 			FailedProvider: failed,
 		}
@@ -165,11 +170,11 @@ func (w *WatchVulnApp) Run(ctx context.Context) error {
 		time.Sleep(time.Second)
 	}()
 
-	ticker := time.NewTicker(w.config.Interval)
+	ticker := time.NewTicker(w.config.IntervalParsed)
 	defer ticker.Stop()
 	for {
 		w.prs = nil
-		w.log.Infof("next checking at %s\n", time.Now().Add(w.config.Interval).Format("2006-01-02 15:04:05"))
+		w.log.Infof("next checking at %s\n", time.Now().Add(w.config.IntervalParsed).Format("2006-01-02 15:04:05"))
 
 		select {
 		case <-ctx.Done():
@@ -203,7 +208,7 @@ func (w *WatchVulnApp) collectAndPush(ctx context.Context) {
 				w.log.Infof("%s has been pushed, skipped", v)
 				continue
 			}
-			if v.CVE != "" && w.config.EnableCVEFilter {
+			if v.CVE != "" && *w.config.EnableCVEFilter {
 				// 同一个 cve 已经有其它源推送过了
 				others, err := w.db.VulnInformation.Query().
 					Where(vulninformation.And(vulninformation.Cve(v.CVE), vulninformation.Pushed(true))).All(ctx)
@@ -256,7 +261,7 @@ func (w *WatchVulnApp) collectAndPush(ctx context.Context) {
 			}
 
 			// find cve pr in nuclei repo
-			if v.CVE != "" && !w.config.NoGithubSearch {
+			if v.CVE != "" && !*w.config.NoGithubSearch {
 				links, err := w.FindGithubPoc(ctx, v.CVE)
 				if err != nil {
 					w.log.Warn(err)

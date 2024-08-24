@@ -18,6 +18,15 @@ import (
 
 var _ = TextPusher(&LanXin{})
 
+const TypeLanxin = "lanxin"
+
+type LanxinConfig struct {
+	Type        string `json:"type" yaml:"type"`
+	Domain      string `yaml:"domain" json:"domain"`
+	AccessToken string `yaml:"access_token" json:"access_token"`
+	SignSecret  string `yaml:"sign_secret" json:"sign_secret"`
+}
+
 type LanXin struct {
 	domain string
 	token  string
@@ -25,11 +34,11 @@ type LanXin struct {
 	log    *golog.Logger
 }
 
-func NewLanxin(domain string, token string, secret string) TextPusher {
+func NewLanxin(config *LanxinConfig) TextPusher {
 	return &LanXin{
-		domain: domain,
-		token:  token,
-		secret: secret,
+		domain: config.Domain,
+		token:  config.AccessToken,
+		secret: config.SignSecret,
 		log:    golog.Child("[pusher-lanxin]"),
 	}
 }

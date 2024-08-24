@@ -10,15 +10,22 @@ import (
 
 var _ = TextPusher(&ServerChan{})
 
+const TypeServerChan = "serverchan"
+
+type ServerChanConfig struct {
+	Type string `json:"type" yaml:"type"`
+	Key  string `yaml:"key" json:"key"`
+}
+
 type ServerChan struct {
 	pushUrl string
 	log     *golog.Logger
 	client  *req.Client
 }
 
-func NewServerChan(botKey string) TextPusher {
+func NewServerChan(config *ServerChanConfig) TextPusher {
 	return &ServerChan{
-		pushUrl: fmt.Sprintf("https://sctapi.ftqq.com/%s.send", botKey),
+		pushUrl: fmt.Sprintf("https://sctapi.ftqq.com/%s.send", config.Key),
 		log:     golog.Child("[pusher-server-chan]"),
 		client:  util.NewHttpClient(),
 	}
