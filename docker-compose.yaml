@@ -2,10 +2,10 @@ version: '3'
 services:
   watchvuln:
     restart: always
-    image: zemal/watchvuln:latest
+    image: registry.cn-hongkong.aliyuncs.com/redteamwing/watchvuln
     environment:
-      DINGDING_ACCESS_TOKEN: YOUR_TOKEN_HERE
-      DINGDING_SECRET: YOUR_SECRET_HERE
+      DINGDING_ACCESS_TOKEN: f1ffdf47e5833214eabd959cb47469c3cde3bfc2e9be0c6dd95093d546b65aab
+      DINGDING_SECRET: SEC79a21f34edadfdaabb9a183d8d4c88fb3ddddbfb3b98a913d2454469e69f196e
       DB_CONN: postgres://watchvuln:watchvuln@postgres:5432/watchvuln
       INTERVAL: 30m
     depends_on:

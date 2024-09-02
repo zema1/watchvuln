@@ -1,4 +1,5 @@
-FROM golang:1.22-alpine as builder
+#M1 Build:docker build --platform linux/amd64 -t registry.cn-hongkong.aliyuncs.com/redteamwing/watchvuln .
+FROM m.daocloud.io/docker.io/library/golang:1.22-alpine as builder
 
 
 WORKDIR /app
@@ -10,7 +11,7 @@ COPY . .
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -extldflags=-static" -o main .
 
 
-FROM alpine:3
+FROM m.daocloud.io/docker.io/library/alpine:3
 
 LABEL Author=Koalr(https://github.com/zema1)
 
