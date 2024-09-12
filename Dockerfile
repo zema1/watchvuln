@@ -1,17 +1,16 @@
-#M1 Build:docker build --platform linux/amd64 -t registry.cn-hongkong.aliyuncs.com/redteamwing/watchvuln .
-FROM m.daocloud.io/docker.io/library/golang:1.22-alpine as builder
+FROM golang:1.22-alpine as builder
 
 
 WORKDIR /app
 
-ENV GO111MODULE=on \
-    GOPROXY=https://goproxy.cn,direct
+#ENV GO111MODULE=on \
+#    GOPROXY=https://goproxy.cn,direct
 
 COPY . .
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -extldflags=-static" -o main .
 
 
-FROM m.daocloud.io/docker.io/library/alpine:3
+FROM alpine:3
 
 LABEL Author=Koalr(https://github.com/zema1)
 
