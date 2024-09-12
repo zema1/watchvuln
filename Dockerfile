@@ -3,8 +3,8 @@ FROM golang:1.22-alpine as builder
 
 WORKDIR /app
 
-ENV GO111MODULE=on \
-    GOPROXY=https://goproxy.cn,direct
+#ENV GO111MODULE=on \
+#    GOPROXY=https://goproxy.cn,direct
 
 COPY . .
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -extldflags=-static" -o main .
