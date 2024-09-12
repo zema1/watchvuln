@@ -1,0 +1,22 @@
+version: '3'
+services:
+  watchvuln:
+    restart: always
+    image: zemal/watchvuln:latest
+    environment:
+      DINGDING_ACCESS_TOKEN: YOUR_TOKEN_HERE
+      DINGDING_SECRET: YOUR_SECRET_HERE
+      DB_CONN: postgres://watchvuln:watchvuln@postgres:5432/watchvuln
+      INTERVAL: 30m
+    depends_on:
+      - postgres
+
+  postgres:
+    restart: always
+    image: postgres:14.4-alpine
+    environment:
+      POSTGRES_DB: watchvuln
+      POSTGRES_USER: watchvuln
+      POSTGRES_PASSWORD: watchvuln
+    volumes:
+      - "./data/postgresql:/var/lib/postgresql/data"
