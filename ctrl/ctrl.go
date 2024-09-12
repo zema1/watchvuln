@@ -80,6 +80,8 @@ func NewApp(config *WatchVulnAppConfig) (*WatchVulnApp, error) {
 	for _, part := range config.Sources {
 		part = strings.ToLower(strings.TrimSpace(part))
 		switch part {
+		case "chaitin":
+			grabs = append(grabs, grab.NewChaitinCrawler())
 		case "avd":
 			grabs = append(grabs, grab.NewAVDCrawler())
 		case "nox", "ti":

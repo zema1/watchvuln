@@ -154,7 +154,7 @@ func main() {
 			Name:     "sources",
 			Aliases:  []string{"s"},
 			Usage:    "set vuln sources",
-			Value:    "avd,nox,oscs,threatbook,seebug,struts2,kev",
+			Value:    "avd,nox,oscs,threatbook,seebug,struts2,kev,chaitin",
 			Category: "[Launch Options]",
 		},
 		&cli.StringFlag{
