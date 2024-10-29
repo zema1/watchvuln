@@ -159,6 +159,12 @@ func (c *WatchVulnAppConfig) GetPusher() (push.TextPusher, push.RawPusher, error
 				return nil, nil, fmt.Errorf("init telegram error %w", err)
 			}
 			textPusher = append(textPusher, tgPusher)
+		case push.TypeCtInternal:
+			ctInternalConfig := unmarshal[push.CtInternalConfig](config)
+			if ctInternalConfig.Token == "" || ctInternalConfig.GroupChat == "" {
+				continue
+			}
+			textPusher = append(textPusher, push.NewCtInternal(&ctInternalConfig))
 		default:
 			return nil, nil, fmt.Errorf("unsupported push type: %s", pushType)
 		}
