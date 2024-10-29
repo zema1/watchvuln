@@ -1,5 +1,4 @@
 db_conn: sqlite3://vuln_v3.sqlite3
-sources: [ "avd","nox","oscs","threatbook","seebug","struts2","kev" ]
 interval: 30m
 enable_cve_filter: true
 no_github_search: false
