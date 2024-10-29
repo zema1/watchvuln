@@ -13,7 +13,7 @@ require (
 	github.com/go-telegram-bot-api/telegram-bot-api v4.6.4+incompatible
 	github.com/google/go-github/v53 v53.2.0
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/imroc/req/v3 v3.42.2
+	github.com/imroc/req/v3 v3.44.0
 	github.com/jackc/pgx/v5 v5.5.5
 	github.com/kataras/golog v0.1.8
 	github.com/larksuite/oapi-sdk-go/v2 v2.0.11
@@ -31,7 +31,7 @@ require (
 	ariga.io/atlas v0.14.1-0.20230918065911-83ad451a4935 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20230217124315-7d5c6f04bbb8 // indirect
 	github.com/agext/levenshtein v1.2.3 // indirect
-	github.com/andybalholm/brotli v1.0.6 // indirect
+	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/andybalholm/cascadia v1.3.2 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
@@ -54,14 +54,14 @@ require (
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/kataras/pio v0.0.11 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
-	github.com/klauspost/compress v1.17.4 // indirect
+	github.com/klauspost/compress v1.17.8 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/onsi/ginkgo/v2 v2.17.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/quic-go/qpack v0.4.0 // indirect
 	github.com/quic-go/quic-go v0.42.0 // indirect
-	github.com/refraction-networking/utls v1.6.0 // indirect
+	github.com/refraction-networking/utls v1.6.3 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/technoweenie/multipartstreamer v1.0.1 // indirect
