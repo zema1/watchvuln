@@ -6,6 +6,7 @@ import (
 	"github.com/zema1/watchvuln/util"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/imroc/req/v3"
 	"github.com/kataras/golog"
@@ -96,6 +97,10 @@ func (t *ChaitinCrawler) IsValuable(info *VulnInfo) bool {
 	if info.Severity != High && info.Severity != Critical {
 		return false
 	}
+
+	if !ContainsChinese(info.Title) {
+		return false
+	}
 	return true
 }
 
@@ -119,4 +124,13 @@ type ChaitinResp struct {
 		} `json:"list"`
 	} `json:"data"`
 	Code int `json:"code"`
+}
+
+func ContainsChinese(s string) bool {
+	for _, r := range s {
+		if unicode.Is(unicode.Han, r) {
+			return true
+		}
+	}
+	return false
 }

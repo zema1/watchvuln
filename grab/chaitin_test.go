@@ -26,3 +26,10 @@ func TestChaitin(t *testing.T) {
 	}
 	assert.Equal(count, 45)
 }
+
+func TestChineseCharacter(t *testing.T) {
+	assert := require.New(t)
+	assert.False(ContainsChinese("hello"))
+	assert.False(ContainsChinese("CVE-2023-0101"))
+	assert.True(ContainsChinese("CyberPanel upgrademysqlstatus 远程命令执行漏洞"))
+}
