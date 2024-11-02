@@ -63,7 +63,7 @@ Docker 方式推荐使用环境变量来配置服务参数
 | `LANXIN_SECRET`         | 蓝信webhook机器人的签名                                                                   |                                                 |
 | `TELEGRAM_BOT_TOKEN`    | Telegram Bot Token                                                                |                                                 |
 | `TELEGRAM_CHAT_IDS`     | Telegram Bot 需要发送给的 chat 列表，使用 `,` 分割                                             |                                                 |
-| `SOURCES`               | 启用哪些漏洞信息源，逗号分隔, 可选 `avd`, `ti`, `oscs`, `seebug`,`threatbook`,`struts2`,`chaitin` | `avd,ti,oscs,threatbook,seebug,struts2,chaitin` |
+| `SOURCES`               | 启用哪些漏洞信息源，逗号分隔, 可选 `avd`, `ti`, `oscs`, `seebug`,`threatbook`,`struts2`,`chaitin` | `avd,ti,oscs,threatbook,seebug,struts2` |
 | `INTERVAL`              | 检查周期，支持秒 `60s`, 分钟 `10m`, 小时 `1h`, 最低 `1m`                                        | `30m`                                           |
 | `ENABLE_CVE_FILTER`     | 启用 CVE 过滤，开启后多个数据源的统一 CVE 将只推送一次                                                  | `true`                                          |
 | `NO_FILTER`             | 禁用上述推送过滤策略，所有新发现的漏洞都会被推送                                                          | `false`                                         |
