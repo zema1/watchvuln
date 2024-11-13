@@ -26,6 +26,7 @@ type WatchVulnAppConfig struct {
 	NoFilter       bool          `yaml:"-" json:"-"`
 	Version        string        `yaml:"-" json:"-"`
 	IntervalParsed time.Duration `json:"-" yaml:"-"`
+	PushRetryCount int           `yaml:"-" json:"-"`
 }
 
 const dbExample = `
@@ -178,7 +179,14 @@ use wechat:   %s --wk WECHATWORK_KEY
 use webhook:  %s --webhook WEBHOOK_URL`
 		return nil, nil, fmt.Errorf(msg, os.Args[0], os.Args[0], os.Args[0])
 	}
-	return push.MultiTextPusher(textPusher...), push.MultiRawPusher(rawPusher...), nil
+	pusherCount := len(textPusher) + len(rawPusher)
+	if pusherCount > 1 {
+		golog.Infof("multi pusher detected, push retry will be disabled")
+		c.PushRetryCount = 0
+	}
+	// 固定一个推送的间隔 1s，避免 dingding 等推送过快的问题
+	interval := time.Second
+	return push.NewMultiTextPusherWithInterval(interval, textPusher...), push.NewMultiRawPusherWithInterval(interval, rawPusher...), nil
 }
 
 func unmarshal[T any](config map[string]string) T {
