@@ -18,6 +18,22 @@ func TestWatchVulnAppConfig_DBConnForEnt(t *testing.T) {
 	assert.Equal("file:vuln_v3.db?cache=shared&_pragma=foreign_keys(1)", conn)
 
 	c = &WatchVulnAppConfig{
+		DBConn: "sqlite3:///tmp/vuln_v3.db",
+	}
+	dialect, conn, err = c.DBConnForEnt()
+	assert.Nil(err)
+	assert.Equal("sqlite3", dialect)
+	assert.Equal("file:/tmp/vuln_v3.db?cache=shared&_pragma=foreign_keys(1)", conn)
+
+	c = &WatchVulnAppConfig{
+		DBConn: "sqlite3://D:/vuln_v3.db",
+	}
+	dialect, conn, err = c.DBConnForEnt()
+	assert.Nil(err)
+	assert.Equal("sqlite3", dialect)
+	assert.Equal("file:D:/vuln_v3.db?cache=shared&_pragma=foreign_keys(1)", conn)
+
+	c = &WatchVulnAppConfig{
 		DBConn: "sqlite3://vuln_v3.sqlite3?cache=shared",
 	}
 	dialect, conn, err = c.DBConnForEnt()

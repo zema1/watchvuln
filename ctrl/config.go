@@ -68,7 +68,7 @@ func (c *WatchVulnAppConfig) DBConnForEnt() (string, string, error) {
 		if u.RawQuery != "" {
 			query = u.RawQuery
 		}
-		return dialect.SQLite, fmt.Sprintf("file:%s?%s", u.Host, query), nil
+		return dialect.SQLite, fmt.Sprintf("file:%s%s?%s", u.Host, u.Path, query), nil
 	case dialect.MySQL:
 		path := ""
 		if u.Path != "" {
