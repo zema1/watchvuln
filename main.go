@@ -19,7 +19,7 @@ import (
 )
 
 var log = golog.Child("[main]")
-var Version = "v2.1.3"
+var Version = "v2.2.0"
 
 func main() {
 	golog.Default.SetLevel("info")
@@ -200,6 +200,12 @@ func main() {
 			Category: "[Launch Options]",
 		},
 		&cli.BoolFlag{
+			Name:     "insecure",
+			Aliases:  []string{"k"},
+			Usage:    "allow insecure server connections when using SSL/TLS",
+			Category: "[Other Options]",
+		},
+		&cli.BoolFlag{
 			Name:     "debug",
 			Aliases:  []string{"d"},
 			Usage:    "set log level to debug, print more details",
@@ -303,6 +309,7 @@ func initConfigFromCli(c *cli.Context) (*ctrl.WatchVulnAppConfig, error) {
 	diff := c.Bool("diff")
 	whitelistFile := c.String("whitelist-file")
 	blacklistFile := c.String("blacklist-file")
+	insecure := c.Bool("insecure")
 
 	if os.Getenv("INTERVAL") != "" {
 		iv = os.Getenv("INTERVAL")
@@ -331,6 +338,11 @@ func initConfigFromCli(c *cli.Context) (*ctrl.WatchVulnAppConfig, error) {
 	}
 	if os.Getenv("HTTPS_PROXY") != "" {
 		must(os.Setenv("HTTP_PROXY", os.Getenv("HTTPS_PROXY")))
+	}
+
+	if insecure {
+		// 这个环境变量仅内部使用，go 本身并不支持
+		must(os.Setenv("GO_SKIP_TLS_CHECK", "1"))
 	}
 
 	log.Infof("config: INTERVAL=%s, NO_FILTER=%v, NO_START_MESSAGE=%v, NO_GITHUB_SEARCH=%v, ENABLE_CVE_FILTER=%v",
