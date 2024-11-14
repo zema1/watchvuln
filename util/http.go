@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/imroc/req/v3"
 	"github.com/kataras/golog"
+	"os"
 	"time"
 )
 
@@ -33,6 +34,9 @@ func NewHttpClient() *req.Client {
 		}
 		return false
 	})
+	if os.Getenv("GO_SKIP_TLS_CHECK") != "" {
+		client.EnableInsecureSkipVerify()
+	}
 	return client
 }
 

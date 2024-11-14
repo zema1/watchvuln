@@ -1,3 +1,15 @@
+## v2.2.0 (2024-11-14)
+
+### 新增
+
+- 提高多个推送服务时的稳定性
+- 增加 `-k/--insecure` 或者环境变量 `GO_SKIP_TLS_CHECK` 来跳过 tls 校验，方便抓包测试 [#108](https://github.com/zema1/watchvuln/issues/108)
+
+## 修复
+
+- 修复一个推送服务报错，其他正常的服务会重复推送的问题 
+- 修复 sqlite 数据库指定绝对路径报错的问题 [#110](https://github.com/zema1/watchvuln/issues/110)
+
 ## v2.1.1 (2024-10-29)
 
 ### 新增
