@@ -14,7 +14,7 @@ func TestVenustech(t *testing.T) {
 	defer cancel()
 
 	grab := NewVenustechCrawler()
-	vulns, err := grab.GetUpdate(ctx, 5)
+	vulns, err := grab.GetUpdate(ctx, 2)
 	assert.Nil(err)
 
 	count := 0

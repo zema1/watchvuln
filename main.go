@@ -19,7 +19,7 @@ import (
 )
 
 var log = golog.Child("[main]")
-var Version = "v2.2.0"
+var Version = "v2.3.0"
 
 func main() {
 	golog.Default.SetLevel("info")
@@ -154,7 +154,7 @@ func main() {
 			Name:     "sources",
 			Aliases:  []string{"s"},
 			Usage:    "set vuln sources",
-			Value:    "avd,nox,oscs,threatbook,seebug,struts2,kev",
+			Value:    "avd,nox,oscs,threatbook,seebug,struts2,kev,venustech",
 			Category: "[Launch Options]",
 		},
 		&cli.StringFlag{
