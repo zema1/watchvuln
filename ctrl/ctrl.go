@@ -96,6 +96,8 @@ func NewApp(config *WatchVulnAppConfig) (*WatchVulnApp, error) {
 			grabs = append(grabs, grab.NewStruts2Crawler())
 		case "kev":
 			grabs = append(grabs, grab.NewKEVCrawler())
+		case "venustech":
+			grabs = append(grabs, grab.NewVenustechCrawler())
 		default:
 			return nil, fmt.Errorf("invalid grab source %s", part)
 		}
@@ -373,6 +375,7 @@ func (w *WatchVulnApp) collectUpdate(ctx context.Context) ([]*grab.VulnInfo, err
 				return errors.Wrap(err, gb.ProviderInfo().Name)
 			}
 			hasNewVuln := false
+			w.log.Infof("collected %d vulns from %s", len(dataChan), source.Name)
 
 			for _, data := range dataChan {
 				isNewVuln, err := w.createOrUpdate(ctx, source, data)

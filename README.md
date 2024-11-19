@@ -14,6 +14,7 @@
 | 奇安信威胁情报中心                  | https://ti.qianxin.com/                                                                         | 等级为高危严重**并且**包含 `奇安信CERT验证` `POC公开` `技术细节公布`标签之一 |
 | 微步在线研究响应中心(公众号)            | https://x.threatbook.com/v5/vulIntelligence                                                     | 等级为高危或严重                                         |
 | 知道创宇Seebug漏洞库              | https://www.seebug.org/                                                                         | 等级为高危或严重                                         |
+| 启明星辰漏洞通告                   | https://www.venustech.com.cn/new_type/aqtg/                                                     | 等级为高危或严重                                         |
 | CISA KEV                   | https://www.cisa.gov/known-exploited-vulnerabilities-catalog                                    | 全部推送                                             |
 | Struts2 Security Bulletins | [Struts2 Security Bulletins](https://cwiki.apache.org/confluence/display/WW/Security+Bulletins) | 等级为高危或严重                                         |
 
@@ -46,33 +47,33 @@
 
 Docker 方式推荐使用环境变量来配置服务参数
 
-| 环境变量名                   | 说明                                                                                | 默认值                                     |
-|-------------------------|-----------------------------------------------------------------------------------|-----------------------------------------|
-| `DB_CONN`               | 数据库链接字符串，详情见 [数据库连接](#数据库连接)                                                      | `sqlite3://vuln_v3.sqlite3`             |
-| `DINGDING_ACCESS_TOKEN` | 钉钉机器人 url 的 `access_token` 部分                                                     |                                         |
-| `DINGDING_SECRET`       | 钉钉机器人的加签值 （仅支持加签方式）                                                               |                                         |
-| `LARK_ACCESS_TOKEN`     | 飞书机器人 url 的 `/open-apis/bot/v2/hook/` 后的部分, 也支持直接指定完整的 url 来访问私有部署的飞书             |                                         |
-| `LARK_SECRET`           | 飞书机器人的加签值 （仅支持加签方式）                                                               |                                         |
-| `WECHATWORK_KEY `       | 微信机器人 url 的 `key` 部分                                                              |                                         |
-| `SERVERCHAN_KEY `       | Server酱的 `SCKEY`                                                                  |                                         |
-| `WEBHOOK_URL`           | 自定义 webhook 服务的完整 url                                                             |                                         |
-| `BARK_URL`              | Bark 服务的完整 url, 路径需要包含 DeviceKey                                                  |                                         |
-| `PUSHPLUS_KEY`          | PushPlus的token                                                                    |                                         |
-| `LANXIN_DOMAIN`         | 蓝信webhook机器人的域名                                                                   |                                         |
-| `LANXIN_TOKEN`          | 蓝信webhook机器人的hook token                                                           |                                         |
-| `LANXIN_SECRET`         | 蓝信webhook机器人的签名                                                                   |                                         |
-| `TELEGRAM_BOT_TOKEN`    | Telegram Bot Token                                                                |                                         |
-| `TELEGRAM_CHAT_IDS`     | Telegram Bot 需要发送给的 chat 列表，使用 `,` 分割                                             |                                         |
-| `SOURCES`               | 启用哪些漏洞信息源，逗号分隔, 可选 `avd`, `ti`, `oscs`, `seebug`,`threatbook`,`struts2`,`chaitin` | `avd,ti,oscs,threatbook,seebug,struts2` |
-| `INTERVAL`              | 检查周期，支持秒 `60s`, 分钟 `10m`, 小时 `1h`, 最低 `1m`                                        | `30m`                                   |
-| `ENABLE_CVE_FILTER`     | 启用 CVE 过滤，开启后多个数据源的统一 CVE 将只推送一次                                                  | `true`                                  |
-| `NO_FILTER`             | 禁用上述推送过滤策略，所有新发现的漏洞都会被推送                                                          | `false`                                 |
-| `NO_START_MESSAGE`      | 禁用服务启动的提示信息                                                                       | `false`                                 |
-| `WHITELIST_FILE`        | 指定推送漏洞的白名单列表文件, 详情见 [推送内容筛选](#推送内容筛选)                                             |                                         |
-| `BLACKLIST_FILE`        | 指定推送漏洞的黑名单列表文件, 详情见 [推送内容筛选](#推送内容筛选)                                             |                                         |
-| `DIFF`                  | 跳过初始化阶段，转而直接检查漏洞更新并推送                                                             |                                         |
-| `HTTPS_PROXY`           | 给所有请求配置代理, 详情见 [配置代理](#配置代理)                                                      |                                         |
-| `GO_SKIP_TLS_CHECK`     | 跳过 tls 校验，详情见 [配置代理](#配置代理)                                                       | `false`                                 |
+| 环境变量名                   | 说明                                                                                | 默认值                                               |
+|-------------------------|-----------------------------------------------------------------------------------|---------------------------------------------------|
+| `DB_CONN`               | 数据库链接字符串，详情见 [数据库连接](#数据库连接)                                                      | `sqlite3://vuln_v3.sqlite3`                       |
+| `DINGDING_ACCESS_TOKEN` | 钉钉机器人 url 的 `access_token` 部分                                                     |                                                   |
+| `DINGDING_SECRET`       | 钉钉机器人的加签值 （仅支持加签方式）                                                               |                                                   |
+| `LARK_ACCESS_TOKEN`     | 飞书机器人 url 的 `/open-apis/bot/v2/hook/` 后的部分, 也支持直接指定完整的 url 来访问私有部署的飞书             |                                                   |
+| `LARK_SECRET`           | 飞书机器人的加签值 （仅支持加签方式）                                                               |                                                   |
+| `WECHATWORK_KEY `       | 微信机器人 url 的 `key` 部分                                                              |                                                   |
+| `SERVERCHAN_KEY `       | Server酱的 `SCKEY`                                                                  |                                                   |
+| `WEBHOOK_URL`           | 自定义 webhook 服务的完整 url                                                             |                                                   |
+| `BARK_URL`              | Bark 服务的完整 url, 路径需要包含 DeviceKey                                                  |                                                   |
+| `PUSHPLUS_KEY`          | PushPlus的token                                                                    |                                                   |
+| `LANXIN_DOMAIN`         | 蓝信webhook机器人的域名                                                                   |                                                   |
+| `LANXIN_TOKEN`          | 蓝信webhook机器人的hook token                                                           |                                                   |
+| `LANXIN_SECRET`         | 蓝信webhook机器人的签名                                                                   |                                                   |
+| `TELEGRAM_BOT_TOKEN`    | Telegram Bot Token                                                                |                                                   |
+| `TELEGRAM_CHAT_IDS`     | Telegram Bot 需要发送给的 chat 列表，使用 `,` 分割                                             |                                                   |
+| `SOURCES`               | 启用哪些漏洞信息源，逗号分隔, 可选 `avd`, `ti`, `oscs`, `seebug`,`threatbook`,`struts2`,`chaitin` | `avd,ti,oscs,threatbook,seebug,struts2,venustech` |
+| `INTERVAL`              | 检查周期，支持秒 `60s`, 分钟 `10m`, 小时 `1h`, 最低 `1m`                                        | `30m`                                             |
+| `ENABLE_CVE_FILTER`     | 启用 CVE 过滤，开启后多个数据源的统一 CVE 将只推送一次                                                  | `true`                                            |
+| `NO_FILTER`             | 禁用上述推送过滤策略，所有新发现的漏洞都会被推送                                                          | `false`                                           |
+| `NO_START_MESSAGE`      | 禁用服务启动的提示信息                                                                       | `false`                                           |
+| `WHITELIST_FILE`        | 指定推送漏洞的白名单列表文件, 详情见 [推送内容筛选](#推送内容筛选)                                             |                                                   |
+| `BLACKLIST_FILE`        | 指定推送漏洞的黑名单列表文件, 详情见 [推送内容筛选](#推送内容筛选)                                             |                                                   |
+| `DIFF`                  | 跳过初始化阶段，转而直接检查漏洞更新并推送                                                             |                                                   |
+| `HTTPS_PROXY`           | 给所有请求配置代理, 详情见 [配置代理](#配置代理)                                                      |                                                   |
+| `GO_SKIP_TLS_CHECK`     | 跳过 tls 校验，详情见 [配置代理](#配置代理)                                                       | `false`                                           |
 
 比如使用钉钉机器人
 
@@ -358,7 +359,8 @@ watchvuln 支持配置上游代理来绕过网络限制，支持两种方式:
 
 支持 `socks5://xxxx` 或者 `http(s)://xxkx` 两种代理形式。
 
-参数 `-k/--insecure` 或者环境变量 `GO_SKIP_TLS_CHECK=1` 可以禁用 tls 校验，即会设置 `InSecureSkipVerify` 为 `true`，在抓包调试时会
+参数 `-k/--insecure` 或者环境变量 `GO_SKIP_TLS_CHECK=1` 可以禁用 tls 校验，即会设置 `InSecureSkipVerify` 为 `true`
+，在抓包调试时会
 比较有用。
 
 ## 推送内容筛选

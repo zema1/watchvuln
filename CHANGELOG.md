@@ -1,13 +1,26 @@
+## v2.3.0 (2024-11-19)
+
+### 新增
+
+- 新增启明星辰漏洞通知支持 `https://www.venustech.com.cn/new_type/aqtg/`
+    - 配置文件用户需手动添加 `venustech` 到 `sources` 里才能生效
+    - 其他方式自动启用
+
+### 修复
+
+- **修复一个逻辑问题导致新增漏洞不推送的问题**
+
 ## v2.2.0 (2024-11-14)
 
 ### 新增
 
 - 提高多个推送服务时的稳定性
-- 增加 `-k/--insecure` 或者环境变量 `GO_SKIP_TLS_CHECK` 来跳过 tls 校验，方便抓包测试 [#108](https://github.com/zema1/watchvuln/issues/108)
+- 增加 `-k/--insecure` 或者环境变量 `GO_SKIP_TLS_CHECK` 来跳过 tls
+  校验，方便抓包测试 [#108](https://github.com/zema1/watchvuln/issues/108)
 
 ## 修复
 
-- 修复一个推送服务报错，其他正常的服务会重复推送的问题 
+- 修复一个推送服务报错，其他正常的服务会重复推送的问题
 - 修复 sqlite 数据库指定绝对路径报错的问题 [#110](https://github.com/zema1/watchvuln/issues/110)
 
 ## v2.1.1 (2024-10-29)
