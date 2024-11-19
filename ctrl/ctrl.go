@@ -280,16 +280,22 @@ func (w *WatchVulnApp) collectAndPush(ctx context.Context) {
 			w.log.Infof("Pushing %s", v)
 
 			// 默认重试3次，如果有多种推送方式，禁用重置机制，避免出现一个成功一个失败，重试的话，成功那个会被重复推送
-			for i := 0; i < w.config.PushRetryCount; i++ {
+			i := 0
+			for {
 				if err := w.pushVuln(v); err == nil {
 					// 如果两种推送都成功，才标记为已推送
 					_, err = dbVuln.Update().SetPushed(true).Save(ctx)
 					if err != nil {
 						w.log.Errorf("failed to save pushed %s status, %s", v.UniqueKey, err)
 					}
+					w.log.Infof("pushed %s successfully", v)
 					break
 				} else {
 					w.log.Errorf("failed to push %s, %s", v.UniqueKey, err)
+				}
+				i++
+				if i > w.config.PushRetryCount {
+					break
 				}
 				w.log.Infof("retry to push %s after 30s", v.UniqueKey)
 				time.Sleep(time.Second * 30)
