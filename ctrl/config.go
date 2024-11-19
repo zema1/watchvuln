@@ -183,6 +183,8 @@ use webhook:  %s --webhook WEBHOOK_URL`
 	if pusherCount > 1 {
 		golog.Infof("multi pusher detected, push retry will be disabled")
 		c.PushRetryCount = 0
+	} else {
+		c.PushRetryCount = 2
 	}
 	// 固定一个推送的间隔 1s，避免 dingding 等推送过快的问题
 	interval := time.Second
