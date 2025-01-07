@@ -1,20 +1,21 @@
 package grab
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"github.com/PuerkitoBio/goquery"
-	"github.com/imroc/req/v3"
-	"github.com/kataras/golog"
-	"github.com/pkg/errors"
-	"github.com/zema1/watchvuln/util"
-	"golang.org/x/net/html"
 	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/PuerkitoBio/goquery"
+	"github.com/chromedp/cdproto/page"
+	"github.com/chromedp/chromedp"
+	"github.com/imroc/req/v3"
+	"github.com/kataras/golog"
+	"github.com/pkg/errors"
+	"github.com/zema1/watchvuln/util"
 )
 
 var (
@@ -23,8 +24,12 @@ var (
 )
 
 type AVDCrawler struct {
-	client *req.Client
-	log    *golog.Logger
+	client          *req.Client
+	log             *golog.Logger
+	ctx             context.Context    // 用于 chromedp
+	cancel          context.CancelFunc // 用于清理 chromedp
+	token           string             // 存储当前有效的 timestamp token
+	tokenExpireTime time.Time          // token 的过期时间
 }
 
 func NewAVDCrawler() Grabber {
@@ -37,11 +42,118 @@ func NewAVDCrawler() Grabber {
 		}
 		return false
 	})
-	return &AVDCrawler{
+
+	// 创建一个新的 Chrome 实例，确保窗口可见
+	opts := []chromedp.ExecAllocatorOption{
+		chromedp.NoFirstRun,
+		chromedp.NoDefaultBrowserCheck,
+		chromedp.Flag("headless", true),                // 显式禁用 headless 模式
+		chromedp.Flag("disable-gpu", false),            // 启用 GPU 加速
+		chromedp.Flag("remote-debugging-port", "9222"), // 开启调试端口
+		chromedp.UserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"), // 设置 UA
+	}
+
+	allocCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
+
+	ctx, _ := chromedp.NewContext(allocCtx)
+
+	crawler := &AVDCrawler{
 		client: client,
 		log:    golog.Child("[aliyun-avd]"),
+		ctx:    ctx,
+		cancel: cancel,
 	}
+
+	// 测试 Chrome 是否正常启动
+	var version string
+	err := chromedp.Run(ctx, chromedp.Evaluate(`navigator.userAgent`, &version))
+	if err != nil {
+		crawler.log.Errorf("Chrome 启动失败: %v", err)
+	} else {
+		crawler.log.Infof("Chrome 启动成功，版本信息: %s", version)
+	}
+
+	return crawler
 }
+
+// 新增的方法：从 URL 中提取 timestamp token
+func (a *AVDCrawler) extractToken(urlStr string) string {
+	u, err := url.Parse(urlStr)
+	if err != nil {
+		return ""
+	}
+	for key := range u.Query() {
+		if strings.HasPrefix(key, "timestamp__") {
+			return key + "=" + u.Query().Get(key)
+		}
+	}
+	return ""
+}
+
+// 修改 getPageContent 方法
+func (a *AVDCrawler) getPageContent(urlStr string) (string, error) {
+	// 先用无头浏览器访问目标URL，获取带token的新URL
+	a.log.Debugf("准备获取页面内容: %s", urlStr)
+	newURL, err := a.getTokenURL(urlStr)
+	if err != nil {
+		return "", fmt.Errorf("获取token URL失败: %v", err)
+	}
+
+	// 使用HTTP客户端请求带token的URL
+	a.log.Debugf("使用token请求页面: %s", newURL)
+	resp, err := a.client.R().Get(newURL)
+	if err != nil {
+		return "", err
+	}
+	content := resp.String()
+
+	if len(content) < 1000 {
+		a.log.Warnf("页面内容可能不完整: %s", content)
+		return "", fmt.Errorf("页面内容不完整")
+	}
+
+	return content, nil
+}
+
+// 新增方法：使用无头浏览器获取带token的URL
+func (a *AVDCrawler) getTokenURL(urlStr string) (string, error) {
+	var currentURL string
+	ctx, cancel := context.WithTimeout(a.ctx, 30*time.Second)
+	defer cancel()
+
+	// 创建一个新的上下文，用于监听URL变化
+	chromectx, _ := chromedp.NewContext(ctx)
+
+	// 设置监听器，监听URL变化
+	chromedp.ListenTarget(chromectx, func(ev interface{}) {
+		if ev, ok := ev.(*page.EventFrameNavigated); ok {
+			if strings.Contains(ev.Frame.URL, "timestamp__") {
+				currentURL = ev.Frame.URL
+				// 发现包含token的URL后立即取消上下文
+				cancel()
+			}
+		}
+	})
+
+	// 开始导航
+	err := chromedp.Run(chromectx,
+		chromedp.Navigate(urlStr),
+	)
+
+	// 如果是因为我们主动取消而退出，则不视为错误
+	if err != nil && !errors.Is(err, context.Canceled) {
+		return "", err
+	}
+
+	// 检查是否获取到了带token的URL
+	if !strings.Contains(currentURL, "timestamp__") {
+		return "", fmt.Errorf("未获取到有效的token URL")
+	}
+
+	a.log.Debugf("成功获取token URL: %s", currentURL)
+	return currentURL, nil
+}
+
 func (a *AVDCrawler) ProviderInfo() *Provider {
 	return &Provider{
 		Name:        "aliyun-avd",
@@ -49,6 +161,7 @@ func (a *AVDCrawler) ProviderInfo() *Provider {
 		Link:        "https://avd.aliyun.com/high-risk/list",
 	}
 }
+
 func (a *AVDCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*VulnInfo, error) {
 	pageCount, err := a.getPageCount(ctx)
 	if err != nil {
@@ -80,31 +193,37 @@ func (a *AVDCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*VulnInfo,
 
 func (a *AVDCrawler) getPageCount(ctx context.Context) (int, error) {
 	u := `https://avd.aliyun.com/high-risk/list`
-	resp, err := a.client.R().SetContext(ctx).Get(u)
+	html, err := a.getPageContent(u)
 	if err != nil {
 		return 0, err
 	}
-	results := pageRegexp.FindStringSubmatch(resp.String())
+	results := pageRegexp.FindStringSubmatch(html)
 	if len(results) != 2 {
+		a.log.Errorf("页面内容匹配失败，内容: %s", html)
 		return 0, fmt.Errorf("failed to match page count")
 	}
-	return strconv.Atoi(results[1])
+	count, err := strconv.Atoi(results[1])
+	if err != nil {
+		return 0, err
+	}
+	a.log.Infof("总页数: %d", count)
+	return count, nil
 }
 
 func (a *AVDCrawler) parsePage(ctx context.Context, page int) ([]*VulnInfo, error) {
 	u := fmt.Sprintf("https://avd.aliyun.com/high-risk/list?page=%d", page)
-	resp, err := a.client.R().SetContext(ctx).Get(u)
+	html, err := a.getPageContent(u)
 	if err != nil {
 		return nil, err
 	}
-	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(resp.Bytes()))
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
 	if err != nil {
 		return nil, err
 	}
 	sel := doc.Find("tbody > tr")
 	count := sel.Length()
 	if count == 0 {
-		a.log.Errorf("invalid response is \n%s", resp.Dump())
+		a.log.Errorf("invalid response is \n%s", html)
 		return nil, fmt.Errorf("goquery find zero vulns")
 	}
 
@@ -158,13 +277,13 @@ func (a *AVDCrawler) IsValuable(info *VulnInfo) bool {
 }
 
 func (a *AVDCrawler) parseSingle(ctx context.Context, vulnLink string) (*VulnInfo, error) {
-	a.log.Debugf("parsing vuln %s", vulnLink)
-	resp, err := a.client.R().SetContext(ctx).Get(vulnLink)
+	a.log.Debugf("正在解析漏洞页面: %s", vulnLink)
+	htmlContent, err := a.getPageContent(vulnLink)
 	if err != nil {
 		return nil, err
 	}
 
-	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(resp.Bytes()))
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(htmlContent))
 	if err != nil {
 		return nil, err
 	}
@@ -241,17 +360,8 @@ func (a *AVDCrawler) parseSingle(ctx context.Context, vulnLink string) (*VulnInf
 				i += 2
 				continue
 			}
-			// 解决一下换行问题
-			innerNode := mainContent.Eq(i + 1).Nodes[0].FirstChild
-			for ; innerNode != nil; innerNode = innerNode.NextSibling {
-				if innerNode.Type != html.TextNode {
-					continue
-				}
-				t := strings.TrimSpace(innerNode.Data)
-				if t != "" {
-					fixSteps += t + "\n"
-				}
-			}
+			// 使用 goquery 的方法来获取文本
+			fixSteps = mainContent.Eq(i + 1).Text()
 			fixSteps = strings.TrimSpace(fixSteps)
 			fixSteps = strings.ReplaceAll(fixSteps, "、", ". ")
 			i += 2
@@ -296,4 +406,14 @@ func (a *AVDCrawler) parseSingle(ctx context.Context, vulnLink string) (*VulnInf
 		Creator:     a,
 	}
 	return data, nil
+}
+
+// 清理资源
+func (a *AVDCrawler) Close() error {
+	if a.cancel != nil {
+		a.cancel()
+	}
+	// 等待一段时间确保资源被清理
+	time.Sleep(1 * time.Second)
+	return nil
 }
