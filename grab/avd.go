@@ -26,8 +26,9 @@ var (
 type AVDCrawler struct {
 	client          *req.Client
 	log             *golog.Logger
-	ctx             context.Context    // 用于 chromedp
-	cancel          context.CancelFunc // 用于清理 chromedp
+	allocCtx        context.Context    // 用于 Chrome 实例分配
+	allocCancel     context.CancelFunc // 用于清理 Chrome 实例
+	browserCtx      context.Context    // 存储浏览器上下文
 	token           string             // 存储当前有效的 timestamp token
 	tokenExpireTime time.Time          // token 的过期时间
 }
@@ -44,36 +45,148 @@ func NewAVDCrawler() Grabber {
 	})
 
 	// 创建一个新的 Chrome 实例，确保窗口可见
-	opts := []chromedp.ExecAllocatorOption{
-		chromedp.NoFirstRun,
-		chromedp.NoDefaultBrowserCheck,
-		chromedp.Flag("headless", true),                // 显式禁用 headless 模式
-		chromedp.Flag("disable-gpu", false),            // 启用 GPU 加速
-		chromedp.Flag("remote-debugging-port", "9222"), // 开启调试端口
-		chromedp.UserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"), // 设置 UA
+	opts := append(chromedp.DefaultExecAllocatorOptions[:],
+		chromedp.Flag("headless", true),
+		chromedp.Flag("disable-gpu", false), // 启用 GPU 加速
+		chromedp.Flag("window-size", "1920,1080"),
+		chromedp.Flag("start-maximized", true),
+		chromedp.Flag("disable-extensions", false),   // 允许扩展
+		chromedp.Flag("disable-default-apps", false), // 允许默认应用
+		chromedp.Flag("no-first-run", true),          // 允许首次运行体验
+		chromedp.Flag("disable-web-security", true),
+		// 添加更多仿真参数
+		chromedp.Flag("enable-automation", false),                       // 禁用自动化标志
+		chromedp.Flag("disable-blink-features", "AutomationControlled"), // 禁用自动化控制特征
+		chromedp.Flag("ignore-certificate-errors", true),
+		chromedp.Flag("disable-background-networking", false),
+		chromedp.Flag("enable-features", "NetworkService,NetworkServiceInProcess"),
+		chromedp.Flag("disable-background-timer-throttling", true),
+		chromedp.Flag("disable-backgrounding-occluded-windows", true),
+		chromedp.Flag("disable-breakpad", true),
+		chromedp.Flag("disable-client-side-phishing-detection", true),
+		chromedp.Flag("disable-component-extensions-with-background-pages", true),
+		chromedp.Flag("disable-dev-shm-usage", true),
+		chromedp.Flag("disable-ipc-flooding-protection", true),
+		chromedp.Flag("disable-popup-blocking", true),
+		chromedp.Flag("disable-prompt-on-repost", true),
+		chromedp.Flag("disable-renderer-backgrounding", true),
+		chromedp.Flag("force-color-profile", "srgb"),
+		chromedp.Flag("metrics-recording-only", true),
+		chromedp.Flag("password-store", "basic"),
+		chromedp.Flag("use-mock-keychain", true),
+		chromedp.UserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.1.0.0 Safari/537.36"),
+	)
+
+	// 创建一个持久的 Chrome 实例
+	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
+
+	// 创建一个持久的浏览器上下文
+	browserCtx, _ := chromedp.NewContext(allocCtx)
+
+	// 启动浏览器并等待准备就绪
+	if err := chromedp.Run(browserCtx); err != nil {
+		panic(fmt.Sprintf("无法启动浏览器: %v", err))
 	}
-
-	allocCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
-
-	ctx, _ := chromedp.NewContext(allocCtx)
 
 	crawler := &AVDCrawler{
-		client: client,
-		log:    golog.Child("[aliyun-avd]"),
-		ctx:    ctx,
-		cancel: cancel,
-	}
-
-	// 测试 Chrome 是否正常启动
-	var version string
-	err := chromedp.Run(ctx, chromedp.Evaluate(`navigator.userAgent`, &version))
-	if err != nil {
-		crawler.log.Errorf("Chrome 启动失败: %v", err)
-	} else {
-		crawler.log.Infof("Chrome 启动成功，版本信息: %s", version)
+		client:      client,
+		log:         golog.Child("[aliyun-avd]"),
+		allocCtx:    allocCtx,
+		allocCancel: allocCancel,
+		browserCtx:  browserCtx,
 	}
 
 	return crawler
+}
+
+// Close 方法用于清理资源
+func (a *AVDCrawler) Close() error {
+	if a.allocCancel != nil {
+		a.allocCancel()
+	}
+	return nil
+}
+
+// 新增方法：使用无头浏览器获取带token的URL
+func (a *AVDCrawler) getTokenURL(urlStr string) (string, error) {
+	// 创建一个新的标签页上下文
+	tabCtx, cancel := chromedp.NewContext(a.browserCtx)
+	defer cancel()
+
+	var currentURL string
+	var done = make(chan bool, 1)
+
+	// 设置监听器，监听URL变化
+	chromedp.ListenTarget(tabCtx, func(ev interface{}) {
+		if ev, ok := ev.(*page.EventFrameNavigated); ok {
+			a.log.Debugf("导航到URL: %s", ev.Frame.URL)
+			if strings.Contains(ev.Frame.URL, "timestamp__") {
+				currentURL = ev.Frame.URL
+				done <- true
+			}
+		}
+	})
+
+	// 开始导航并等待页面加载完成
+	errChan := make(chan error, 1)
+	go func() {
+		// 注入 JavaScript 来模拟真实浏览器环境
+		err := chromedp.Run(tabCtx,
+			chromedp.Navigate(urlStr),
+			chromedp.Evaluate(`
+				// 覆盖 webdriver 标志
+				Object.defineProperty(navigator, 'webdriver', {
+					get: () => false,
+				});
+				// 添加 chrome 对象
+				if (!window.chrome) {
+					window.chrome = {};
+					window.chrome.runtime = {};
+				}
+				// 添加语言和插件
+				Object.defineProperty(navigator, 'languages', {
+					get: () => ['zh-CN', 'zh', 'en'],
+				});
+				Object.defineProperty(navigator, 'plugins', {
+					get: () => [1, 2, 3, 4, 5],
+				});
+			`, nil),
+			chromedp.WaitReady("body", chromedp.ByQuery),
+		)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		// 如果没有通过事件获取到URL，尝试获取当前页面URL
+		var location string
+		if err := chromedp.Run(tabCtx, chromedp.Location(&location)); err == nil && strings.Contains(location, "timestamp__") {
+			currentURL = location
+			done <- true
+		}
+	}()
+
+	// 设置超时
+	timeout := time.After(30 * time.Second)
+
+	// 等待导航完成或超时
+	select {
+	case <-done:
+		a.log.Debugf("成功获取token URL: %s", currentURL)
+		return currentURL, nil
+	case err := <-errChan:
+		if err != nil && !errors.Is(err, context.Canceled) {
+			return "", fmt.Errorf("导航失败: %v", err)
+		}
+	case <-timeout:
+		return "", fmt.Errorf("导航超时")
+	}
+
+	// 检查是否获取到了带token的URL
+	if !strings.Contains(currentURL, "timestamp__") {
+		return "", fmt.Errorf("未获取到有效的token URL")
+	}
+
+	return currentURL, nil
 }
 
 // 新增的方法：从 URL 中提取 timestamp token
@@ -115,45 +228,6 @@ func (a *AVDCrawler) getPageContent(urlStr string) (string, error) {
 	return content, nil
 }
 
-// 新增方法：使用无头浏览器获取带token的URL
-func (a *AVDCrawler) getTokenURL(urlStr string) (string, error) {
-	var currentURL string
-	ctx, cancel := context.WithTimeout(a.ctx, 30*time.Second)
-	defer cancel()
-
-	// 创建一个新的上下文，用于监听URL变化
-	chromectx, _ := chromedp.NewContext(ctx)
-
-	// 设置监听器，监听URL变化
-	chromedp.ListenTarget(chromectx, func(ev interface{}) {
-		if ev, ok := ev.(*page.EventFrameNavigated); ok {
-			if strings.Contains(ev.Frame.URL, "timestamp__") {
-				currentURL = ev.Frame.URL
-				// 发现包含token的URL后立即取消上下文
-				cancel()
-			}
-		}
-	})
-
-	// 开始导航
-	err := chromedp.Run(chromectx,
-		chromedp.Navigate(urlStr),
-	)
-
-	// 如果是因为我们主动取消而退出，则不视为错误
-	if err != nil && !errors.Is(err, context.Canceled) {
-		return "", err
-	}
-
-	// 检查是否获取到了带token的URL
-	if !strings.Contains(currentURL, "timestamp__") {
-		return "", fmt.Errorf("未获取到有效的token URL")
-	}
-
-	a.log.Debugf("成功获取token URL: %s", currentURL)
-	return currentURL, nil
-}
-
 func (a *AVDCrawler) ProviderInfo() *Provider {
 	return &Provider{
 		Name:        "aliyun-avd",
@@ -192,8 +266,7 @@ func (a *AVDCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*VulnInfo,
 }
 
 func (a *AVDCrawler) getPageCount(ctx context.Context) (int, error) {
-	u := `https://avd.aliyun.com/high-risk/list`
-	html, err := a.getPageContent(u)
+	html, err := a.getPageContent(a.ProviderInfo().Link)
 	if err != nil {
 		return 0, err
 	}
@@ -211,7 +284,7 @@ func (a *AVDCrawler) getPageCount(ctx context.Context) (int, error) {
 }
 
 func (a *AVDCrawler) parsePage(ctx context.Context, page int) ([]*VulnInfo, error) {
-	u := fmt.Sprintf("https://avd.aliyun.com/high-risk/list?page=%d", page)
+	u := fmt.Sprintf("%s?page=%d", a.ProviderInfo().Link, page)
 	html, err := a.getPageContent(u)
 	if err != nil {
 		return nil, err
@@ -406,14 +479,4 @@ func (a *AVDCrawler) parseSingle(ctx context.Context, vulnLink string) (*VulnInf
 		Creator:     a,
 	}
 	return data, nil
-}
-
-// 清理资源
-func (a *AVDCrawler) Close() error {
-	if a.cancel != nil {
-		a.cancel()
-	}
-	// 等待一段时间确保资源被清理
-	time.Sleep(1 * time.Second)
-	return nil
 }
