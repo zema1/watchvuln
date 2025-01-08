@@ -232,16 +232,20 @@ func (w *WatchVulnApp) collectAndPush(ctx context.Context) {
 
 			// 如果配置了软件列表黑名单，不推送在黑名单内的漏洞
 			if len(w.config.BlackKeywords) != 0 {
+				shouldContinue := false
 				for _, p := range w.config.BlackKeywords {
 					if strings.Contains(strings.ToLower(v.Title), strings.ToLower(p)) {
 						w.log.Infof("skipped %s as in product filter list", v)
-						continue
+						shouldContinue = true
 					}
 					// 黑名单就不检查 description 里的内容了, 容易漏推送
 					// if strings.Contains(strings.ToLower(v.Description), strings.ToLower(p)) {
 					// 	w.log.Infof("skipped %s as in product filter list", v)
 					// 	continue
 					// }
+				}
+				if shouldContinue {
+					continue
 				}
 			}
 
