@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/zema1/watchvuln/util"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/imroc/req/v3"
@@ -67,17 +68,23 @@ func (c *KEVCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*VulnInfo,
 		var vulnInfo VulnInfo
 		vuln := result.Vulnerabilities[i] // 排序后正向取漏洞
 		vulnInfo.UniqueKey = vuln.CveID + "_KEV"
-		vulnInfo.Title = vuln.VulnerabilityName
-		vulnInfo.Description = vuln.ShortDescription
+		vulnInfo.Title = strings.TrimSpace(vuln.VulnerabilityName)
+		vulnInfo.Description = strings.TrimSpace(vuln.ShortDescription)
 		vulnInfo.Severity = Critical // 数据源本身无该字段，因为有在野利用直接提成Critical了，后续考虑要不要去CVE查询原始评级？
-		vulnInfo.CVE = vuln.CveID
-		vulnInfo.Solutions = vuln.RequiredAction
-		vulnInfo.Disclosure = vuln.DateAdded
+		vulnInfo.CVE = strings.TrimSpace(vuln.CveID)
+		vulnInfo.Solutions = strings.TrimSpace(vuln.RequiredAction)
+		vulnInfo.Disclosure = strings.TrimSpace(vuln.DateAdded)
 		vulnInfo.From = "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
 		if vuln.Notes != "" {
-			vulnInfo.References = append(vulnInfo.References, vuln.Notes)
+			refs := strings.Split(vuln.Notes, ";")
+			for _, ref := range refs {
+				if ref == "" {
+					continue
+				}
+				vulnInfo.References = append(vulnInfo.References, strings.TrimSpace(ref))
+			}
 		}
-		vulnInfo.Tags = []string{vuln.VendorProject, vuln.Product, "在野利用"}
+		vulnInfo.Tags = []string{strings.TrimSpace(vuln.VendorProject), strings.TrimSpace(vuln.Product), "在野利用"}
 		vulnInfo.Creator = c
 		vulnInfos = append(vulnInfos, &vulnInfo)
 	}
