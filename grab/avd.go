@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/dop251/goja"
+	"github.com/dop251/goja_nodejs/eventloop"
 	"github.com/imroc/req/v3"
 	"github.com/kataras/golog"
 	"github.com/pkg/errors"
@@ -12,7 +14,6 @@ import (
 	"golang.org/x/net/html"
 	"net/url"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -22,25 +23,39 @@ var (
 	pageRegexp  = regexp.MustCompile(`第 \d+ 页 / (\d+) 页 `)
 )
 
+type contextType string
+
+var contextLoopDetect = contextType("loop_detect")
+
 type AVDCrawler struct {
 	client *req.Client
 	log    *golog.Logger
 }
 
 func NewAVDCrawler() Grabber {
-	client := util.NewHttpClient().AddCommonRetryCondition(func(resp *req.Response, err error) bool {
-		if err != nil {
-			return !errors.Is(err, context.Canceled)
-		}
-		if resp.StatusCode != 200 {
-			return true
-		}
-		return false
-	})
-	return &AVDCrawler{
-		client: client,
-		log:    golog.Child("[aliyun-avd]"),
+	crawler := &AVDCrawler{
+		log: golog.Child("[aliyun-avd]"),
 	}
+	crawler.client = util.NewHttpClient().OnBeforeRequest(func(client *req.Client, req *req.Request) error {
+		ctx := req.Context()
+		if ctx == nil {
+			ctx = context.Background()
+		}
+		if ctx.Value(contextLoopDetect) != nil {
+			return nil
+		}
+		ctx = context.WithValue(ctx, contextLoopDetect, struct{}{})
+		req.SetContext(ctx)
+
+		newUrl, err := crawler.wafBypass(ctx, client, req.RawURL)
+		if err != nil {
+			return errors.Wrap(err, "waf bypass failed")
+		}
+		crawler.log.Infof("got new url %s", newUrl)
+		req.RawURL = newUrl
+		return nil
+	})
+	return crawler
 }
 func (a *AVDCrawler) ProviderInfo() *Provider {
 	return &Provider{
@@ -50,19 +65,8 @@ func (a *AVDCrawler) ProviderInfo() *Provider {
 	}
 }
 func (a *AVDCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*VulnInfo, error) {
-	pageCount, err := a.getPageCount(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "get page count")
-	}
-	if pageCount == 0 {
-		return nil, fmt.Errorf("invalid page count")
-	}
-	if pageCount > pageLimit {
-		pageCount = pageLimit
-	}
-
 	var results []*VulnInfo
-	for i := 1; i <= pageCount; i++ {
+	for i := 1; i <= pageLimit; i++ {
 		select {
 		case <-ctx.Done():
 			return results, ctx.Err()
@@ -76,19 +80,6 @@ func (a *AVDCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*VulnInfo,
 		results = append(results, pageResult...)
 	}
 	return results, nil
-}
-
-func (a *AVDCrawler) getPageCount(ctx context.Context) (int, error) {
-	u := `https://avd.aliyun.com/high-risk/list`
-	resp, err := a.client.R().SetContext(ctx).Get(u)
-	if err != nil {
-		return 0, err
-	}
-	results := pageRegexp.FindStringSubmatch(resp.String())
-	if len(results) != 2 {
-		return 0, fmt.Errorf("failed to match page count")
-	}
-	return strconv.Atoi(results[1])
 }
 
 func (a *AVDCrawler) parsePage(ctx context.Context, page int) ([]*VulnInfo, error) {
@@ -296,4 +287,107 @@ func (a *AVDCrawler) parseSingle(ctx context.Context, vulnLink string) (*VulnInf
 		Creator:     a,
 	}
 	return data, nil
+}
+
+// 如果阿里云的工作人员对此不满，请提 issue 或直接微信联系我把这个数据源删除
+// 本项目仅获取正常的公开数据，没有恶意抓取行为
+func (a *AVDCrawler) wafBypass(ctx context.Context, client *req.Client, targetUrl string) (string, error) {
+	getScriptContent := func() (*req.Response, string, error) {
+		resp, err := client.NewRequest().SetContext(ctx).Get(targetUrl)
+		if err != nil {
+			return nil, "", err
+		}
+		// get scripts content
+		matches := scriptRegexp.FindStringSubmatch(resp.String())
+		if len(matches) != 2 {
+			return nil, "", fmt.Errorf("invalid response, %s", resp.String())
+		}
+		return resp, matches[1], nil
+	}
+
+	urlParser := func() map[string]interface{} {
+		u, err := url.Parse(targetUrl)
+		if err != nil {
+			return nil
+		}
+		protocol := u.Scheme + ":"
+		search := "?" + u.RawQuery
+		return map[string]interface{}{
+			"protocol": protocol,
+			"host":     u.Host,
+			"hostname": u.Hostname(),
+			"port":     u.Port(),
+			"pathname": u.Path,
+			"search":   search,
+			"hash":     u.Fragment,
+			"url":      u.String(),
+			"href":     u.String(),
+			"firstChild": map[string]interface{}{
+				"protocol": protocol,
+				"host":     u.Host,
+				"hostname": u.Hostname(),
+				"port":     u.Port(),
+				"pathname": u.Path,
+				"search":   search,
+				"hash":     u.Fragment,
+				"url":      u.String(),
+				"href":     u.String(),
+			},
+		}
+	}
+
+	location := map[string]interface{}{
+		"href": targetUrl,
+	}
+
+	document := map[string]interface{}{
+		"cookie":   "",
+		"location": location,
+
+		// 一个特殊的处理逻辑
+		"createElement": func(args ...interface{}) map[string]interface{} {
+			return urlParser()
+		},
+	}
+
+	window := map[string]interface{}{
+		"navigator": map[string]interface{}{
+			"userAgent": client.Headers.Get("User-Agent"),
+		},
+		"location": location,
+		"document": document,
+	}
+
+	loop := eventloop.NewEventLoop()
+	defer loop.StopNoWait()
+	go func() {
+		<-ctx.Done()
+		loop.StopNoWait()
+	}()
+
+	loop.Run(func(vm *goja.Runtime) {
+		globals := vm.GlobalObject()
+		_ = globals.Set("window", window)
+		_ = globals.Set("document", document)
+		_ = globals.Set("location", location)
+	})
+	_, scripts, err := getScriptContent()
+	if err != nil {
+		return "", err
+	}
+
+	loop.Run(func(runtime *goja.Runtime) {
+		_, err = runtime.RunScript("waf1.js", scripts)
+		if err != nil {
+			a.log.Error(err)
+		}
+	})
+	if err != nil {
+		return "", err
+	}
+	href, ok := location["href"].(string)
+	if !ok || href == "" || href == targetUrl {
+		return "", fmt.Errorf("waf bypass failed")
+	}
+	return href, nil
 }
