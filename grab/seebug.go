@@ -220,6 +220,8 @@ func (t *SeebugCrawler) newClient() *req.Client {
 
 var scriptRegexp = regexp.MustCompile(`(?m)<script>(.*?)</script>`)
 
+// 如果知道创宇的工作人员对此不满，请提 issue 或直接微信联系我把这个数据源删除
+// 本项目仅获取正常的公开数据，没有恶意抓取行为
 func (t *SeebugCrawler) wafBypass(ctx context.Context) error {
 	jar, _ := cookiejar.New(nil)
 	client := t.newClient().SetCookieJar(jar)
