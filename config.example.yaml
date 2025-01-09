@@ -6,6 +6,8 @@ no_start_message: false
 diff_mode: false
 white_keywords: [ ]
 black_keywords: [ ]
+skip_tls_verify: false
+proxy: ""
 
 pusher:
   - type: dingding

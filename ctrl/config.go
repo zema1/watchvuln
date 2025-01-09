@@ -22,6 +22,8 @@ type WatchVulnAppConfig struct {
 	WhiteKeywords   []string            `yaml:"white_keywords" json:"white_keywords"`
 	BlackKeywords   []string            `yaml:"black_keywords" json:"black_keywords"`
 	Pusher          []map[string]string `yaml:"pusher" json:"pusher"`
+	Proxy           string              `yaml:"proxy" json:"proxy"`
+	SkipTLSVerify   bool                `yaml:"skip_tls_verify" json:"skip_tls_verify"`
 
 	NoFilter       bool          `yaml:"-" json:"-"`
 	Version        string        `yaml:"-" json:"-"`
@@ -54,6 +56,27 @@ func (c *WatchVulnAppConfig) Init() {
 	}
 	if len(c.Sources) == 0 {
 		c.Sources = []string{"avd", "chaitin", "nox", "oscs", "threatbook", "seebug", "struts2", "kev", "venustech"}
+
+	}
+
+	if c.Proxy != "" {
+		fmt.Println(c.Proxy)
+		must(os.Setenv("HTTP_PROXY", c.Proxy))
+		must(os.Setenv("HTTPS_PROXY", c.Proxy))
+	}
+	if os.Getenv("HTTPS_PROXY") != "" {
+		must(os.Setenv("HTTP_PROXY", os.Getenv("HTTPS_PROXY")))
+	}
+
+	if c.SkipTLSVerify {
+		// 这个环境变量仅内部使用，go 本身并不支持
+		must(os.Setenv("GO_SKIP_TLS_CHECK", "1"))
+	}
+}
+
+func must(err error) {
+	if err != nil {
+		panic(err)
 	}
 }
 
