@@ -305,10 +305,10 @@ func initConfigFromCli(c *cli.Context) (*ctrl.WatchVulnAppConfig, error) {
 	debug := c.Bool("debug")
 	iv := c.String("interval")
 	db := c.String("db")
-	proxy := c.String("proxy")
 	diff := c.Bool("diff")
 	whitelistFile := c.String("whitelist-file")
 	blacklistFile := c.String("blacklist-file")
+	proxy := c.String("proxy")
 	insecure := c.Bool("insecure")
 
 	if os.Getenv("INTERVAL") != "" {
@@ -331,18 +331,6 @@ func initConfigFromCli(c *cli.Context) (*ctrl.WatchVulnAppConfig, error) {
 	}
 	if os.Getenv("DB_CONN") != "" {
 		db = os.Getenv("DB_CONN")
-	}
-	if proxy != "" {
-		must(os.Setenv("HTTP_PROXY", proxy))
-		must(os.Setenv("HTTPS_PROXY", proxy))
-	}
-	if os.Getenv("HTTPS_PROXY") != "" {
-		must(os.Setenv("HTTP_PROXY", os.Getenv("HTTPS_PROXY")))
-	}
-
-	if insecure {
-		// 这个环境变量仅内部使用，go 本身并不支持
-		must(os.Setenv("GO_SKIP_TLS_CHECK", "1"))
 	}
 
 	log.Infof("config: INTERVAL=%s, NO_FILTER=%v, NO_START_MESSAGE=%v, NO_GITHUB_SEARCH=%v, ENABLE_CVE_FILTER=%v",
@@ -394,6 +382,8 @@ func initConfigFromCli(c *cli.Context) (*ctrl.WatchVulnAppConfig, error) {
 		WhiteKeywords:   whiteKeywords,
 		BlackKeywords:   blackKeywords,
 		Pusher:          pusher,
+		Proxy:           proxy,
+		SkipTLSVerify:   insecure,
 	}
 	return config, nil
 }
@@ -538,12 +528,6 @@ func signalCtx() (context.Context, func()) {
 		cancel()
 	}()
 	return ctx, cancel
-}
-
-func must(err error) {
-	if err != nil {
-		panic(err)
-	}
 }
 
 func splitLines(path string) ([]string, error) {

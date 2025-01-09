@@ -51,7 +51,7 @@ func NewAVDCrawler() Grabber {
 		if err != nil {
 			return errors.Wrap(err, "waf bypass failed")
 		}
-		crawler.log.Infof("got new url %s", newUrl)
+		crawler.log.Debugf("got new url %s", newUrl)
 		req.RawURL = newUrl
 		return nil
 	})
