@@ -410,7 +410,5 @@ docker run -v $(pwd):/config \
 
 扫码加我拉进讨论群，请备注申请理由为：问题反馈与讨论，否则不通过
 
-![wechat](https://user-images.githubusercontent.com/20637881/229296623-24a7cc5d-8f33-4120-ae77-bbe2610ce5bb.jpg)
-
-
+![wechat](https://github.com/user-attachments/assets/362d2079-4cfa-4764-819f-a4aa70580c1d)
 
