@@ -20,7 +20,6 @@ import (
 
 var (
 	cveIDRegexp = regexp.MustCompile(`^CVE-\d+-\d+$`)
-	pageRegexp  = regexp.MustCompile(`第 \d+ 页 / (\d+) 页 `)
 )
 
 type contextType string
