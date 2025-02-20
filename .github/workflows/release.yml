@@ -47,9 +47,9 @@ jobs:
           go-version: 1.22.2
           cache: true
       - run: go build -trimpath -ldflags "-w -s -extldflags '-static'" -o target/${{ matrix.output }}
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: target
+          name: target-${{ matrix.os }}-${{ matrix.arch }}
           path: target/*
 
   upload-release:
@@ -60,9 +60,10 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: target
+          pattern: target-*
+          merge-multiple: true
           path: target
       - run: ls -al target && ls -R target/ && file target/
       # release assets
