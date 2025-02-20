@@ -169,6 +169,9 @@ func (v *VenustechCrawler) parseSingle(ctx context.Context, vulnURL string) (*Vu
 	contentSel.Find("div > h3").Each(func(i int, s *goquery.Selection) {
 		if strings.Contains(s.Text(), "参考链接") {
 			s.NextUntil("h2").Each(func(i int, s *goquery.Selection) {
+				if len(s.Nodes) == 0 || s.Nodes[0].Data != "section" {
+					return
+				}
 				ref := strings.TrimSpace(s.Text())
 				if ref != "" {
 					vulnInfo.References = append(vulnInfo.References, ref)
