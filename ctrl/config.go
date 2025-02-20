@@ -24,6 +24,7 @@ type WatchVulnAppConfig struct {
 	Pusher          []map[string]string `yaml:"pusher" json:"pusher"`
 	Proxy           string              `yaml:"proxy" json:"proxy"`
 	SkipTLSVerify   bool                `yaml:"skip_tls_verify" json:"skip_tls_verify"`
+	Test            bool                `yaml:"test" json:"test"`
 
 	NoFilter       bool          `yaml:"-" json:"-"`
 	Version        string        `yaml:"-" json:"-"`
