@@ -206,6 +206,12 @@ func main() {
 			Category: "[Other Options]",
 		},
 		&cli.BoolFlag{
+			Name:     "test",
+			Aliases:  []string{"T"},
+			Usage:    "use to test message pusher, three mocked messages will be pushed",
+			Category: "[Other Options]",
+		},
+		&cli.BoolFlag{
 			Name:     "debug",
 			Aliases:  []string{"d"},
 			Usage:    "set log level to debug, print more details",
@@ -310,6 +316,7 @@ func initConfigFromCli(c *cli.Context) (*ctrl.WatchVulnAppConfig, error) {
 	blacklistFile := c.String("blacklist-file")
 	proxy := c.String("proxy")
 	insecure := c.Bool("insecure")
+	test := c.Bool("test")
 
 	if os.Getenv("INTERVAL") != "" {
 		iv = os.Getenv("INTERVAL")
@@ -384,6 +391,7 @@ func initConfigFromCli(c *cli.Context) (*ctrl.WatchVulnAppConfig, error) {
 		Pusher:          pusher,
 		Proxy:           proxy,
 		SkipTLSVerify:   insecure,
+		Test:            test,
 	}
 	return config, nil
 }

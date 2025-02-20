@@ -129,6 +129,15 @@ func (w *WatchVulnApp) Run(ctx context.Context) error {
 		return nil
 	}
 
+	if w.config.Test {
+		w.log.Info("running in test mode, the mocked message will be sent")
+		if err := w.testPushMessage(); err != nil {
+			return err
+		}
+		w.log.Infof("test finished")
+		return nil
+	}
+
 	w.log.Infof("initialize local database..")
 	success, fail := w.initData(ctx)
 	w.grabbers = success
@@ -561,4 +570,57 @@ func (w *WatchVulnApp) findNucleiPR(ctx context.Context, cveId string) ([]string
 		}
 	}
 	return links, nil
+}
+
+func (w *WatchVulnApp) testPushMessage() error {
+	// push start message
+	providers := make([]*grab.Provider, 0, 10)
+	failed := make([]*grab.Provider, 0, 10)
+	for _, p := range w.grabbers {
+		providers = append(providers, p.ProviderInfo())
+	}
+	msg := &push.InitialMessage{
+		Version:        w.config.Version,
+		VulnCount:      1024,
+		Interval:       w.config.IntervalParsed.String(),
+		Provider:       providers,
+		FailedProvider: failed,
+	}
+	if err := w.textPusher.PushMarkdown("WatchVuln 初始化完成", push.RenderInitialMsg(msg)); err != nil {
+		return err
+	}
+	if err := w.rawPusher.PushRaw(push.NewRawInitialMessage(msg)); err != nil {
+		return err
+	}
+	w.log.Infof("start message pushed")
+
+	// push a mocked vuln
+	v := &grab.VulnInfo{
+		Title:        "Watchvuln 代码执行漏洞",
+		CVE:          "CVE-2033-9096",
+		Severity:     "严重",
+		Tags:         []string{"POC公开", "源码公开", "技术细节公开"},
+		Disclosure:   "2033-06-30",
+		From:         "https://github.com/zema1",
+		Reason:       []string{"created"},
+		Description:  "Watchvuln 存在代码执行漏洞，只要你想二开，那么就一定需要执行它原本的代码",
+		GithubSearch: []string{"https://github.com/search?q=watchvuln&ref=opensearch&type=repositories"},
+		References:   []string{"https://github.com/zema1/watchvuln/issues/127"},
+		Solutions:    "1. 升级到最新版本\n2. 赞助作者",
+	}
+	if err := w.pushVuln(v); err != nil {
+		return err
+	}
+	w.log.Infof("mocked vuln message pushed")
+
+	// push stop message
+	info := "WatchVuln 测试结束，进程即将退出"
+	if err := w.textPusher.PushText(info); err != nil {
+		return err
+	}
+	if err := w.rawPusher.PushRaw(push.NewRawTextMessage(info)); err != nil {
+		return err
+	}
+	w.log.Infof("stop message pushed")
+	return nil
 }
