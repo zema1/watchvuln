@@ -119,6 +119,13 @@ func (c *WatchVulnAppConfig) DBConnForEnt() (string, string, error) {
 }
 
 func (c *WatchVulnAppConfig) GetPusher() (push.TextPusher, push.RawPusher, error) {
+	// 如果没有推送配置，返回空的推送器
+	if len(c.Pusher) == 0 {
+		return push.NewMultiTextPusherWithInterval(time.Second, nil), 
+			   push.NewMultiRawPusherWithInterval(time.Second, nil), 
+			   nil
+	}
+
 	var textPusher []push.TextPusher
 	var rawPusher []push.RawPusher
 
@@ -195,14 +202,7 @@ func (c *WatchVulnAppConfig) GetPusher() (push.TextPusher, push.RawPusher, error
 		}
 		golog.Infof("add pusher: %s", pushType)
 	}
-	if len(textPusher) == 0 && len(rawPusher) == 0 {
-		msg := `
-you must setup at least one pusher, eg: 
-use dingding: %s --dt DINGDING_ACCESS_TOKEN --ds DINGDING_SECRET
-use wechat:   %s --wk WECHATWORK_KEY
-use webhook:  %s --webhook WEBHOOK_URL`
-		return nil, nil, fmt.Errorf(msg, os.Args[0], os.Args[0], os.Args[0])
-	}
+
 	pusherCount := len(textPusher) + len(rawPusher)
 	if pusherCount > 1 {
 		golog.Infof("multi pusher detected, push retry will be disabled")
@@ -212,7 +212,9 @@ use webhook:  %s --webhook WEBHOOK_URL`
 	}
 	// 固定一个推送的间隔 1s，避免 dingding 等推送过快的问题
 	interval := time.Second
-	return push.NewMultiTextPusherWithInterval(interval, textPusher...), push.NewMultiRawPusherWithInterval(interval, rawPusher...), nil
+	return push.NewMultiTextPusherWithInterval(interval, textPusher...), 
+		   push.NewMultiRawPusherWithInterval(interval, rawPusher...), 
+		   nil
 }
 
 func unmarshal[T any](config map[string]string) T {

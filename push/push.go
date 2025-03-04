@@ -17,66 +17,164 @@ type RawPusher interface {
 }
 
 type multiPusher struct {
-	textPusher []TextPusher
-	rawPusher  []RawPusher
-
+	pushers  []TextPusher
 	interval time.Duration
 }
 
 // MultiTextPusher returns a TextPusher that pushes to all the given pushers.
 func MultiTextPusher(pushers ...TextPusher) TextPusher {
-	return &multiPusher{textPusher: pushers}
+	// 如果没有推送器，返回一个空的推送器
+	if len(pushers) == 0 {
+		return &emptyPusher{}
+	}
+	return &multiPusher{pushers: pushers}
 }
 
 // NewMultiTextPusherWithInterval returns a TextPusher that pushes to all the given pushers with interval.
 func NewMultiTextPusherWithInterval(interval time.Duration, pushers ...TextPusher) TextPusher {
-	return &multiPusher{textPusher: pushers, interval: interval}
+	// 如果没有推送器，返回一个空的推送器
+	if len(pushers) == 0 {
+		return &emptyPusher{}
+	}
+	// 确保 pushers 不为 nil
+	if pushers == nil {
+		pushers = make([]TextPusher, 0)
+	}
+	return &multiPusher{
+		pushers:  pushers,
+		interval: interval,
+	}
+}
+
+// 添加一个空的推送器实现
+type emptyPusher struct{}
+
+func (e *emptyPusher) PushText(text string) error {
+	return nil
+}
+
+func (e *emptyPusher) PushMarkdown(title, text string) error {
+	return nil
+}
+
+// 同样为 RawPusher 添加类似的实现
+type multiRawPusher struct {
+	pushers  []RawPusher
+	interval time.Duration
 }
 
 // MultiRawPusher returns a RawPusher that pushes to all the given pushers.
 func MultiRawPusher(pushers ...RawPusher) RawPusher {
-	return &multiPusher{rawPusher: pushers}
+	// 如果没有推送器，返回一个空的推送器
+	if len(pushers) == 0 {
+		return &emptyRawPusher{}
+	}
+	return &multiRawPusher{pushers: pushers}
 }
 
 // NewMultiRawPusherWithInterval returns a RawPusher that pushes to all the given pushers with interval.
 func NewMultiRawPusherWithInterval(interval time.Duration, pushers ...RawPusher) RawPusher {
-	return &multiPusher{rawPusher: pushers, interval: interval}
+	// 如果没有推送器，返回一个空的推送器
+	if len(pushers) == 0 {
+		return &emptyRawPusher{}
+	}
+	// 确保 pushers 不为 nil
+	if pushers == nil {
+		pushers = make([]RawPusher, 0)
+	}
+	return &multiRawPusher{
+		pushers:  pushers,
+		interval: interval,
+	}
+}
+
+type emptyRawPusher struct{}
+
+// 修改这里，使用正确的参数类型
+func (e *emptyRawPusher) PushRaw(r *RawMessage) error {
+	return nil
 }
 
 func (m *multiPusher) PushText(s string) error {
-	var pushErr *multierror.Error
-	for _, push := range m.textPusher {
+	// 确保 pushers 不为 nil
+	if m == nil || m.pushers == nil {
+		return nil
+	}
+
+	var errs []error
+	for _, push := range m.pushers {
+		if push == nil {
+			continue
+		}
 		if err := push.PushText(s); err != nil {
-			pushErr = multierror.Append(pushErr, err)
+			errs = append(errs, err)
 		}
 		if m.interval != 0 {
 			time.Sleep(m.interval)
 		}
 	}
-	return pushErr.ErrorOrNil()
+	if len(errs) > 0 {
+		var result error
+		for _, err := range errs {
+			result = multierror.Append(result, err)
+		}
+		return result
+	}
+	return nil
 }
 
 func (m *multiPusher) PushMarkdown(title, content string) error {
-	var pushErr *multierror.Error
-	for _, push := range m.textPusher {
+	// 确保 pushers 不为 nil
+	if m == nil || m.pushers == nil {
+		return nil
+	}
+
+	var errs []error
+	for _, push := range m.pushers {
+		if push == nil {
+			continue
+		}
 		if err := push.PushMarkdown(title, content); err != nil {
-			pushErr = multierror.Append(pushErr, err)
+			errs = append(errs, err)
 		}
 		if m.interval != 0 {
 			time.Sleep(m.interval)
 		}
 	}
-	return pushErr.ErrorOrNil()
+	if len(errs) > 0 {
+		var result error
+		for _, err := range errs {
+			result = multierror.Append(result, err)
+		}
+		return result
+	}
+	return nil
 }
 
-func (m *multiPusher) PushRaw(r *RawMessage) error {
-	for _, push := range m.rawPusher {
+func (m *multiRawPusher) PushRaw(r *RawMessage) error {
+	// 确保 pushers 不为 nil
+	if m == nil || m.pushers == nil {
+		return nil
+	}
+
+	var errs []error
+	for _, push := range m.pushers {
+		if push == nil {
+			continue
+		}
 		if err := push.PushRaw(r); err != nil {
-			return err
+			errs = append(errs, err)
 		}
 		if m.interval != 0 {
 			time.Sleep(m.interval)
 		}
+	}
+	if len(errs) > 0 {
+		var result error
+		for _, err := range errs {
+			result = multierror.Append(result, err)
+		}
+		return result
 	}
 	return nil
 }

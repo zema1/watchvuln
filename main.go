@@ -218,6 +218,12 @@ func main() {
 			Value:    false,
 			Category: "[Other Options]",
 		},
+		&cli.BoolFlag{
+			Name:     "no-push",
+			Aliases:  []string{"np"},
+			Usage:    "disable push notifications and only store data in database",
+			Category: "[Launch Options]",
+		},
 	}
 	app.Before = func(c *cli.Context) error {
 		if c.Bool("debug") {
@@ -289,13 +295,35 @@ func initConfigFromFile(c *cli.Context) (*ctrl.WatchVulnAppConfig, error) {
 	if config.IntervalParsed.Minutes() < 1 && !c.Bool("debug") {
 		return nil, fmt.Errorf("interval is too small, at least 1m")
 	}
+
+	// 如果设置了 no-push，清空推送配置
+	if c.Bool("no-push") {
+		config.Pusher = nil
+	}
+
 	return &config, nil
 }
 
 func initConfigFromCli(c *cli.Context) (*ctrl.WatchVulnAppConfig, error) {
-	pusher, err := initPusher(c)
-	if err != nil {
-		return nil, err
+	noPush := c.Bool("no-push")
+	
+	var pusher []map[string]string
+	var err error
+	
+	if !noPush {
+		pusher, err = initPusher(c)
+		if err != nil {
+			return nil, err
+		}
+		
+		// Only validate pusher config if push is enabled
+		if len(pusher) == 0 {
+			return nil, fmt.Errorf("you must setup at least one pusher, eg: \n" +
+				"use dingding: %s --dt DINGDING_ACCESS_TOKEN --ds DINGDING_SECRET\n" +
+				"use wechat:   %s --wk WECHATWORK_KEY\n" +
+				"use webhook:  %s --webhook WEBHOOK_URL",
+				os.Args[0], os.Args[0], os.Args[0])
+		}
 	}
 
 	sources := c.String("sources")
@@ -340,8 +368,8 @@ func initConfigFromCli(c *cli.Context) (*ctrl.WatchVulnAppConfig, error) {
 		db = os.Getenv("DB_CONN")
 	}
 
-	log.Infof("config: INTERVAL=%s, NO_FILTER=%v, NO_START_MESSAGE=%v, NO_GITHUB_SEARCH=%v, ENABLE_CVE_FILTER=%v",
-		iv, noFilter, noStartMessage, noGithubSearch, cveFilter)
+	log.Infof("config: INTERVAL=%s, NO_FILTER=%v, NO_START_MESSAGE=%v, NO_GITHUB_SEARCH=%v, ENABLE_CVE_FILTER=%v, NO_PUSH=%v",
+		iv, noFilter, noStartMessage, noGithubSearch, cveFilter, noPush)
 
 	interval, err := time.ParseDuration(iv)
 	if err != nil {

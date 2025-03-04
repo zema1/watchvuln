@@ -130,6 +130,10 @@ func (w *WatchVulnApp) Run(ctx context.Context) error {
 	}
 
 	if w.config.Test {
+		if w.textPusher == nil && w.rawPusher == nil {
+			w.log.Info("no pusher configured, skip test")
+			return nil
+		}
 		w.log.Info("running in test mode, the mocked message will be sent")
 		if err := w.testPushMessage(); err != nil {
 			return err
@@ -146,7 +150,7 @@ func (w *WatchVulnApp) Run(ctx context.Context) error {
 		return err
 	}
 	w.log.Infof("system init finished, local database has %d vulns", localCount)
-	if !*w.config.NoStartMessage {
+	if !*w.config.NoStartMessage && (w.textPusher != nil || w.rawPusher != nil) {
 		providers := make([]*grab.Provider, 0, 10)
 		failed := make([]*grab.Provider, 0, 10)
 		for _, p := range w.grabbers {
@@ -162,25 +166,44 @@ func (w *WatchVulnApp) Run(ctx context.Context) error {
 			Provider:       providers,
 			FailedProvider: failed,
 		}
-		if err := w.textPusher.PushMarkdown("WatchVuln 初始化完成", push.RenderInitialMsg(msg)); err != nil {
-			return err
+
+		var errs []error
+		if w.textPusher != nil {
+			if err := w.textPusher.PushMarkdown("WatchVuln 初始化完成", push.RenderInitialMsg(msg)); err != nil {
+				errs = append(errs, err)
+			}
 		}
-		if err := w.rawPusher.PushRaw(push.NewRawInitialMessage(msg)); err != nil {
-			return err
+		if w.rawPusher != nil {
+			if err := w.rawPusher.PushRaw(push.NewRawInitialMessage(msg)); err != nil {
+				errs = append(errs, err)
+			}
+		}
+		if len(errs) > 0 {
+			var result error
+			for _, err := range errs {
+				result = multierror.Append(result, err)
+			}
+			return result
 		}
 	}
 
 	w.log.Infof("ticking every %s", w.config.Interval)
 
 	defer func() {
-		msg := "注意: WatchVuln 进程退出"
-		if err = w.textPusher.PushText(msg); err != nil {
-			w.log.Error(err)
+		if w.textPusher != nil || w.rawPusher != nil {
+			msg := "注意: WatchVuln 进程退出"
+			if w.textPusher != nil {
+				if err = w.textPusher.PushText(msg); err != nil {
+					w.log.Error(err)
+				}
+			}
+			if w.rawPusher != nil {
+				if err = w.rawPusher.PushRaw(push.NewRawTextMessage(msg)); err != nil {
+					w.log.Error(err)
+				}
+			}
+			time.Sleep(time.Second)
 		}
-		if err = w.rawPusher.PushRaw(push.NewRawTextMessage(msg)); err != nil {
-			w.log.Error(err)
-		}
-		time.Sleep(time.Second)
 	}()
 
 	ticker := time.NewTicker(w.config.IntervalParsed)
@@ -322,17 +345,34 @@ func (w *WatchVulnApp) collectAndPush(ctx context.Context) {
 }
 
 func (w *WatchVulnApp) pushVuln(vul *grab.VulnInfo) error {
-	var pushErr *multierror.Error
-
-	if err := w.textPusher.PushMarkdown(vul.Title, push.RenderVulnInfo(vul)); err != nil {
-		pushErr = multierror.Append(pushErr, err)
+	// 如果没有配置推送器，直接返回成功
+	if w.textPusher == nil && w.rawPusher == nil {
+		return nil
 	}
 
-	if err := w.rawPusher.PushRaw(push.NewRawVulnInfoMessage(vul)); err != nil {
-		pushErr = multierror.Append(pushErr, err)
+	var errs []error
+
+	if w.textPusher != nil {
+		if err := w.textPusher.PushMarkdown(vul.Title, push.RenderVulnInfo(vul)); err != nil {
+			errs = append(errs, err)
+		}
 	}
 
-	return pushErr.ErrorOrNil()
+	if w.rawPusher != nil {
+		if err := w.rawPusher.PushRaw(push.NewRawVulnInfoMessage(vul)); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	// 如果有错误，将它们组合起来
+	if len(errs) > 0 {
+		var result error
+		for _, err := range errs {
+			result = multierror.Append(result, err)
+		}
+		return result
+	}
+	return nil
 }
 
 func (w *WatchVulnApp) Close() {
@@ -586,12 +626,19 @@ func (w *WatchVulnApp) testPushMessage() error {
 		Provider:       providers,
 		FailedProvider: failed,
 	}
-	if err := w.textPusher.PushMarkdown("WatchVuln 初始化完成", push.RenderInitialMsg(msg)); err != nil {
-		return err
+	
+	if w.textPusher != nil {
+		if err := w.textPusher.PushMarkdown("WatchVuln 初始化完成", push.RenderInitialMsg(msg)); err != nil {
+			return err
+		}
 	}
-	if err := w.rawPusher.PushRaw(push.NewRawInitialMessage(msg)); err != nil {
-		return err
+	
+	if w.rawPusher != nil {
+		if err := w.rawPusher.PushRaw(push.NewRawInitialMessage(msg)); err != nil {
+			return err
+		}
 	}
+	
 	w.log.Infof("start message pushed")
 
 	// push a mocked vuln
@@ -615,11 +662,15 @@ func (w *WatchVulnApp) testPushMessage() error {
 
 	// push stop message
 	info := "WatchVuln 测试结束，进程即将退出"
-	if err := w.textPusher.PushText(info); err != nil {
-		return err
+	if w.textPusher != nil {
+		if err := w.textPusher.PushText(info); err != nil {
+			return err
+		}
 	}
-	if err := w.rawPusher.PushRaw(push.NewRawTextMessage(info)); err != nil {
-		return err
+	if w.rawPusher != nil {
+		if err := w.rawPusher.PushRaw(push.NewRawTextMessage(info)); err != nil {
+			return err
+		}
 	}
 	w.log.Infof("stop message pushed")
 	return nil
