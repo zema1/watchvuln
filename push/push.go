@@ -23,23 +23,11 @@ type multiPusher struct {
 
 // MultiTextPusher returns a TextPusher that pushes to all the given pushers.
 func MultiTextPusher(pushers ...TextPusher) TextPusher {
-	// 如果没有推送器，返回一个空的推送器
-	if len(pushers) == 0 {
-		return &emptyPusher{}
-	}
 	return &multiPusher{pushers: pushers}
 }
 
 // NewMultiTextPusherWithInterval returns a TextPusher that pushes to all the given pushers with interval.
 func NewMultiTextPusherWithInterval(interval time.Duration, pushers ...TextPusher) TextPusher {
-	// 如果没有推送器，返回一个空的推送器
-	if len(pushers) == 0 {
-		return &emptyPusher{}
-	}
-	// 确保 pushers 不为 nil
-	if pushers == nil {
-		pushers = make([]TextPusher, 0)
-	}
 	return &multiPusher{
 		pushers:  pushers,
 		interval: interval,
@@ -65,23 +53,11 @@ type multiRawPusher struct {
 
 // MultiRawPusher returns a RawPusher that pushes to all the given pushers.
 func MultiRawPusher(pushers ...RawPusher) RawPusher {
-	// 如果没有推送器，返回一个空的推送器
-	if len(pushers) == 0 {
-		return &emptyRawPusher{}
-	}
 	return &multiRawPusher{pushers: pushers}
 }
 
 // NewMultiRawPusherWithInterval returns a RawPusher that pushes to all the given pushers with interval.
 func NewMultiRawPusherWithInterval(interval time.Duration, pushers ...RawPusher) RawPusher {
-	// 如果没有推送器，返回一个空的推送器
-	if len(pushers) == 0 {
-		return &emptyRawPusher{}
-	}
-	// 确保 pushers 不为 nil
-	if pushers == nil {
-		pushers = make([]RawPusher, 0)
-	}
 	return &multiRawPusher{
 		pushers:  pushers,
 		interval: interval,

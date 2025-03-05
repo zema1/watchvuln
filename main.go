@@ -315,15 +315,6 @@ func initConfigFromCli(c *cli.Context) (*ctrl.WatchVulnAppConfig, error) {
 		if err != nil {
 			return nil, err
 		}
-		
-		// Only validate pusher config if push is enabled
-		if len(pusher) == 0 {
-			return nil, fmt.Errorf("you must setup at least one pusher, eg: \n" +
-				"use dingding: %s --dt DINGDING_ACCESS_TOKEN --ds DINGDING_SECRET\n" +
-				"use wechat:   %s --wk WECHATWORK_KEY\n" +
-				"use webhook:  %s --webhook WEBHOOK_URL",
-				os.Args[0], os.Args[0], os.Args[0])
-		}
 	}
 
 	sources := c.String("sources")

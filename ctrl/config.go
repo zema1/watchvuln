@@ -119,15 +119,15 @@ func (c *WatchVulnAppConfig) DBConnForEnt() (string, string, error) {
 }
 
 func (c *WatchVulnAppConfig) GetPusher() (push.TextPusher, push.RawPusher, error) {
-	// 如果没有推送配置，返回空的推送器
+	var textPusher []push.TextPusher
+	var rawPusher []push.RawPusher
+
+	// 如果没有推送配置，直接返回空的推送器
 	if len(c.Pusher) == 0 {
 		return push.NewMultiTextPusherWithInterval(time.Second, nil), 
 			   push.NewMultiRawPusherWithInterval(time.Second, nil), 
 			   nil
 	}
-
-	var textPusher []push.TextPusher
-	var rawPusher []push.RawPusher
 
 	for _, config := range c.Pusher {
 		pushType := config["type"]
@@ -210,6 +210,7 @@ func (c *WatchVulnAppConfig) GetPusher() (push.TextPusher, push.RawPusher, error
 	} else {
 		c.PushRetryCount = 2
 	}
+
 	// 固定一个推送的间隔 1s，避免 dingding 等推送过快的问题
 	interval := time.Second
 	return push.NewMultiTextPusherWithInterval(interval, textPusher...), 
