@@ -51,3 +51,4 @@ jobs:
           cache-to: type=registry,ref=${{ vars.IMAGE_BASE }}:buildcache,mode=max
           tags: |
             ${{ env.TAGGED_IMAGE }}
+            ${{ env.LATEST_IMAGE }}

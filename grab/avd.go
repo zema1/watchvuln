@@ -291,6 +291,9 @@ func (a *AVDCrawler) parseSingle(ctx context.Context, vulnLink string) (*VulnInf
 // 如果阿里云的工作人员对此不满，请提 issue 或直接微信联系我把这个数据源删除
 // 本项目仅获取正常的公开数据，没有恶意抓取行为
 func (a *AVDCrawler) wafBypass(ctx context.Context, client *req.Client, targetUrl string) (string, error) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	getScriptContent := func() (*req.Response, string, error) {
 		resp, err := client.NewRequest().SetContext(ctx).Get(targetUrl)
 		if err != nil {

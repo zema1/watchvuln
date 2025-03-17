@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/zema1/watchvuln/push"
 	"gopkg.in/yaml.v3"
-	"net/http"
 	"os"
 	"os/signal"
 	"strings"
@@ -17,15 +16,10 @@ import (
 	"github.com/kataras/golog"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
-	_ "net/http/pprof"
 )
 
 var log = golog.Child("[main]")
-var Version = "v2.4.1"
-
-func init() {
-	go http.ListenAndServe("127.0.0.1:8842", nil)
-}
+var Version = "v2.5.0"
 
 func main() {
 	golog.Default.SetLevel("info")
