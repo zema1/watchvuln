@@ -12,7 +12,7 @@ import (
 func NewHttpClient() *req.Client {
 	client := req.C()
 	client.
-		ImpersonateChrome().
+		ImpersonateFirefox().
 		SetTimeout(10 * time.Second).
 		SetCommonRetryCount(3).
 		SetCookieJar(nil).
