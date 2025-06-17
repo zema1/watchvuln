@@ -412,3 +412,7 @@ docker run -v $(pwd):/config \
 
 <img src="https://github.com/user-attachments/assets/362d2079-4cfa-4764-819f-a4aa70580c1d" width="300" />
 
+## 感谢
+
+[![Powered by DartNode](https://dartnode.com/branding/DN-Open-Source-sm.png)](https://dartnode.com "Powered by DartNode - Free VPS for Open Source")
+
