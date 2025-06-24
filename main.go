@@ -19,7 +19,7 @@ import (
 )
 
 var log = golog.Child("[main]")
-var Version = "v2.5.1"
+var Version = "v2.6.0"
 
 func main() {
 	golog.Default.SetLevel("info")
@@ -195,6 +195,12 @@ func main() {
 			Category: "[Launch Options]",
 		},
 		&cli.BoolFlag{
+			Name:     "no-sleep",
+			Aliases:  []string{"ns"},
+			Usage:    "don't sleep in night, run every interval",
+			Category: "[Launch Options]",
+		},
+		&cli.BoolFlag{
 			Name:     "diff",
 			Usage:    "skip init vuln db, push new vulns then exit",
 			Category: "[Launch Options]",
@@ -307,6 +313,7 @@ func initConfigFromCli(c *cli.Context) (*ctrl.WatchVulnAppConfig, error) {
 	noStartMessage := c.Bool("no-start-message")
 	noFilter := c.Bool("no-filter")
 	noGithubSearch := c.Bool("no-github-search")
+	noSleep := c.Bool("no-sleep")
 	cveFilter := c.Bool("enable-cve-filter")
 	debug := c.Bool("debug")
 	iv := c.String("interval")
@@ -330,6 +337,10 @@ func initConfigFromCli(c *cli.Context) (*ctrl.WatchVulnAppConfig, error) {
 	if os.Getenv("NO_GITHUB_SEARCH") != "" {
 		noGithubSearch = true
 	}
+	if os.Getenv("NO_SLEEP") != "" {
+		noSleep = true
+	}
+
 	if os.Getenv("ENABLE_CVE_FILTER") == "false" {
 		cveFilter = false
 	}
@@ -383,6 +394,7 @@ func initConfigFromCli(c *cli.Context) (*ctrl.WatchVulnAppConfig, error) {
 		EnableCVEFilter: &cveFilter,
 		NoStartMessage:  &noStartMessage,
 		NoGithubSearch:  &noGithubSearch,
+		NoSleep:         &noSleep,
 		NoFilter:        noFilter,
 		DiffMode:        &diff,
 		Version:         Version,

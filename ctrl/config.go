@@ -18,6 +18,7 @@ type WatchVulnAppConfig struct {
 	EnableCVEFilter *bool               `yaml:"enable_cve_filter" json:"enable_cve_filter"`
 	NoGithubSearch  *bool               `yaml:"no_github_search" json:"no_github_search"`
 	NoStartMessage  *bool               `yaml:"no_start_message" json:"no_start_message"`
+	NoSleep         *bool               `yaml:"no_sleep" json:"no_sleep"`
 	DiffMode        *bool               `yaml:"diff_mode" json:"diff_mode"`
 	WhiteKeywords   []string            `yaml:"white_keywords" json:"white_keywords"`
 	BlackKeywords   []string            `yaml:"black_keywords" json:"black_keywords"`
@@ -48,6 +49,9 @@ func (c *WatchVulnAppConfig) Init() {
 	}
 	if c.NoStartMessage == nil {
 		c.NoStartMessage = new(bool)
+	}
+	if c.NoSleep == nil {
+		c.NoSleep = new(bool)
 	}
 	if c.DiffMode == nil {
 		c.DiffMode = new(bool)
