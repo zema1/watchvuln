@@ -194,7 +194,7 @@ func (w *WatchVulnApp) Run(ctx context.Context) error {
 			return ctx.Err()
 		case <-ticker.C:
 			hour := time.Now().Hour()
-			if hour >= 0 && hour < 7 {
+			if hour >= 0 && hour < 7 && !*w.config.NoSleep {
 				// we must sleep in this time
 				w.log.Infof("sleeping..")
 				continue
