@@ -47,33 +47,34 @@
 
 Docker 方式推荐使用环境变量来配置服务参数
 
-| 环境变量名                   | 说明                                                                                | 默认值                                               |
-|-------------------------|-----------------------------------------------------------------------------------|---------------------------------------------------|
-| `DB_CONN`               | 数据库链接字符串，详情见 [数据库连接](#数据库连接)                                                      | `sqlite3://vuln_v3.sqlite3`                       |
-| `DINGDING_ACCESS_TOKEN` | 钉钉机器人 url 的 `access_token` 部分                                                     |                                                   |
-| `DINGDING_SECRET`       | 钉钉机器人的加签值 （仅支持加签方式）                                                               |                                                   |
-| `LARK_ACCESS_TOKEN`     | 飞书机器人 url 的 `/open-apis/bot/v2/hook/` 后的部分, 也支持直接指定完整的 url 来访问私有部署的飞书             |                                                   |
-| `LARK_SECRET`           | 飞书机器人的加签值 （仅支持加签方式）                                                               |                                                   |
-| `WECHATWORK_KEY `       | 微信机器人 url 的 `key` 部分                                                              |                                                   |
-| `SERVERCHAN_KEY `       | Server酱的 `SCKEY`                                                                  |                                                   |
-| `WEBHOOK_URL`           | 自定义 webhook 服务的完整 url                                                             |                                                   |
-| `BARK_URL`              | Bark 服务的完整 url, 路径需要包含 DeviceKey                                                  |                                                   |
-| `PUSHPLUS_KEY`          | PushPlus的token                                                                    |                                                   |
-| `LANXIN_DOMAIN`         | 蓝信webhook机器人的域名                                                                   |                                                   |
-| `LANXIN_TOKEN`          | 蓝信webhook机器人的hook token                                                           |                                                   |
-| `LANXIN_SECRET`         | 蓝信webhook机器人的签名                                                                   |                                                   |
-| `TELEGRAM_BOT_TOKEN`    | Telegram Bot Token                                                                |                                                   |
-| `TELEGRAM_CHAT_IDS`     | Telegram Bot 需要发送给的 chat 列表，使用 `,` 分割                                             |                                                   |
+| 环境变量名                   | 说明                                                                              | 默认值                                               |
+|-------------------------|---------------------------------------------------------------------------------|---------------------------------------------------|
+| `DB_CONN`               | 数据库链接字符串，详情见 [数据库连接](#数据库连接)                                                    | `sqlite3://vuln_v3.sqlite3`                       |
+| `DINGDING_ACCESS_TOKEN` | 钉钉机器人 url 的 `access_token` 部分                                                   |                                                   |
+| `DINGDING_SECRET`       | 钉钉机器人的加签值 （仅支持加签方式）                                                             |                                                   |
+| `LARK_ACCESS_TOKEN`     | 飞书机器人 url 的 `/open-apis/bot/v2/hook/` 后的部分, 也支持直接指定完整的 url 来访问私有部署的飞书           |                                                   |
+| `LARK_SECRET`           | 飞书机器人的加签值 （仅支持加签方式）                                                             |                                                   |
+| `WECHATWORK_KEY `       | 微信机器人 url 的 `key` 部分                                                            |                                                   |
+| `SERVERCHAN_KEY `       | Server酱的 `SCKEY`                                                                |                                                   |
+| `WEBHOOK_URL`           | 自定义 webhook 服务的完整 url                                                           |                                                   |
+| `BARK_URL`              | Bark 服务的完整 url, 路径需要包含 DeviceKey                                                |                                                   |
+| `PUSHPLUS_KEY`          | PushPlus的token                                                                  |                                                   |
+| `LANXIN_DOMAIN`         | 蓝信webhook机器人的域名                                                                 |                                                   |
+| `LANXIN_TOKEN`          | 蓝信webhook机器人的hook token                                                         |                                                   |
+| `LANXIN_SECRET`         | 蓝信webhook机器人的签名                                                                 |                                                   |
+| `TELEGRAM_BOT_TOKEN`    | Telegram Bot Token                                                              |                                                   |
+| `TELEGRAM_CHAT_IDS`     | Telegram Bot 需要发送给的 chat 列表，使用 `,` 分割                                           |                                                   |
 | `SOURCES`               | 启用哪些漏洞信息源，逗号分隔, 可选 `avd`, `ti`, `oscs`, `seebug`,`threatbook`,`struts2`,`chaitin` | `avd,ti,oscs,threatbook,seebug,struts2,venustech` |
-| `INTERVAL`              | 检查周期，支持秒 `60s`, 分钟 `10m`, 小时 `1h`, 最低 `1m`                                        | `30m`                                             |
-| `ENABLE_CVE_FILTER`     | 启用 CVE 过滤，开启后多个数据源的统一 CVE 将只推送一次                                                  | `true`                                            |
-| `NO_FILTER`             | 禁用上述推送过滤策略，所有新发现的漏洞都会被推送                                                          | `false`                                           |
-| `NO_START_MESSAGE`      | 禁用服务启动的提示信息                                                                       | `false`                                           |
-| `WHITELIST_FILE`        | 指定推送漏洞的白名单列表文件, 详情见 [推送内容筛选](#推送内容筛选)                                             |                                                   |
-| `BLACKLIST_FILE`        | 指定推送漏洞的黑名单列表文件, 详情见 [推送内容筛选](#推送内容筛选)                                             |                                                   |
-| `DIFF`                  | 跳过初始化阶段，转而直接检查漏洞更新并推送                                                             |                                                   |
-| `HTTPS_PROXY`           | 给所有请求配置代理, 详情见 [配置代理](#配置代理)                                                      |                                                   |
-| `GO_SKIP_TLS_CHECK`     | 跳过 tls 校验，详情见 [配置代理](#配置代理)                                                       | `false`                                           |
+| `INTERVAL`              | 检查周期，支持秒 `60s`, 分钟 `10m`, 小时 `1h`, 最低 `1m`                                      | `30m`                                             |
+| `ENABLE_CVE_FILTER`     | 启用 CVE 过滤，开启后多个数据源的统一 CVE 将只推送一次                                                | `true`                                            |
+| `NO_FILTER`             | 禁用上述推送过滤策略，所有新发现的漏洞都会被推送                                                        | `false`                                           |
+| `NO_START_MESSAGE`      | 禁用服务启动的提示信息                                                                     | `false`                                           |
+| `WHITELIST_FILE`        | 指定推送漏洞的白名单列表文件, 详情见 [推送内容筛选](#推送内容筛选)                                           |                                                   |
+| `BLACKLIST_FILE`        | 指定推送漏洞的黑名单列表文件, 详情见 [推送内容筛选](#推送内容筛选)                                           |                                                   |
+| `DIFF`                  | 跳过初始化阶段，转而直接检查漏洞更新并推送                                                           |                                                   |
+| `HTTPS_PROXY`           | 给所有请求配置代理, 详情见 [配置代理](#配置代理)                                                    |                                                   |
+| `GO_SKIP_TLS_CHECK`     | 跳过 tls 校验，详情见 [配置代理](#配置代理)                                                     | `false`                                           |
+| `NO_SLEEP`              | 禁用夜晚休眠，全天24小时无休！[其他](#其他)                                                       | `false`                                           |
 
 比如使用钉钉机器人
 
@@ -216,9 +217,12 @@ USAGE:
    watchvuln [global options] command [command options] [arguments...]
 
 GLOBAL OPTIONS:
+   --config value, -c value  config file path, support json or yaml
+   
    [Push Options]
 
    --bark-url value, --bark value             your bark server url, ex: http://127.0.0.1:1111/DeviceKey
+   --blacklist-file value, --bf value         specify a file that contains some keywords, vulns with these products will NOT be pushed
    --dingding-access-token value, --dt value  webhook access token of dingding bot
    --dingding-sign-secret value, --ds value   sign secret of dingding bot
    --lanxin-domain value, --lxd value         your lanxin server url, ex: https://apigw-example.domain
@@ -232,23 +236,28 @@ GLOBAL OPTIONS:
    --telegram-chat-ids value, --tgids value   chat ids want to send on telegram, ex: 123456,4312341,123123
    --webhook-url value, --webhook value       your webhook server url, ex: http://127.0.0.1:1111/webhook
    --wechatwork-key value, --wk value         webhook key of wechat work
+   --whitelist-file value, --wf value         specify a file that contains some keywords, vulns with these keywords will be pushed
 
    [Launch Options]
 
    --db-conn value, --db value  database connection string (default: "sqlite3://vuln_v3.sqlite3")
+   --diff                       skip init vuln db, push new vulns then exit (default: false)
    --enable-cve-filter          enable a filter that vulns from multiple sources with same cve id will be sent only once (default: true)
    --interval value, -i value   checking every [interval], supported format like 30s, 30m, 1h (default: "30m")
    --no-filter, --nf            ignore the valuable filter and push all discovered vulns (default: false)
    --no-github-search, --ng     don't search github repos and pull requests for every cve vuln (default: false)
+   --no-sleep, --ns             don't sleep in night, run every interval (default: false)
    --no-start-message, --nm     disable the hello message when server starts (default: false)
    --proxy value, -x value      set request proxy, support socks5://xxx or http(s)://
-   --sources value, -s value    set vuln sources (default: "avd,nox,oscs,threatbook,seebug,struts2")
+   --sources value, -s value    set vuln sources (default: "avd,nox,oscs,threatbook,seebug,struts2,kev,venustech")
 
    [Other Options]
 
-   --debug, -d    set log level to debug, print more details (default: false)
-   --help, -h     show help (default: false)
-   --version, -v  print the version (default: false)
+   --debug, -d     set log level to debug, print more details (default: false)
+   --help, -h      show help (default: false)
+   --insecure, -k  allow insecure server connections when using SSL/TLS (default: false)
+   --test, -T      use to test message pusher, three mocked messages will be pushed (default: false)
+   --version, -v   print the version (default: false)
 ```
 
 在参数中指定相关 Token 即可, 比如使用钉钉机器人
@@ -392,17 +401,6 @@ docker run -v $(pwd):/config \
 
 通过命令行参数 `-bf` 或者环境变量 `BLACKLIST_FILE` 来指定黑名单文件。在发现新漏洞时，将检查漏洞的 **标题** 是否包含黑名单的任意一行，
 包含的将不推送漏洞。为了避免非预期的漏掉推送，黑名单**不会**检查漏洞的 **描述** 是否匹配。
-
-## 常见问题
-
-1. 服务重启后支持增量更新吗
-
-   支持，每次检查会按照一定的策略去增量抓取
-
-2. Docker 拉取镜像提示 `not found`
-
-   你使用的 Docker 版本太老了，不支持新的镜像格式，需要升级一下 Docker
-   版本，参考 [#16](https://github.com/zema1/watchvuln/issues/16)
 
 ## 其他
 
