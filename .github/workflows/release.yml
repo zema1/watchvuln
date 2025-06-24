@@ -33,6 +33,9 @@ jobs:
           - os: linux
             arch: arm64
             output: watchvuln-linux-arm64
+          - os: linux
+            arch: arm
+            output: watchvuln-linux-arm
     runs-on: ubuntu-latest
     env:
       CGO_ENABLED: 0
