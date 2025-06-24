@@ -163,8 +163,23 @@ func (v *VenustechCrawler) parseSingle(ctx context.Context, vulnURL string) (*Vu
 	ext := path.Ext(filename)
 	vulnInfo.UniqueKey = strings.TrimSuffix(filename, ext) + "_venustech"
 	vulnInfo.From = vulnURL
-	// 提取描述内容
-	vulnInfo.Description = strings.TrimSpace(vulnTableSel.NextUntil("h2").Text())
+	// 提取描述内容, 取两者不为空且较短的那个
+	// 大标题的情况
+	h2Data := strings.TrimSpace(vulnTableSel.NextUntil("h2").Text())
+	// 小标题的情况
+	h3Data := strings.TrimSpace(vulnTableSel.NextUntil("h3").Text())
+	if h2Data != "" && h3Data != "" {
+		if len(h2Data) < len(h3Data) {
+			vulnInfo.Description = h2Data
+		} else {
+			vulnInfo.Description = h3Data
+		}
+	} else if h2Data != "" {
+		vulnInfo.Description = h2Data
+	} else {
+		vulnInfo.Description = h3Data
+	}
+
 	// 提取参考链接
 	contentSel.Find("div > h3").Each(func(i int, s *goquery.Selection) {
 		if strings.Contains(s.Text(), "参考链接") {
