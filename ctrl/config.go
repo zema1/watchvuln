@@ -194,6 +194,12 @@ func (c *WatchVulnAppConfig) GetPusher() (push.TextPusher, push.RawPusher, error
 				continue
 			}
 			textPusher = append(textPusher, push.NewCtInternal(&ctInternalConfig))
+		case push.TypeSlack:
+			slackConfig := unmarshal[push.SlackConfig](config)
+			if slackConfig.WebhookURL == "" {
+				continue
+			}
+			textPusher = append(textPusher, push.NewSlack(&slackConfig))
 		default:
 			return nil, nil, fmt.Errorf("unsupported push type: %s", pushType)
 		}
