@@ -3,16 +3,18 @@ package util
 import (
 	"context"
 	"errors"
-	"github.com/imroc/req/v3"
-	"github.com/kataras/golog"
 	"os"
 	"time"
+
+	"github.com/imroc/req/v3"
+	"github.com/kataras/golog"
 )
 
 func NewHttpClient() *req.Client {
 	client := req.C()
 	client.
-		ImpersonateFirefox().
+		ImpersonateChrome().
+		SetCommonHeader("User-Agent", RandUserAgent()).
 		SetTimeout(10 * time.Second).
 		SetCommonRetryCount(3).
 		SetCookieJar(nil).
@@ -25,15 +27,17 @@ func NewHttpClient() *req.Client {
 		SetCommonRetryHook(func(resp *req.Response, err error) {
 			if err != nil {
 				if !errors.Is(err, context.Canceled) {
+					client.Headers.Set("User-Agent", RandUserAgent())
 					golog.Warnf("retrying as %s", err)
 				}
 			}
-		}).SetCommonRetryCondition(func(resp *req.Response, err error) bool {
-		if err != nil {
-			return !errors.Is(err, context.Canceled)
-		}
-		return false
-	})
+		}).
+		SetCommonRetryCondition(func(resp *req.Response, err error) bool {
+			if err != nil {
+				return !errors.Is(err, context.Canceled)
+			}
+			return false
+		})
 	if os.Getenv("GO_SKIP_TLS_CHECK") != "" {
 		client.EnableInsecureSkipVerify()
 	}
