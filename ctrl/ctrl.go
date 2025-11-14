@@ -277,6 +277,17 @@ func (w *WatchVulnApp) collectAndPush(ctx context.Context) {
 				}
 			}
 
+			// 仅推送披露日期在1年以内的
+			if v.Disclosure != "" {
+				disclosureTime, err := time.Parse("2006-01-02", v.Disclosure)
+				if err == nil {
+					if time.Since(disclosureTime) > time.Hour*24*365 {
+						w.log.Infof("skipped %s as disclosure date %s older than 1 year", v, v.Disclosure)
+						continue
+					}
+				}
+			}
+
 			// find cve pr in nuclei repo
 			if v.CVE != "" && !*w.config.NoGithubSearch {
 				links, err := w.FindGithubPoc(ctx, v.CVE)
