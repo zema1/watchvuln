@@ -4,13 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/PuerkitoBio/goquery"
-	"github.com/dop251/goja"
-	"github.com/dop251/goja_nodejs/eventloop"
-	"github.com/imroc/req/v3"
-	"github.com/kataras/golog"
-	"github.com/pkg/errors"
-	"github.com/zema1/watchvuln/util"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -18,6 +11,14 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/PuerkitoBio/goquery"
+	"github.com/dop251/goja"
+	"github.com/dop251/goja_nodejs/eventloop"
+	"github.com/imroc/req/v3"
+	"github.com/kataras/golog"
+	"github.com/pkg/errors"
+	"github.com/zema1/watchvuln/util"
 )
 
 type SeebugCrawler struct {
@@ -85,7 +86,7 @@ func (t *SeebugCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*VulnIn
 		if err != nil {
 			return results, err
 		}
-		t.log.Infof("got %d vulns from page %d", len(pageResult), i)
+		t.log.Debugf("got %d vulns from page %d", len(pageResult), i)
 		results = append(results, pageResult...)
 	}
 	return results, nil

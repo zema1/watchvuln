@@ -61,7 +61,7 @@ func (t *OSCSCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*VulnInfo
 		if err != nil {
 			return results, err
 		}
-		t.log.Infof("got %d vulns from page %d", len(pageResult), i)
+		t.log.Debugf("got %d vulns from page %d", len(pageResult), i)
 		results = append(results, pageResult...)
 	}
 	return results, nil

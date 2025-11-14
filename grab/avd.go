@@ -4,6 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net/url"
+	"regexp"
+	"strings"
+	"time"
+
 	"github.com/PuerkitoBio/goquery"
 	"github.com/dop251/goja"
 	"github.com/dop251/goja_nodejs/eventloop"
@@ -12,10 +17,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/zema1/watchvuln/util"
 	"golang.org/x/net/html"
-	"net/url"
-	"regexp"
-	"strings"
-	"time"
 )
 
 var (
@@ -75,7 +76,7 @@ func (a *AVDCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*VulnInfo,
 		if err != nil {
 			return results, err
 		}
-		a.log.Infof("got %d vulns from page %d", len(pageResult), i)
+		a.log.Debugf("got %d vulns from page %d", len(pageResult), i)
 		results = append(results, pageResult...)
 	}
 	return results, nil

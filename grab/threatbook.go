@@ -49,7 +49,7 @@ func (t *ThreatBookCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*Vu
 	if err != nil {
 		return nil, err
 	}
-	t.log.Infof("got %d vulns", len(body.Data.HighRisk))
+	t.log.Debugf("got %d vulns", len(body.Data.HighRisk))
 
 	for _, v := range body.Data.HighRisk {
 		disclosure := v.VulnPublishTime
@@ -82,7 +82,7 @@ func (t *ThreatBookCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*Vu
 		}
 		results = append(results, vuln)
 	}
-	t.log.Infof("got %d vulns", len(results))
+	t.log.Debugf("got %d vulns", len(results))
 
 	return results, nil
 }

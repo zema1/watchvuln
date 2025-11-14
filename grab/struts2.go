@@ -112,7 +112,7 @@ func (c *Struts2Crawler) GetUpdate(ctx context.Context, vulnLimit int) ([]*VulnI
 			*/
 			// 提取链接和描述
 			linkTag := s.Find("a")
-			//description := s.Find("span.smalltext").Text()
+			// description := s.Find("span.smalltext").Text()
 			title := linkTag.Text()
 			link, _ := linkTag.Attr("href")
 
@@ -134,7 +134,7 @@ func (c *Struts2Crawler) GetUpdate(ctx context.Context, vulnLimit int) ([]*VulnI
 			vulnInfos = append(vulnInfos, vuln)
 		}
 	})
-	c.log.Infof("got %d vulns", len(vulnInfos))
+	c.log.Debugf("got %d vulns", len(vulnInfos))
 
 	return vulnInfos, nil
 }

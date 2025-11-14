@@ -42,7 +42,7 @@ func (t *ChaitinCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*VulnI
 	// CT- 为长亭漏洞库的标识
 	urlTpl := "https://stack.chaitin.com/api/v2/vuln/list/?limit=15&offset=%d&search=CT-"
 	for i := 0; i < pageLimit; i++ {
-		t.log.Infof("get vuln from chatin page %d", i+1)
+		t.log.Debugf("get vuln from chatin page %d", i+1)
 		u := fmt.Sprintf(urlTpl, i*15)
 		var body ChaitinResp
 		_, err := t.client.R().
@@ -89,7 +89,7 @@ func (t *ChaitinCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*VulnI
 		}
 	}
 
-	t.log.Infof("got %d vulns from chaitin api", len(results))
+	t.log.Debugf("got %d vulns from chaitin api", len(results))
 	return results, nil
 }
 

@@ -2,9 +2,10 @@ package grab
 
 import (
 	"context"
-	"github.com/zema1/watchvuln/util"
 	"strconv"
 	"strings"
+
+	"github.com/zema1/watchvuln/util"
 
 	"github.com/imroc/req/v3"
 	"github.com/kataras/golog"
@@ -92,7 +93,7 @@ func (t *TiCrawler) GetUpdate(ctx context.Context, _ int) ([]*VulnInfo, error) {
 		newResults = append(newResults, info)
 		uniqResults[info.UniqueKey] = nil
 	}
-	t.log.Infof("got %d vulns from oneday api", len(newResults))
+	t.log.Debugf("got %d vulns from oneday api", len(newResults))
 	return newResults, nil
 }
 

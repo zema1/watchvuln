@@ -46,7 +46,7 @@ func (v *VenustechCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*Vul
 		if err != nil {
 			return results, err
 		}
-		v.log.Infof("got %d vulns from page %d", len(pageResult), i)
+		v.log.Debugf("got %d vulns from page %d", len(pageResult), i)
 		results = append(results, pageResult...)
 	}
 

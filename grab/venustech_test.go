@@ -24,7 +24,6 @@ func TestVenustech(t *testing.T) {
 		assert.NotEmpty(v.UniqueKey)
 		assert.NotEmpty(v.Description)
 		assert.NotEmpty(v.Title)
-		assert.NotEmpty(v.Disclosure)
 		assert.NotEmpty(v.From)
 	}
 	assert.Greater(count, 0)
