@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/zema1/watchvuln/push"
-	"gopkg.in/yaml.v3"
 	"os"
 	"os/signal"
 	"strings"
 	"time"
+
+	"github.com/zema1/watchvuln/push"
+	"gopkg.in/yaml.v3"
 
 	"github.com/zema1/watchvuln/ctrl"
 
@@ -19,7 +20,7 @@ import (
 )
 
 var log = golog.Child("[main]")
-var Version = "v2.6.0"
+var Version = "v2.7.0"
 
 func main() {
 	golog.Default.SetLevel("info")
@@ -129,6 +130,18 @@ func main() {
 			Name:     "telegram-chat-ids",
 			Aliases:  []string{"tgids"},
 			Usage:    "chat ids want to send on telegram, ex: 123456,4312341,123123",
+			Category: "[\x00Push Options]",
+		},
+		&cli.StringFlag{
+			Name:     "slack-channel",
+			Aliases:  []string{"sc"},
+			Usage:    "specify slack channel, eg, #security_vulns",
+			Category: "[\x00Push Options]",
+		},
+		&cli.StringFlag{
+			Name:     "slack-webhook-url",
+			Aliases:  []string{"sw"},
+			Usage:    "specify slack webhook url, eg, https://hooks.slack.com/services/XXX/YYY/ZZZ",
 			Category: "[\x00Push Options]",
 		},
 		&cli.StringFlag{
@@ -423,6 +436,8 @@ func initPusher(c *cli.Context) ([]map[string]string, error) {
 	pushPlusKey := c.String("pushplus-key")
 	telegramBotTokey := c.String("telegram-bot-token")
 	telegramChatIDs := c.String("telegram-chat-ids")
+	slackChannel := c.String("slack-channel")
+	slackWebhook := c.String("slack-webhook-url")
 
 	if os.Getenv("DINGDING_ACCESS_TOKEN") != "" {
 		dingToken = os.Getenv("DINGDING_ACCESS_TOKEN")
@@ -465,6 +480,12 @@ func initPusher(c *cli.Context) ([]map[string]string, error) {
 	}
 	if os.Getenv("TELEGRAM_CHAT_IDS") != "" {
 		telegramChatIDs = os.Getenv("TELEGRAM_CHAT_IDS")
+	}
+	if os.Getenv("SLACK_CHANNEL") != "" {
+		slackChannel = os.Getenv("SLACK_CHANNEL")
+	}
+	if os.Getenv("SLACK_WEBHOOK_URL") != "" {
+		slackWebhook = os.Getenv("SLACK_WEBHOOK_URL")
 	}
 
 	var pusherConfig []any
@@ -525,6 +546,13 @@ func initPusher(c *cli.Context) ([]map[string]string, error) {
 			Type:     push.TypeTelegram,
 			BotToken: telegramBotTokey,
 			ChatIDs:  telegramChatIDs,
+		})
+	}
+	if slackWebhook != "" {
+		pusherConfig = append(pusherConfig, &push.SlackConfig{
+			Type:       push.TypeSlack,
+			WebhookURL: slackWebhook,
+			Channel:    slackChannel,
 		})
 	}
 	data, err := json.Marshal(pusherConfig)

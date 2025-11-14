@@ -10,39 +10,47 @@ skip_tls_verify: false
 proxy: ""
 
 pusher:
+  # 钉钉
   - type: dingding
     access_token: ""
     sign_secret: ""
 
+  # 飞书(含私有化)
   - type: lark
     access_token: ""
     sign_secret: ""
 
+  # 企业微信
   - type: wechatwork
     key: ""
 
+  # 蓝信
   - type: lanxin
     domain: ""
     access_token: ""
     sign_secret: ""
 
+  # Bark 推送
   - type: bark
     url: ""
 
+  # Server 酱
   - type: serverchan
     key: ""
 
+  # PushPlus
   - type: pushplus
     token: ""
 
+  # Telegram bot
   - type: telegram
     bot_token: ""
     chat_ids: ""
 
-  - type: webhook
-    url: ""
-
-    # Slack 推送渠道配置
+  # Slack webhook
   - type: slack
     webhook_url: "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
     channel: "#security-alerts"  # 可选：指定频道
+
+  - type: webhook
+    url: ""
