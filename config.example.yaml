@@ -49,7 +49,7 @@ pusher:
 
   # Slack webhook
   - type: slack
-    webhook_url: "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
+    webhook_url: "" # https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
     channel: "#security-alerts"  # 可选：指定频道
 
   - type: webhook
