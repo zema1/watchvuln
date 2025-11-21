@@ -31,7 +31,7 @@ func (t *ThreatBookCrawler) ProviderInfo() *Provider {
 	return &Provider{
 		Name:        "threatbook",
 		DisplayName: "微步在线研究响应中心-漏洞通告",
-		Link:        "https://x.threatbook.com/v5/vulIntelligence",
+		Link:        "https://x.threatbook.com/v5/vul/",
 	}
 }
 
@@ -77,7 +77,7 @@ func (t *ThreatBookCrawler) GetUpdate(ctx context.Context, pageLimit int) ([]*Vu
 			Solutions:  "",
 			References: nil,
 			Tags:       tags,
-			From:       t.ProviderInfo().Link,
+			From:       t.ProviderInfo().Link+v.Id,
 			Creator:    t,
 		}
 		results = append(results, vuln)
