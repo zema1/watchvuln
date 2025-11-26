@@ -7,6 +7,7 @@ WORKDIR /app
 #    GOPROXY=https://goproxy.cn,direct
 
 COPY . .
+RUN go env -w GOPROXY=https://goproxy.cn,direct
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -extldflags=-static" -o main .
 
 
