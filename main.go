@@ -91,6 +91,24 @@ func main() {
 			Category: "[\x00Push Options]",
 		},
 		&cli.StringFlag{
+			Name:     "wpush-key",
+			Aliases:  []string{"wpk"},
+			Usage:    "api key for wpush",
+			Category: "[\x00Push Options]",
+		},
+		&cli.StringFlag{
+			Name:     "wpush-channel",
+			Aliases:  []string{"wpc"},
+			Usage:    "optional channel for wpush, default wechat",
+			Category: "[\x00Push Options]",
+		},
+		&cli.StringFlag{
+			Name:     "wpush-topic-code",
+			Aliases:  []string{"wpt"},
+			Usage:    "optional topic_code for wpush topic messages",
+			Category: "[\x00Push Options]",
+		},
+		&cli.StringFlag{
 			Name:     "webhook-url",
 			Aliases:  []string{"webhook"},
 			Usage:    "your webhook server url, ex: http://127.0.0.1:1111/webhook",
@@ -434,6 +452,9 @@ func initPusher(c *cli.Context) ([]map[string]string, error) {
 	larkSecret := c.String("lark-sign-secret")
 	serverChanKey := c.String("serverchan-key")
 	pushPlusKey := c.String("pushplus-key")
+	wpushKey := c.String("wpush-key")
+	wpushChannel := c.String("wpush-channel")
+	wpushTopicCode := c.String("wpush-topic-code")
 	telegramBotTokey := c.String("telegram-bot-token")
 	telegramChatIDs := c.String("telegram-chat-ids")
 	slackChannel := c.String("slack-channel")
@@ -474,6 +495,15 @@ func initPusher(c *cli.Context) ([]map[string]string, error) {
 	}
 	if os.Getenv("PUSHPLUS_KEY") != "" {
 		pushPlusKey = os.Getenv("PUSHPLUS_KEY")
+	}
+	if os.Getenv("WPUSH_KEY") != "" {
+		wpushKey = os.Getenv("WPUSH_KEY")
+	}
+	if os.Getenv("WPUSH_CHANNEL") != "" {
+		wpushChannel = os.Getenv("WPUSH_CHANNEL")
+	}
+	if os.Getenv("WPUSH_TOPIC_CODE") != "" {
+		wpushTopicCode = os.Getenv("WPUSH_TOPIC_CODE")
 	}
 	if os.Getenv("TELEGRAM_BOT_TOKEN") != "" {
 		telegramBotTokey = os.Getenv("TELEGRAM_BOT_TOKEN")
@@ -539,6 +569,14 @@ func initPusher(c *cli.Context) ([]map[string]string, error) {
 		pusherConfig = append(pusherConfig, &push.PushPlusConfig{
 			Type:  push.TypePushPlus,
 			Token: pushPlusKey,
+		})
+	}
+	if wpushKey != "" {
+		pusherConfig = append(pusherConfig, &push.WPushConfig{
+			Type:      push.TypeWPush,
+			APIKey:    wpushKey,
+			Channel:   wpushChannel,
+			TopicCode: wpushTopicCode,
 		})
 	}
 	if telegramBotTokey != "" && telegramChatIDs != "" {

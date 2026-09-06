@@ -178,6 +178,12 @@ func (c *WatchVulnAppConfig) GetPusher() (push.TextPusher, push.RawPusher, error
 				continue
 			}
 			textPusher = append(textPusher, push.NewPushPlus(&pushplusConfig))
+		case push.TypeWPush:
+			wpushConfig := unmarshal[push.WPushConfig](config)
+			if wpushConfig.APIKey == "" {
+				continue
+			}
+			textPusher = append(textPusher, push.NewWPush(&wpushConfig))
 		case push.TypeTelegram:
 			telegramConfig := unmarshal[push.TelegramConfig](config)
 			if telegramConfig.BotToken == "" || telegramConfig.ChatIDs == "" {

@@ -39,6 +39,7 @@
 - [蓝信群组机器人](https://developer.lanxin.cn/official/article?id=646ecae03d4e4adb7039c0e4&module=development-help&article_id=646f193b3d4e4adb7039c21c)
 - [Server 酱](https://sct.ftqq.com/)
 - [PushPlus](https://pushplus.plus/)
+- [WPUSH](https://wpush.cn/)
 - [Slack Webhook](https://docs.slack.dev/messaging/sending-messages-using-incoming-webhooks/)
 - [Telegram Bot](https://core.telegram.org/bots/tutorial)
 - [自定义 Bark 服务](https://github.com/Finb/Bark)
@@ -60,6 +61,9 @@ Docker 方式推荐使用环境变量来配置服务参数
 | `WEBHOOK_URL`           | 自定义 webhook 服务的完整 url                                                             |                                                   |
 | `BARK_URL`              | Bark 服务的完整 url, 路径需要包含 DeviceKey                                                  |                                                   |
 | `PUSHPLUS_KEY`          | PushPlus的token                                                                    |                                                   |
+| `WPUSH_KEY`             | WPUSH 的 apikey                                                                    |                                                   |
+| `WPUSH_CHANNEL`         | WPUSH 发送通道，可选 wechat/app/webhook/feishu/dingtalk/wechat_work/mail/sms 等           | `wechat`                                          |
+| `WPUSH_TOPIC_CODE`      | WPUSH 主题消息编码（可选）                                                                |                                                   |
 | `LANXIN_DOMAIN`         | 蓝信webhook机器人的域名                                                                   |                                                   |
 | `LANXIN_TOKEN`          | 蓝信webhook机器人的hook token                                                           |                                                   |
 | `LANXIN_SECRET`         | 蓝信webhook机器人的签名                                                                   |                                                   |
@@ -151,6 +155,17 @@ docker run --restart always -d \
 ```bash
 docker run --restart always -d \
   -e PUSHPLUS_KEY=xxx \
+  -e INTERVAL=30m \
+  zemal/watchvuln:latest
+```
+
+</details>
+
+<details><summary>使用 WPUSH</summary>
+
+```bash
+docker run --restart always -d \
+  -e WPUSH_KEY=xxx \
   -e INTERVAL=30m \
   zemal/watchvuln:latest
 ```
@@ -257,6 +272,9 @@ GLOBAL OPTIONS:
    --telegram-chat-ids value, --tgids value   chat ids want to send on telegram, ex: 123456,4312341,123123
    --webhook-url value, --webhook value       your webhook server url, ex: http://127.0.0.1:1111/webhook
    --wechatwork-key value, --wk value         webhook key of wechat work
+   --wpush-channel value, --wpc value         optional channel for wpush, default wechat
+   --wpush-key value, --wpk value             api key for wpush
+   --wpush-topic-code value, --wpt value      optional topic_code for wpush topic messages
    --whitelist-file value, --wf value         specify a file that contains some keywords, vulns with these keywords will be pushed
 
    [Launch Options]
@@ -324,6 +342,14 @@ $ ./watchvuln --sk xxxx -i 30m
 
 ```
 $ ./watchvuln --pk xxxx -i 30m
+```
+
+</details>
+
+<details><summary>使用 WPUSH</summary>
+
+```
+$ ./watchvuln --wpk xxxx -i 30m
 ```
 
 </details>

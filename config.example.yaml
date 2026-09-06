@@ -42,6 +42,12 @@ pusher:
   - type: pushplus
     token: ""
 
+  # WPUSH
+  - type: wpush
+    apikey: ""
+    channel: ""      # 可选，默认 wechat
+    topic_code: ""   # 可选，主题消息编码
+
   # Telegram bot
   - type: telegram
     bot_token: ""
